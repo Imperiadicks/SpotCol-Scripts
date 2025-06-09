@@ -1096,15 +1096,15 @@ class HandleEventsManager {
             "OBuserprofile": "userprofile",
             "OBtrailers": "trailers",
             "OBvibeanimation": "vibeanimation",
-            // … другие модули Open-Blocker
+            // …другие модули Open-Blocker по ключам из handleEvents.json
         };
     }
+
     applyOpenBlocker(settings) {
-        // Читаем плоские настройки из handleEvents.json
         Object.entries(this.moduleMap).forEach(([key, slug]) => {
             const cssId    = `openblocker-${slug}`;
-            const setting  = settings[key];                // e.g. settings['OBdonations']
-            const needHide = setting?.value === false;     // если false ⇒ скрыть
+            const setting  = settings[key];                // flat: settings['OBdonations']
+            const needHide = setting?.value === false;     // false → скрыть
 
             if (needHide && !document.getElementById(cssId)) {
                 this.theme.stylesManager.add(cssId, `
@@ -1145,7 +1145,7 @@ class HandleEventsManager {
     }
 
     apply(settings) {
-        // Сразу вызываем все функции без вложенных секций
+        // Вызываем все методы будто на «плоских» ключах
         this.applyOpenBlocker(settings);
         this.applyPlayerBackground(settings);
         this.applyNewButtonHeight(settings);
