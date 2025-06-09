@@ -188,37 +188,47 @@ class SettingsManager extends EventEmitter {
 	 * @example
 	 * await settingsManager.update();
 	 */
-	async update() {
-		try {
-			const data = await this.theme.assetsManager.getContent('handleEvents.json');
-			if (!data?.sections) {
-				console.warn("Структура данных не соответствует ожидаемой");
-				return null;
-			}
+// В классе SettingsManager:
+async update() {
+    try {
+        // ----------------------------------------------------------------
+        // вместо fetch('http://127.0.0.1:2007/get_handle?name=...')
+        // загружаем напрямую наш handleEvents.json из ассетов темы:
+        const data = await this.theme.assetsManager.getContent('handleEvents.json');
+        // ----------------------------------------------------------------
 
-			this.old_settings = this.settings;
-			this.settings = this.transformJSON(data);
+        if (!data?.sections) {
+            console.warn("Структура handleEvents.json не соответствует ожидаемой");
+            return null;
+        }
 
-			this.emit('update', {
-				settings: this.theme.settingsManager,
-				styles: this.theme.stylesManager,
-				state: this.theme.player.state
-			});
+        // сохраняем предыдущие настройки и преобразуем новый JSON в плоский объект
+        this.old_settings = this.settings;
+        this.settings    = this.transformJSON(data);
 
-			for (const id in this.settings) {
-				if (this.hasChanged(id)) {
-					this.emit(`change:${id}`, {
-						settings: this.theme.settingsManager,
-						styles: this.theme.stylesManager,
-						state: this.theme.player.state
-					});
-				}
-			}
-		} catch (error) {
-			console.error(error);
-			return null;
-		}
-	}
+        // эмитим глобальный апдейт настроек...
+        this.emit('update', {
+            settings: this.theme.settingsManager,
+            styles:   this.theme.stylesManager,
+            state:    this.theme.player.state
+        });
+
+        // и вызываем change-события для всех изменённых ключей
+        for (const id in this.settings) {
+            if (this.hasChanged(id)) {
+                this.emit(`change:${id}`, {
+                    settings: this.theme.settingsManager,
+                    styles:   this.theme.stylesManager,
+                    state:    this.theme.player.state
+                });
+            }
+        }
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+}
+
 
 	/**
 	 * Преобразует сложную структуру настроек из API в плоский объект
@@ -1090,34 +1100,41 @@ const asd = 0;
 class HandleEventsManager {
     constructor(theme) {
         this.theme = theme;
+
+        // карта ключей из handleEvents.json → slug для Open-Blocker
         this.moduleMap = {
-            "OBdonations": "donations",
-            "OBconcerts": "concerts",
-            "OBuserprofile": "userprofile",
-            "OBtrailers": "trailers",
-            "OBvibeanimation": "vibeanimation",
-            // …другие модули Open-Blocker по ключам из handleEvents.json
+            OBpodcasts:    'podcasts',
+            OBdonations:   'donations',
+            OBconcerts:    'concerts',
+            OBmywave:      'mywave',
+            OBshorts:      'shorts',
+            OBvideos:      'videos',
+            OBuserprofile: 'userprofile',
+            OBtrailers:    'trailers',
+            OBvibeanimation:'vibeanimation',
+            // …добавьте остальные из вашего handleEvents.json
         };
     }
 
     applyOpenBlocker(settings) {
         Object.entries(this.moduleMap).forEach(([key, slug]) => {
-            const cssId    = `openblocker-${slug}`;
-            const setting  = settings[key];                // flat: settings['OBdonations']
-            const needHide = setting?.value === false;     // false → скрыть
+            const cssId   = `openblocker-${slug}`;
+            const setting = settings[key];
+            const hide    = setting?.value === false;
 
-            if (needHide && !document.getElementById(cssId)) {
+            if (hide && !document.getElementById(cssId)) {
+                // можно подгружать ваш собственный CSS или просто скрывать:
                 this.theme.stylesManager.add(cssId, `
                     .${slug} { display: none !important; }
                 `);
-            } else if (!needHide) {
+            } else if (!hide) {
                 this.theme.stylesManager.remove(cssId);
             }
         });
     }
 
     applyPlayerBackground(settings) {
-        const on = settings['togglePlayerBackground']?.value === true;
+        const on  = settings['togglePlayerBackground']?.value === true;
         const css = `
             .FullscreenPlayerDesktopContent_syncLyrics__6dTfH,
             .FullscreenPlayerDesktopContent_info__Dq69p,
@@ -1130,22 +1147,22 @@ class HandleEventsManager {
 
     applyNewButtonHeight(settings) {
         const tall = settings['Newbuttona']?.value === true;
-        const css = tall
+        const css  = tall
             ? `.MainPage_vibe__XEBbh { transform: scale(1.2); }`
             : `.MainPage_vibe__XEBbh { transform: scale(1); }`;
         this.theme.stylesManager.add('newbutton-height', css);
     }
 
     applyNewButtonHide(settings) {
-        const visible = settings['NewbuttonHide']?.value === true;
-        const css = visible
+        const show = settings['NewbuttonHide']?.value === true;
+        const css  = show
             ? `body > div.WithTopBanner_root__P__x3 { display: block; }`
             : `body > div.WithTopBanner_root__P__x3 { display: none !important; }`;
         this.theme.stylesManager.add('newbutton-hide', css);
     }
 
     apply(settings) {
-        // Вызываем все методы будто на «плоских» ключах
+        // запускаем все 4 блока
         this.applyOpenBlocker(settings);
         this.applyPlayerBackground(settings);
         this.applyNewButtonHeight(settings);
