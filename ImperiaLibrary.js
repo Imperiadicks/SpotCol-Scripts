@@ -1082,127 +1082,71 @@ class Theme {
  * @type {Object}
  * @param {EventData} data - Менеджер настроек.
  */
-
+const asd = 0;
 /* ────────────────────────────────────────────────────────────────
    HandleEventsManager — общая обработка настроек из handleEvents.json
    ──────────────────────────────────────────────────────────────── */
+// В файле ImperiaLibrary.js, внутри класса HandleEventsManager
 class HandleEventsManager {
     constructor(theme) {
         this.theme = theme;
-
-        /* карта «ключ настройки  →  slug CSS-файла Open-Blocker» */
         this.moduleMap = {
-            OBpodcasts:  'podcasts',
-            OBdonations: 'donations',
-            OBconcerts:  'concerts',
-            OBmywave:    'mywave',
-            OBshorts:    'shorts',
-            OBvideos:    'videos',
+            "OBdonations": "donations",
+            "OBconcerts": "concerts",
+            "OBuserprofile": "userprofile",
+            "OBtrailers": "trailers",
+            "OBvibeanimation": "vibeanimation",
+            // … другие модули Open-Blocker
         };
     }
-
-    /* гарантируем наличие секций даже при пустом конфиге */
-    ensureSections(settings) {
-        ['Open-Blocker', 'Действия', 'Плеер', 'Фон'].forEach(sec => {
-            if (!settings[sec]) settings[sec] = {};
-        });
-    }
-
-    /* ────────────────────────────────────────────────────────────
-       1. Open-Blocker
-       ──────────────────────────────────────────────────────────── */
     applyOpenBlocker(settings) {
-        const ob = settings['Open-Blocker'];
-
+        // Читаем плоские настройки из handleEvents.json
         Object.entries(this.moduleMap).forEach(([key, slug]) => {
             const cssId    = `openblocker-${slug}`;
-            const needHide = ob[key] === false;          // false ⇒ скрыть
+            const setting  = settings[key];                // e.g. settings['OBdonations']
+            const needHide = setting?.value === false;     // если false ⇒ скрыть
 
             if (needHide && !document.getElementById(cssId)) {
-                fetch(`https://raw.githubusercontent.com/WolfySoCute/open-blocker/main/${slug}.css`)
-                    .then(r => r.text())
-                    .then(css => {
-                        this.theme.stylesManager.add(cssId, css);
-                    })
-                    .catch(console.error);
+                this.theme.stylesManager.add(cssId, `
+                    .${slug} { display: none !important; }
+                `);
             } else if (!needHide) {
                 this.theme.stylesManager.remove(cssId);
             }
         });
     }
 
-    /* ────────────────────────────────────────────────────────────
-       2. Действия → togglePlayerBackground
-       ──────────────────────────────────────────────────────────── */
     applyPlayerBackground(settings) {
-        const on = !!settings['Действия'].togglePlayerBackground;
-
+        const on = settings['togglePlayerBackground']?.value === true;
         const css = `
-.PlayerBarDesktop_root__d2Hwi,
-.Content_main__8_wIa,
-.Spotify_Screen,
-.All_Info_Container,
-.Artist_Info_Container,
-.LikesAndHistoryItem_root__oI1gk,
-.MixCard_root__9tPLV,
-.GPT_Info_Container{
-    background:${on ? 'transparent' : 'var(--ym-surface-color-primary-enabled)'} !important;
-}
-.nHWc2sto1C6Gm0Dpw_l0{
-    backdrop-filter:${on ? 'blur(0px)' : 'blur(50px)'} !important;
-}
-.VibeContext_context__Z_82k{
-    backdrop-filter:${on ? 'blur(0px)' : 'blur(5px)'};
-}
-.NewReleaseCard_root__IY5m_,
-.VibeButton_button__tXFAm,
-.NeuromusicButton_button__kT4GN{
-    border:${on ? '0' : '1px'} solid var(--ym-controls-color-control-enabled);
-    background:${on ? 'transparent' : 'var(--ym-surface-color-primary-enabled)'} !important;
-}`;
-
+            .FullscreenPlayerDesktopContent_syncLyrics__6dTfH,
+            .FullscreenPlayerDesktopContent_info__Dq69p,
+            .PlayQueue_root__ponhw {
+                background: ${on ? 'none !important' : 'initial'};
+            }
+        `;
         this.theme.stylesManager.add('toggle-player-background', css);
     }
 
-    /* ────────────────────────────────────────────────────────────
-       3. Действия → Newbuttona  (изменяем высоту блока My Vibe)
-       ──────────────────────────────────────────────────────────── */
     applyNewButtonHeight(settings) {
-        const tall = !!settings['Действия'].Newbuttona;
-
-        const css = `
-.MainPage_vibe__XEBbh{
-    height:${tall ? '89vh' : '57vh'};
-}`;
-        this.theme.stylesManager.add('new-button-height', css);
+        const tall = settings['Newbuttona']?.value === true;
+        const css = tall
+            ? `.MainPage_vibe__XEBbh { transform: scale(1.2); }`
+            : `.MainPage_vibe__XEBbh { transform: scale(1); }`;
+        this.theme.stylesManager.add('newbutton-height', css);
     }
 
-    /* ────────────────────────────────────────────────────────────
-       4. Действия → NewbuttonHide  (прячем/двигаем иконки)
-       ──────────────────────────────────────────────────────────── */
     applyNewButtonHide(settings) {
-        const visible = !!settings['Действия'].NewbuttonHide;
-
-        const css = `
-body > div.WithTopBanner_root__P__x3 > div > div > aside > div > div.NavbarDesktop_scrollableContainer__HLc9D > div > nav > ol > li:nth-child(3) > a > div.zpkgiiHgDpbBThy6gavq{
-    visibility:${visible ? 'visible' : 'hidden'};
-}
-body > div.WithTopBanner_root__P__x3 > div > div > aside > div > div.NavbarDesktop_scrollableContainer__HLc9D > div > nav > ol > li:nth-child(4) > a > div.zpkgiiHgDpbBThy6gavq{
-    left:${visible ? '175px' : '125px'};
-}`;
-        this.theme.stylesManager.add('new-button-hide', css);
+        const visible = settings['NewbuttonHide']?.value === true;
+        const css = visible
+            ? `body > div.WithTopBanner_root__P__x3 { display: block; }`
+            : `body > div.WithTopBanner_root__P__x3 { display: none !important; }`;
+        this.theme.stylesManager.add('newbutton-hide', css);
     }
 
-    /* ────────────────────────────────────────────────────────────
-       Главный метод — вызывается из Theme.update()
-       ──────────────────────────────────────────────────────────── */
     apply(settings) {
-        this.ensureSections(settings);
-
-        /* Open-Blocker */
+        // Сразу вызываем все функции без вложенных секций
         this.applyOpenBlocker(settings);
-
-        /* Действия */
         this.applyPlayerBackground(settings);
         this.applyNewButtonHeight(settings);
         this.applyNewButtonHide(settings);
