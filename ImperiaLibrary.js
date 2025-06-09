@@ -190,10 +190,7 @@ class SettingsManager extends EventEmitter {
 	 */
 	async update() {
 		try {
-			const response = await fetch(`http://127.0.0.1:2007/get_handle?name=${this.theme.id}`);
-			if (!response.ok) throw new Error(`Ошибка сети: ${response.status}`);
-
-			const { data } = await response.json();
+			const data = await this.theme.assetsManager.getContent('handleEvents.json');
 			if (!data?.sections) {
 				console.warn("Структура данных не соответствует ожидаемой");
 				return null;
