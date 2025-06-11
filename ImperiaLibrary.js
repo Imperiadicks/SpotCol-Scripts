@@ -190,19 +190,16 @@ class SettingsManager extends EventEmitter {
 	 */
 // В классе SettingsManager:
 async update() {
-  try {
-    const url  = chrome.runtime.getURL('handleEvents.json');
-    const resp = await fetch(url);
-    const data = await resp.json();
-
-        if (!data?.sections) {
-            console.warn("Структура handleEvents.json не соответствует ожидаемой");
-            return null;
-        }
-
-        // сохраняем предыдущие настройки и преобразуем новый JSON в плоский объект
-        this.old_settings = this.settings;
-        this.settings    = this.transformJSON(data);
+   try {
+    // напрямую берём JSON из ваших ассетов
+    const data = await this.theme.assetsManager.getContent('handleEvents.json');
+    if (!data?.sections) {
+      console.warn("Структура handleEvents.json не соответствует ожидаемой");
+      return null;
+    }
+    
+    this.old_settings = this.settings;
+    this.settings    = this.transformJSON(data);
 
         // эмитим глобальный апдейт настроек...
         this.emit('update', {
@@ -222,9 +219,9 @@ async update() {
             }
         }
     } catch (error) {
-        console.error(error);
-        return null;
-    }
+    console.error(error);
+    return null;
+  }
 }
 
 
