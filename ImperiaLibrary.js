@@ -1164,6 +1164,7 @@ class HandleEventsManager {
     apply(settings) {
         // запускаем все 4 блока
         this.applyOpenBlocker(settings);
+		console.log('OpenBlocker settings:', settings)
         this.applyPlayerBackground(settings);
         this.applyNewButtonHeight(settings);
         this.applyNewButtonHide(settings);
