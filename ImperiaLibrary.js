@@ -628,7 +628,83 @@ class PlayerEvents extends EventEmitter {
 		});
 	};
 }
+/* ────────────────────────────────────────────────────────────────
+   HandleEventsManager — общая обработка настроек из handleEvents.json
+   ──────────────────────────────────────────────────────────────── */
+// В файле ImperiaLibrary.js, внутри класса HandleEventsManager
+class HandleEventsManager {
+    constructor(theme) {
+        this.theme = theme;
 
+        // карта ключей из handleEvents.json → slug для Open-Blocker
+        this.moduleMap = {
+            OBpodcasts:    'podcasts',
+            OBdonations:   'donations',
+            OBconcerts:    'concerts',
+            OBmywave:      'mywave',
+            OBshorts:      'shorts',
+            OBvideos:      'videos',
+            OBuserprofile: 'userprofile',
+            OBtrailers:    'trailers',
+            OBvibeanimation:'vibeanimation',
+            // …добавьте остальные из вашего handleEvents.json
+        };
+    }
+
+    applyOpenBlocker(settings) {
+        Object.entries(this.moduleMap).forEach(([key, slug]) => {
+            const cssId   = `openblocker-${slug}`;
+            const setting = settings[key];
+            const hide    = setting?.value === false;
+
+            if (hide && !document.getElementById(cssId)) {
+                // можно подгружать ваш собственный CSS или просто скрывать:
+                this.theme.stylesManager.add(cssId, `
+                    .${slug} { display: none !important; }
+                `);
+            } else if (!hide) {
+                this.theme.stylesManager.remove(cssId);
+            }
+        });
+    }
+
+    applyPlayerBackground(settings) {
+        const on  = settings['togglePlayerBackground']?.value === true;
+        const css = `
+            .FullscreenPlayerDesktopContent_syncLyrics__6dTfH,
+            .FullscreenPlayerDesktopContent_info__Dq69p,
+            .PlayQueue_root__ponhw {
+                background: ${on ? 'none !important' : 'initial'};
+            }
+        `;
+        this.theme.stylesManager.add('toggle-player-background', css);
+    }
+
+    applyNewButtonHeight(settings) {
+        const tall = settings['Newbuttona']?.value === true;
+        const css  = tall
+            ? `.MainPage_vibe__XEBbh { transform: scale(1.2); }`
+            : `.MainPage_vibe__XEBbh { transform: scale(1); }`;
+        this.theme.stylesManager.add('newbutton-height', css);
+    }
+
+    applyNewButtonHide(settings) {
+        const show = settings['NewbuttonHide']?.value === true;
+        const css  = show
+            ? `body > div.WithTopBanner_root__P__x3 { display: block; }`
+            : `body > div.WithTopBanner_root__P__x3 { display: none !important; }`;
+        this.theme.stylesManager.add('newbutton-hide', css);
+    }
+
+    apply(settings) {
+        // запускаем все 4 блока
+        this.applyOpenBlocker(settings);
+		console.log('OpenBlocker settings:', settings)
+        this.applyPlayerBackground(settings);
+        this.applyNewButtonHeight(settings);
+        this.applyNewButtonHide(settings);
+    }
+}
 /**
  * Основной класс темы
  * @class
@@ -1093,83 +1169,6 @@ class Theme {
  * @param {EventData} data - Менеджер настроек.
  */
 const asd = 0;
-/* ────────────────────────────────────────────────────────────────
-   HandleEventsManager — общая обработка настроек из handleEvents.json
-   ──────────────────────────────────────────────────────────────── */
-// В файле ImperiaLibrary.js, внутри класса HandleEventsManager
-class HandleEventsManager {
-    constructor(theme) {
-        this.theme = theme;
-
-        // карта ключей из handleEvents.json → slug для Open-Blocker
-        this.moduleMap = {
-            OBpodcasts:    'podcasts',
-            OBdonations:   'donations',
-            OBconcerts:    'concerts',
-            OBmywave:      'mywave',
-            OBshorts:      'shorts',
-            OBvideos:      'videos',
-            OBuserprofile: 'userprofile',
-            OBtrailers:    'trailers',
-            OBvibeanimation:'vibeanimation',
-            // …добавьте остальные из вашего handleEvents.json
-        };
-    }
-
-    applyOpenBlocker(settings) {
-        Object.entries(this.moduleMap).forEach(([key, slug]) => {
-            const cssId   = `openblocker-${slug}`;
-            const setting = settings[key];
-            const hide    = setting?.value === false;
-
-            if (hide && !document.getElementById(cssId)) {
-                // можно подгружать ваш собственный CSS или просто скрывать:
-                this.theme.stylesManager.add(cssId, `
-                    .${slug} { display: none !important; }
-                `);
-            } else if (!hide) {
-                this.theme.stylesManager.remove(cssId);
-            }
-        });
-    }
-
-    applyPlayerBackground(settings) {
-        const on  = settings['togglePlayerBackground']?.value === true;
-        const css = `
-            .FullscreenPlayerDesktopContent_syncLyrics__6dTfH,
-            .FullscreenPlayerDesktopContent_info__Dq69p,
-            .PlayQueue_root__ponhw {
-                background: ${on ? 'none !important' : 'initial'};
-            }
-        `;
-        this.theme.stylesManager.add('toggle-player-background', css);
-    }
-
-    applyNewButtonHeight(settings) {
-        const tall = settings['Newbuttona']?.value === true;
-        const css  = tall
-            ? `.MainPage_vibe__XEBbh { transform: scale(1.2); }`
-            : `.MainPage_vibe__XEBbh { transform: scale(1); }`;
-        this.theme.stylesManager.add('newbutton-height', css);
-    }
-
-    applyNewButtonHide(settings) {
-        const show = settings['NewbuttonHide']?.value === true;
-        const css  = show
-            ? `body > div.WithTopBanner_root__P__x3 { display: block; }`
-            : `body > div.WithTopBanner_root__P__x3 { display: none !important; }`;
-        this.theme.stylesManager.add('newbutton-hide', css);
-    }
-
-    apply(settings) {
-        // запускаем все 4 блока
-        this.applyOpenBlocker(settings);
-		console.log('OpenBlocker settings:', settings)
-        this.applyPlayerBackground(settings);
-        this.applyNewButtonHeight(settings);
-        this.applyNewButtonHide(settings);
-    }
-}
 /* ======================================================================
    Экспортируем в глобальный namespace, если ещё не экспортирован
    ====================================================================== */
