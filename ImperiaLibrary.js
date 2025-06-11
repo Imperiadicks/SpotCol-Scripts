@@ -190,12 +190,10 @@ class SettingsManager extends EventEmitter {
 	 */
 // В классе SettingsManager:
 async update() {
-    try {
-        // ----------------------------------------------------------------
-        // вместо fetch('http://127.0.0.1:2007/get_handle?name=...')
-        // загружаем напрямую наш handleEvents.json из ассетов темы:
-        const data = await this.theme.assetsManager.getContent('handleEvents.json');
-        // ----------------------------------------------------------------
+  try {
+    const url  = chrome.runtime.getURL('handleEvents.json');
+    const resp = await fetch(url);
+    const data = await resp.json();
 
         if (!data?.sections) {
             console.warn("Структура handleEvents.json не соответствует ожидаемой");
