@@ -2,6 +2,7 @@
   const LIB_URL     = `https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/ImperiaLibrary.js?t=${Date.now()}`;
   const HELPER_URL  = `https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/helpers.js?t=${Date.now()}`;
   const BP_URL      = `https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/BetterPlayer.js?t=${Date.now()}`;
+  const EVENTS_URL = `https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/handleEvents.json?t=${Date.now()}`;
   const THEME_ID    = 'SpotColЛичная';
 
   function loadScript(src) {
@@ -19,6 +20,7 @@
   loadScript(LIB_URL)
     .then(()  => loadScript(HELPER_URL))
     .then(()  => loadScript(BP_URL))
+    .then(()  => loadScript(EVENTS_URL))
     .then(startTheme)
     .catch(err => console.error('[SpotCol] Ошибка загрузки скриптов:', err));
 
