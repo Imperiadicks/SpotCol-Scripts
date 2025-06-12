@@ -1,7 +1,7 @@
 // script.js
 ;(function initSpotCol() {
   // Базовый URL репозитория на jsDelivr
-  const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@7a189cf';
+  const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@fc9f8ec';
   window.BASE = BASE;
   const THEME_ID      = 'SpotColЛичная';
   const POLL_INTERVAL = 1000;
@@ -61,7 +61,12 @@
     } else {
       console.warn('[SpotCol] BetterPlayer не найден — проверьте загрузку BetterPlayer.js');
     }
-
+   // 4.1) Инициализируем ScreenSpotify-плагин
+   if (typeof window.ScreenSpotify === 'function') {
+     new window.ScreenSpotify(SpotCol);
+   } else {
+     console.warn('[SpotCol] ScreenSpotify не найден — проверьте загрузку ScreenSpotify.js');
+   }
     // 5) Запускаем циклическое обновление темы/настроек
     SpotCol.start(POLL_INTERVAL);
     console.log('[SpotCol] Тема и плагины запущены');
