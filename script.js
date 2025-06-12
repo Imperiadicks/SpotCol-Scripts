@@ -1,21 +1,27 @@
 (function initSpotCol () {
-  const LIB_URL  = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/ImperiaLibrary.js';
-  const HELPER_URL = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/helpers.js';
-  const THEME_ID = 'SpotColЛичная';
+  const LIB_URL     = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/ImperiaLibrary.js';
+  const HELPER_URL  = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/helpers.js';
+  const THEME_ID    = 'SpotColЛичная';
 
-  if (window.ImperiaLibrary?.Theme) {
-    startTheme();
-    return;
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src   = src;
+      s.async = true;
+      s.onload  = () => resolve();
+      s.onerror = () => reject(new Error(`Не удалось загрузить ${src}`));
+      document.head.appendChild(s);
+    });
   }
 
-  const s = document.createElement('script');
-  s.src   = LIB_URL, HELPER_URL;
-  s.async = true;
-  s.onload = startTheme;
-  document.head.appendChild(s);
+  // Сначала библиотека, потом помощь, и только потом старт темы
+  loadScript(LIB_URL)
+    .then(()  => loadScript(HELPER_URL))
+    .then(startTheme)
+    .catch(err => console.error('[SpotCol] Ошибка загрузки скриптов:', err));
 
   function startTheme () {
-    const { Theme } = window.ImperiaLibrary;
+    const { Theme } = window.ImperiaLibrary || {};
     if (!Theme) {
       console.error('[SpotCol] ImperiaLibrary.Theme отсутствует');
       return;
