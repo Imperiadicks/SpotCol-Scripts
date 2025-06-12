@@ -5,7 +5,7 @@
  * @namespace WolfyLibrary
  */
 //
-const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@50a6c56';
+const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@2bfb5d8';
 const URLS = { events: `${BASE}/handleEvents.json` };
 
 /**
