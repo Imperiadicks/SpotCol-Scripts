@@ -416,11 +416,7 @@ function setupSpotColЛичная(settings, styles) {
   }
 }
 
-
-/* НАЧАЛО ТЕМЫ */
-const SpotColЛичная = new Theme('SpotColЛичная');
-
-SpotColЛичная.player.on('openPlayer', ({ settings, styles, state }) => {
+SpotCol.player.on('openPlayer', ({ settings, styles, state }) => {
   const setting = settings.get('playerBackground');
   const backgroundImage = settings.get('backgroundImage');
   if (!setting) return;
@@ -431,7 +427,7 @@ SpotColЛичная.player.on('openPlayer', ({ settings, styles, state }) => {
   setupSpotColЛичная(settings, styles);
 });
 
-SpotColЛичная.player.on('trackChange', ({ settings, state }) => {
+SpotCol.player.on('trackChange', ({ settings, state }) => {
   const setting = settings.get('playerBackground');
   if (!setting) return;
   if (setting.value) {
@@ -460,17 +456,17 @@ SpotColЛичная.player.on('trackChange', ({ settings, state }) => {
 });
 
 // Навсякий, чтобы не баговалось
-SpotColЛичная.player.on('openText', () => {
+SpotCol.player.on('openText', () => {
   const customLyricsButton = document.querySelector('.custom-text');
   if (customLyricsButton) customLyricsButton.querySelector('svg').classList.add('SyncLyricsButton_icon_active__6WcWG');
 })
-SpotColЛичная.player.on('closeText', () => {
+SpotCol.player.on('closeText', () => {
   const customLyricsButton = document.querySelector('.custom-text');
   if (customLyricsButton) customLyricsButton.querySelector('svg').classList.remove('SyncLyricsButton_icon_active__6WcWG');
 })
 
 
-SpotColЛичная.settingsManager.on('change:playerBackground', ({ settings, state }) => {
+SpotCol.settingsManager.on('change:playerBackground', ({ settings, state }) => {
   const playerBackground = settings.get('playerBackground');
   const backgroundImage = settings.get('backgroundImage');
 
@@ -480,7 +476,7 @@ SpotColЛичная.settingsManager.on('change:playerBackground', ({ settings, s
   setPlayerBackground(settings, image);
 });
 
-SpotColЛичная.settingsManager.on('change:backgroundImage', ({ settings }) => {
+SpotCol.settingsManager.on('change:backgroundImage', ({ settings }) => {
   const playerBackground = settings.get('playerBackground');
   const backgroundImage = settings.get('backgroundImage');
 
@@ -490,7 +486,7 @@ SpotColЛичная.settingsManager.on('change:backgroundImage', ({ settings }) 
   setPlayerBackground(settings, image);
 });
 
-SpotColЛичная.settingsManager.on('change:autoBlackout', async ({ settings, state }) => {
+SpotCol.settingsManager.on('change:autoBlackout', async ({ settings, state }) => {
   const autoBlackout = settings.get('autoBlackout');
   const playerBackground = settings.get('playerBackground');
   if (!autoBlackout) return;
@@ -511,7 +507,7 @@ SpotColЛичная.settingsManager.on('change:autoBlackout', async ({ settings,
       .catch(console.error);
 });
 
-SpotColЛичная.settingsManager.on('change:brightness', ({ settings }) => {
+SpotCol.settingsManager.on('change:brightness', ({ settings }) => {
   const brightness = settings.get('brightness');
   if (!brightness) return;
 
@@ -520,7 +516,7 @@ SpotColЛичная.settingsManager.on('change:brightness', ({ settings }) => {
   backgroundDiv.style.setProperty('--brightness', (brightness.value != undefined) ? (brightness.value / 100) : (brightness.default / 100));
 });
 
-SpotColЛичная.settingsManager.on('change:blur', ({ settings }) => {
+SpotCol.settingsManager.on('change:blur', ({ settings }) => {
   const blur = settings.get('blur');
   if (!blur) return;
 
@@ -529,11 +525,11 @@ SpotColЛичная.settingsManager.on('change:blur', ({ settings }) => {
   backgroundDiv.style.setProperty('--blur', blur.value != undefined ? `${blur.value}px` : `${blur.default}px`);
 });
 
-SpotColЛичная.settingsManager.on('change:SpotColЛичная', ({ settings, styles }) => {
+SpotCol.settingsManager.on('change:SpotColЛичная', ({ settings, styles }) => {
   setupSpotColЛичная(settings, styles);
 });
 
-SpotColЛичная.settingsManager.on('change:playerButtonsBackground', ({ settings, styles }) => {
+SpotCol.settingsManager.on('change:playerButtonsBackground', ({ settings, styles }) => {
   const SpotColЛичная = settings.get('SpotColЛичная');
   if (!SpotColЛичная) return;
   if (!SpotColЛичная.value)  return;
@@ -567,7 +563,7 @@ SpotColЛичная.settingsManager.on('change:playerButtonsBackground', ({ sett
   }
 });
 
-SpotColЛичная.settingsManager.on('change:playerButtonsInvertBackground', ({ settings, styles }) => {
+SpotCol.settingsManager.on('change:playerButtonsInvertBackground', ({ settings, styles }) => {
   const SpotColЛичная = settings.get('SpotColЛичная');
   if (!SpotColЛичная) return;
   if (!SpotColЛичная.value)  return;
@@ -592,7 +588,7 @@ SpotColЛичная.settingsManager.on('change:playerButtonsInvertBackground', (
     //WolfyLibrary Theme: SpotColЛичная (v5.0)
 /*_____________________________________________________________________________________________*/
 
-   SpotColЛичная.stylesManager.add(
+   SpotCol.stylesManager.add(
      'spotify-like-wrapper',
      `.LikeTrack{flex:0 0 42px;
      display:flex;
@@ -742,7 +738,7 @@ SpotColЛичная.settingsManager.on('change:playerButtonsInvertBackground', (
      theme.player.on('trackChange',({state})=>update(state));
    
      function el(tag,cls,parent=document.body,txt){const n=document.createElement(tag);n.classList.add(cls);if(txt)n.textContent=txt;parent.appendChild(n);return n;}
-   })(SpotColЛичная);
+   })(SpotCol);
    
 /*_____________________________________________________________________________________________*/
 
@@ -754,7 +750,7 @@ SpotColЛичная.settingsManager.on('change:playerButtonsInvertBackground', (
 
 (() => {
   /* === SETTINGS === */
-  const sm = SpotColЛичная.settingsManager;
+  const sm = SpotCol.settingsManager;
   const modelMap = {
     1: 'searchgpt',
     2: 'gpt-4o-mini',
@@ -943,7 +939,7 @@ SpotColЛичная.settingsManager.on('change:playerButtonsInvertBackground', (
 
 
 /*_____________________________________________________________________________________________*/
-        SpotColЛичная.start(1000);
+        SpotCol.start(1000);
         console.log('[SpotCol] Theme initialised');
     }
 })();
