@@ -158,96 +158,80 @@ class EventEmitter {
  * });
  */
 class SettingsManager extends EventEmitter {
-	/**
-	 * @param {Theme} theme - Экземпляр основного класса
-	 */
-	constructor(theme) {
-		super();
-		/**
-		 * Экземпляр основного класса
-		 * @type {Theme}
-		 */
-		this.theme = theme;
-
-		/**
-		 * Текущие настройки в преобразованном формате
-		 * @type {Object.<string, Setting | TextFields>}
-		 */
-		this.settings = {};
-
-		/**
-		 * Предыдущие значения настроек (для сравнения изменений)
-		 * @type {Object.<string, Setting | TextFields>}
-		 */
-		this.old_settings = {};
-	}
-
-	/**
-	 * Загружает и обновляет настройки с сервера
-	 * @async
-	 * @throws {Error} При ошибке сети или неверном формате данных
-	 * @emits SettingsManager#update При любом обновлении настроек
-	 * @emits SettingsManager#change:[id] При изменении конкретной настройки
-	 * @example
-	 * await settingsManager.update();
-	 */
-// В классе SettingsManager:
-/**
- * Перечитать настройки из handleEvents.json и применить их
- */
-async update() {
-  let data;
-  try {
-    // тянем JSON напрямую по нашему CDN-URL
-    const resp = await fetch(URLS.events);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    data = await resp.json();
-  } catch (e) {
-    console.error('SettingsManager.update:', e);
-    data = { sections: [] };
+  /**
+   * @param {Theme} theme - Экземпляр основного класса
+   */
+  constructor(theme) {
+    super();
+    this.theme = theme;
+    this.settings = {};
+    this.old_settings = {};
   }
 
-  // Трансформируем формат JSON, как было у вас
-  const newSettings = {};
-  data.sections.forEach(sec => {
-    sec.items.forEach(item => {
-      if (item.buttons) {
-        newSettings[item.id] = {};
-        item.buttons.forEach(b => {
-          newSettings[item.id][b.id] = {
-            value: b.text,
-            default: b.defaultParameter
+  /**
+   * Перечитать настройки из handleEvents.json и применить их
+   * @async
+   */
+  async update() {
+    let data;
+    try {
+      // тянем JSON напрямую по CDN
+      const resp = await fetch(URLS.events);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      data = await resp.json();
+    } catch (e) {
+      console.error('SettingsManager.update:', e);
+      data = { sections: [] };
+    }
+
+    // Преобразуем формат точно так же, как ваш transformJSON
+    const newSettings = {};
+    data.sections.forEach(sec => {
+      sec.items.forEach(item => {
+        if (item.buttons) {
+          newSettings[item.id] = {};
+          item.buttons.forEach(b => {
+            newSettings[item.id][b.id] = {
+              value: b.text,
+              default: b.defaultParameter
+            };
+          });
+        } else {
+          const val = item.bool != null
+            ? item.bool
+            : item.input != null
+              ? item.input
+              : item.value;
+          newSettings[item.id] = {
+            value: val,
+            default: item.defaultParameter
           };
+        }
+      });
+    });
+
+    // Сохраняем старые и новые, эмитим события
+    this.old_settings = this.settings;
+    this.settings     = newSettings;
+
+    // полное обновление
+    this.emit('update', {
+      settings: this.settings,
+      state:    this.theme.player.state
+    });
+
+    // change:[id] для каждой изменившейся настройки
+    Object.keys(this.settings).forEach(id => {
+      const oldVal = this.old_settings[id]?.value;
+      const newVal = this.settings[id].value;
+      if (newVal !== oldVal) {
+        this.emit(`change:${id}`, {
+          settings: this.settings,
+          state:    this.theme.player.state
         });
-      } else {
-        const val = item.bool != null
-          ? item.bool
-          : item.input != null
-            ? item.input
-            : item.value;
-        newSettings[item.id] = {
-          value: val,
-          default: item.defaultParameter
-        };
       }
     });
-  });
-
-  // Сохраняем старые и новые настройки, пушим события
-  this.old_settings = this.settings;
-  this.settings     = newSettings;
-  this.emit('update', { settings: this.settings, state: this.theme.player.state });
-  // для прислушанных onChange
-  Object.keys(this.settings).forEach(id => {
-    const oldVal = this.old_settings[id]?.value;
-    const newVal = this.settings[id].value;
-    if (newVal !== oldVal) {
-      this.emit('change', id, { settings: this.settings, state: this.theme.player.state });
-    }
-  });
-}
-
-
+  }
 	/**
 	 * Преобразует сложную структуру настроек из API в плоский объект
 	 * @private
