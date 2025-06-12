@@ -1,6 +1,6 @@
 /**
  * WolfyLibrary - Библиотека для облегчения создания аддонов для Яндекс.Музыки
- * @author WolfySoCute & ImperiaDicks
+ * @author WolfySoCute & ImperiaDicks - фыв
  * @version 2.1.0
  * @namespace WolfyLibrary
  */
