@@ -190,9 +190,9 @@ class SettingsManager extends EventEmitter {
 	 */
 // В классе SettingsManager:
 async update() {
-   try {
-    // напрямую берём JSON из ваших ассетов
-    const data = await this.theme.assetsManager.getContent('handleEvents.json');
+    try {
+        const resp = await fetch(URLS.events);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     if (!data?.sections) {
       console.warn("Структура handleEvents.json не соответствует ожидаемой");
       return null;
