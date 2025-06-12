@@ -5,7 +5,8 @@
  * @namespace WolfyLibrary
  */
 //
- const resp = await fetch(`${BASE}/handleEvents.json`);
+const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@13503c7';
+const URLS = { events: `${BASE}/handleEvents.json` };
 
 /**
  * Менеджер для управления CSS стилями темы
@@ -191,40 +192,61 @@ class SettingsManager extends EventEmitter {
 	 * await settingsManager.update();
 	 */
 // В классе SettingsManager:
+/**
+ * Перечитать настройки из handleEvents.json и применить их
+ */
 async update() {
-    try {
-        const resp = await fetch(URLS.events);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    if (!data?.sections) {
-      console.warn("Структура handleEvents.json не соответствует ожидаемой");
-      return null;
-    }
-    
-    this.old_settings = this.settings;
-    this.settings    = this.transformJSON(data);
-
-        // эмитим глобальный апдейт настроек...
-        this.emit('update', {
-            settings: this.theme.settingsManager,
-            styles:   this.theme.stylesManager,
-            state:    this.theme.player.state
-        });
-
-        // и вызываем change-события для всех изменённых ключей
-        for (const id in this.settings) {
-            if (this.hasChanged(id)) {
-                this.emit(`change:${id}`, {
-                    settings: this.theme.settingsManager,
-                    styles:   this.theme.stylesManager,
-                    state:    this.theme.player.state
-                });
-            }
-        }
-    } catch (error) {
-    console.error(error);
-    return null;
+  let data;
+  try {
+    // тянем JSON напрямую по нашему CDN-URL
+    const resp = await fetch(URLS.events);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    data = await resp.json();
+  } catch (e) {
+    console.error('SettingsManager.update:', e);
+    data = { sections: [] };
   }
+
+  // Трансформируем формат JSON, как было у вас
+  const newSettings = {};
+  data.sections.forEach(sec => {
+    sec.items.forEach(item => {
+      if (item.buttons) {
+        newSettings[item.id] = {};
+        item.buttons.forEach(b => {
+          newSettings[item.id][b.id] = {
+            value: b.text,
+            default: b.defaultParameter
+          };
+        });
+      } else {
+        const val = item.bool != null
+          ? item.bool
+          : item.input != null
+            ? item.input
+            : item.value;
+        newSettings[item.id] = {
+          value: val,
+          default: item.defaultParameter
+        };
+      }
+    });
+  });
+
+  // Сохраняем старые и новые настройки, пушим события
+  this.old_settings = this.settings;
+  this.settings     = newSettings;
+  this.emit('update', { settings: this.settings, state: this.theme.player.state });
+  // для прислушанных onChange
+  Object.keys(this.settings).forEach(id => {
+    const oldVal = this.old_settings[id]?.value;
+    const newVal = this.settings[id].value;
+    if (newVal !== oldVal) {
+      this.emit('change', id, { settings: this.settings, state: this.theme.player.state });
+    }
+  });
 }
+
 
 	/**
 	 * Преобразует сложную структуру настроек из API в плоский объект
