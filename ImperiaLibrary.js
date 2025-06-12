@@ -704,11 +704,10 @@ class HandleEventsManager {
 		if (this._lastSettings === settings) return;
 			console.log('OpenBlocker settings:', settings)
     		this._lastSettings = settings;
-        // запускаем все 4 блока
-/*         this.applyOpenBlocker(settings);
-        this.applyPlayerBackground(settings);
-        this.applyNewButtonHeight(settings);
-        this.applyNewButtonHide(settings); */
+			this.applyOpenBlocker(settings);
+        	//this.applyPlayerBackground(settings);
+        	//this.applyNewButtonHeight(settings);
+        	//this.applyNewButtonHide(settings); 
     }
 }
 /**
