@@ -4,6 +4,8 @@
  * @version 2.1.0
  * @namespace WolfyLibrary
  */
+//
+ const resp = await fetch(`${BASE}/handleEvents.json`);
 
 /**
  * Менеджер для управления CSS стилями темы
