@@ -322,14 +322,14 @@ async update() {
  * @classdesc Позволяет получать содержимое файлов и ссылки на них, а также список всех доступных файлов.
  */
 class AssetsManager {
-	constructor() {
-		/**
-		 * Базовый URL для доступа к ассетам.
-		 * @private
-		 * @type {string}
-		 */
-		this._urlBase = 'http://127.0.0.1:2007/assets';
-	}
+    constructor() {
+        /**
+         * Базовый URL для доступа к ассетам.
+         * @private
+         * @type {string}
+         */
+        this._urlBase = `${window.location.origin}/assets`;
+    }
 
 	/**
 	 * Получает содержимое файла.
@@ -813,8 +813,7 @@ class Theme {
         this.update().catch(console.error);
 
         // периодический цикл
-        this._updateTimer = setInterval(() => this.update().catch(console.error),
-                                         interval);
+        this._updateTimer = setInterval(() => this.update().catch(console.error),interval);
     }
 
     /**
