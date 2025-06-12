@@ -103,7 +103,12 @@
 
     // 4) Обновление UI при смене трека/открытии плеера
     function updateUI(state) {
-      buildUI();
+        // Если нет данных о треке — скрываем весь оверлей и выходим
+    if (!state.track || !state.track.title) {
+      if ($root) $root.style.display = 'none';
+      return;
+    }
+    buildUI();
       if (!$origLike || !document.contains($origLike)) {
         const fresh = createLikeClone();
         $like.replaceWith(fresh);
@@ -125,7 +130,10 @@
     // 5) Подписываемся на события плеера
     theme.player.on('openPlayer',  ({state}) => updateUI(state));
     theme.player.on('trackChange', ({state}) => updateUI(state));
-
+// при закрытии плеера скрываем оверлей
+theme.player.on('closePlayer', () => {
+  if ($root) $root.style.display = 'none';
+});
     // 6) GPT / Wiki Helper — _внутри_ конструктора, чтобы сразу получить theme
     const UI = {
       artist: () => document.querySelector('.Search_Info'),
