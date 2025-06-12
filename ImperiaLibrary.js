@@ -705,10 +705,10 @@ class HandleEventsManager {
 			console.log('OpenBlocker settings:', settings)
     		this._lastSettings = settings;
         // запускаем все 4 блока
-        this.applyOpenBlocker(settings);
+/*         this.applyOpenBlocker(settings);
         this.applyPlayerBackground(settings);
         this.applyNewButtonHeight(settings);
-        this.applyNewButtonHide(settings);
+        this.applyNewButtonHide(settings); */
     }
 }
 /**
