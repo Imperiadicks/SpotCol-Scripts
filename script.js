@@ -12,7 +12,7 @@
     plugin1: `${BASE}/BetterPlayer.js?t=${Date.now()}`,
     events: `${BASE}/handleEvents.json?t=${Date.now()}`,
     plugin2: `${BASE}/ScreenSpotify.js?t=${Date.now()}`,
-    plugin2: `${BASE}/colorize.js?t=${Date.now()}`
+    plugin3: `${BASE}/colorize.js?t=${Date.now()}`
   };
 
   // Утиль для динамической загрузки <script>
@@ -153,7 +153,9 @@
   // Загружаем скрипты в правильном порядке
   loadScript(URLS.lib)
     .then(() => loadScript(URLS.helper))
-    .then(() => loadScript(URLS.plugin))
+    .then(() => loadScript(URLS.plugin1))
+    .then(() => loadScript(URLS.plugin2))
+    .then(() => loadScript(URLS.plugin3))
     .then(startTheme)
     .catch(err => console.error('[SpotCol] Ошибка загрузки скриптов:', err));
 })();
