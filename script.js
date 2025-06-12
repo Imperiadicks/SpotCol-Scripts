@@ -1,7 +1,7 @@
 // script.js
 ;(function initSpotCol() {
   // Базовый URL репозитория на jsDelivr
-  const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@fbf9cb2';
+  const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@4d50c95';
   window.BASE = BASE;
   const THEME_ID      = 'SpotColЛичная';
   const POLL_INTERVAL = 1000;

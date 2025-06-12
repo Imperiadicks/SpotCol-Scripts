@@ -1,4 +1,4 @@
-const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@13503c7';
+const BASE = require('../SpotColЛичная/script');
 const URLS = {
   noCover: `${BASE}/Assets/no-cover-image.png`,
   events:  `${BASE}/handleEvents.json`
