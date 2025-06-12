@@ -9,7 +9,7 @@
   }
 
   const s = document.createElement('script');
-  s.src   = LIB_URL;
+  s.src   = LIB_URL, HELPER_URL;
   s.async = true;
   s.onload = startTheme;
   document.head.appendChild(s);
