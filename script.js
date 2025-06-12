@@ -1,7 +1,7 @@
 ;(function initSpotCol () {
   const LIB_URL     = `https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/ImperiaLibrary.js?t=${Date.now()}`;
   const HELPER_URL  = `https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/helpers.js?t=${Date.now()}`;
-  const BP_URL = `https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/BetterPlayer.js?t=${Date.now()}`;
+  const BP_URL      = `https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/BetterPlayer.js?t=${Date.now()}`;
   const THEME_ID    = 'SpotColЛичная';
 
   function loadScript(src) {
@@ -31,7 +31,20 @@
 
     // Инициализируем тему
     const SpotCol = new Theme(THEME_ID);
-
+(() => {
+  const am = SpotCol.assetsManager;
+  const origUrlBase = am._urlBase;
+  // перехватываем getContent
+  am.getContent = async function(path) {
+    // path может быть 'handleEvents.json' или 'some.js'
+    const busted = path.includes('?') 
+      ? `${path}&t=${Date.now()}` 
+      : `${path}?t=${Date.now()}`;
+    // явно формируем полный URL
+    const url = `${origUrlBase}/${busted}`;
+    return fetch(url).then(r => r.json());
+  };
+})();
     // Подхватываем хелперы (если они кладут утилиты в window.Helpers)
     if (!window.Helpers) {
       console.warn('[SpotCol] Helpers не найдены — проверьте helpers.js');
