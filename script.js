@@ -68,7 +68,7 @@
      console.warn('[SpotCol] ScreenSpotify не найден — проверьте загрузку ScreenSpotify.js');
    }
     // 5) Запускаем циклическое обновление темы/настроек
-    SpotCol.start(POLL_INTERVAL);
+    await SpotCol.update();
     console.log('[SpotCol] Тема и плагины запущены');
 
     // ========== Дальнейшая логика из оригинала ==========

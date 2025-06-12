@@ -651,6 +651,7 @@ class HandleEventsManager {
             OBvibeanimation:'vibeanimation',
             // …добавьте остальные из вашего handleEvents.json
         };
+		this._lastSettings = null;
     }
 
     applyOpenBlocker(settings) {
@@ -699,9 +700,12 @@ class HandleEventsManager {
     }
 
     apply(settings) {
+		   // Если ссылочный объект не изменился — пропускаем
+		if (this._lastSettings === settings) return;
+			console.log('OpenBlocker settings:', settings)
+    		this._lastSettings = settings;
         // запускаем все 4 блока
         this.applyOpenBlocker(settings);
-		console.log('OpenBlocker settings:', settings)
         this.applyPlayerBackground(settings);
         this.applyNewButtonHeight(settings);
         this.applyNewButtonHide(settings);
