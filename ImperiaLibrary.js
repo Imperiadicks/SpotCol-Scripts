@@ -215,21 +215,21 @@ class SettingsManager extends EventEmitter {
     this.settings     = newSettings;
 
     // полное обновление
-    this.emit('update', {
-      settings: this.settings,
-      state:    this.theme.player.state
-    });
+this.emit('update', {
+  settings: this,
+  state:    this.theme.player.state
+});
 
     // change:[id] для каждой изменившейся настройки
     Object.keys(this.settings).forEach(id => {
       const oldVal = this.old_settings[id]?.value;
       const newVal = this.settings[id].value;
-      if (newVal !== oldVal) {
-        this.emit(`change:${id}`, {
-          settings: this.settings,
-          state:    this.theme.player.state
-        });
-      }
+	 if (newVal !== oldVal) {
+ 	 this.emit(`change:${id}`, {
+     settings: this,
+     state:    this.theme.player.state
+  		 });
+ 	 }
     });
   }
 	/**
