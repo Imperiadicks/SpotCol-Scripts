@@ -790,7 +790,30 @@ class Theme {
         // итоговые стили
         this.applyStyles();
     }
+ /**
+   * Загружает настройки, очищает inline-стили html и применяет тему
+   */
+  async update() {
+    // 1) Убираем фон и все inline-переменные, которые ЯМ подставляет в <html>
+    document.documentElement.style.backgroundColor = '';
+    document.documentElement.removeAttribute('style');
 
+    // 2) Загружаем JSON с настройками из CDN
+    await this.settingsManager.update();
+
+    // 3) Применяем OpenBlocker + общие обработчики
+    this.handleEvents.apply(this.settingsManager.settings);
+
+    // 4) Применяем все зарегистрированные в теме actions и CSS
+    this.applyTheme();
+
+    // 5) Эмитим внешнее событие, если нужно
+    this.emitter.emit('update', {
+      settings: this.settingsManager.settings,
+      styles:   this.stylesManager,
+      state:    this.player.state
+    });
+  }
     /**
      * Загружает настройки, обрабатывает Open-Blocker и «Действия»,
      * затем вызывает applyTheme()

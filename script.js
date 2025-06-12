@@ -1,7 +1,7 @@
 // script.js
 ;(function initSpotCol() {
   // Базовый URL репозитория на jsDelivr
-  const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@7ef6ada';
+  const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@84feee7';
   window.BASE = BASE;
   const THEME_ID      = 'SpotColЛичная';
   const POLL_INTERVAL = 1000;
@@ -164,4 +164,5 @@
     .then(() => loadScript(URLS.plugin3))
     .then(startTheme)
     .catch(err => console.error('[SpotCol] Ошибка загрузки скриптов:', err));
+    // В какой-нибудь точке после того, как ЯМ закончит расчёт темы:
 })();
