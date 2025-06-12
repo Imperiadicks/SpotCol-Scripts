@@ -1,7 +1,7 @@
 ;(function initSpotCol () {
-  const LIB_URL     = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/ImperiaLibrary.js';
-  const HELPER_URL  = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/helpers.js';
-  const BP_URL      = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/BetterPlayer.js';
+  const LIB_URL     = `https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/ImperiaLibrary.js?t=${Date.now()}`;
+  const HELPER_URL  = `https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/helpers.js?t=${Date.now()}`;
+  const BP_URL = `https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/BetterPlayer.js?t=${Date.now()}`;
   const THEME_ID    = 'SpotColЛичная';
 
   function loadScript(src) {
