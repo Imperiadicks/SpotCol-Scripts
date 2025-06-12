@@ -1,9 +1,3 @@
-const BASE = require('../SpotColЛичная/script');
-const URLS = {
-  noCover: `${BASE}/Assets/no-cover-image.png`,
-  events:  `${BASE}/handleEvents.json`
-};
-
 ;(function() {
   /**
    * Конструктор плагина ScreenSpotify — получает экземпляр темы SpotCol
