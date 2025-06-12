@@ -1,22 +1,24 @@
-(function initSpotCol () {
+;(function initSpotCol () {
   const LIB_URL     = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/ImperiaLibrary.js';
   const HELPER_URL  = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/helpers.js';
+  const BP_URL      = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@latest/BetterPlayer.js';
   const THEME_ID    = 'SpotColЛичная';
 
   function loadScript(src) {
     return new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src   = src;
-      s.async = true;
+      s.src     = src;
+      s.async   = true;
       s.onload  = () => resolve();
       s.onerror = () => reject(new Error(`Не удалось загрузить ${src}`));
       document.head.appendChild(s);
     });
   }
 
-  // Сначала библиотека, потом помощь, и только потом старт темы
+  // Загрузка всех трёх: ImperiaLibrary → helpers → BetterPlayer
   loadScript(LIB_URL)
     .then(()  => loadScript(HELPER_URL))
+    .then(()  => loadScript(BP_URL))
     .then(startTheme)
     .catch(err => console.error('[SpotCol] Ошибка загрузки скриптов:', err));
 
@@ -26,7 +28,21 @@
       console.error('[SpotCol] ImperiaLibrary.Theme отсутствует');
       return;
     }
+
+    // Инициализируем тему
     const SpotCol = new Theme(THEME_ID);
+
+    // Подхватываем хелперы (если они кладут утилиты в window.Helpers)
+    if (!window.Helpers) {
+      console.warn('[SpotCol] Helpers не найдены — проверьте helpers.js');
+    }
+
+    // Инициализируем BetterPlayer (если скрипт определил глобальный конструктор)
+    if (typeof window.BetterPlayer === 'function') {
+      new window.BetterPlayer(SpotCol);
+    } else {
+      console.warn('[SpotCol] BetterPlayer не найден — проверьте BetterPlayer.js');
+    }
 /*_____________________________________________________________________________________________*/
 /*
  * SpotColЛичная — GPT / Wiki helper (rev‑2025‑05‑11‑i2)
