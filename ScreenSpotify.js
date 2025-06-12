@@ -1,9 +1,3 @@
-// ScreenSpotify.js
-// Плагин для SpotCol: отображение Spotify-экрана + интеграция GPT/Wiki
-
-// ---------------------------------------------
-// Глобальные константы для CDN и локальных JSON/Assets
-// ---------------------------------------------
 const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@13503c7';
 const URLS = {
   noCover: `${BASE}/Assets/no-cover-image.png`,
