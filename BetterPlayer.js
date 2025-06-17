@@ -1,6 +1,7 @@
 // BetterPlayer.js
 // Плагин для SpotCol: BetterPlayer
-;(function() {
+
+(function() {
   /**
    * Конструктор BetterPlayer — принимается экземпляр темы SpotCol
    * @param {import('ImperiaLibrary').Theme} theme

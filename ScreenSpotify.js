@@ -1,4 +1,5 @@
-;(function() {
+
+(function() {
   /**
    * Конструктор плагина ScreenSpotify — получает экземпляр темы SpotCol
    * @param {import('ImperiaLibrary').Theme} theme

@@ -5,8 +5,10 @@
  * @namespace WolfyLibrary
  */
 //
-const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@2278e29';
-const URLS = { events: `${BASE}/handleEvents.json` };
+;(function(global) {
+  // Единое объявление BASE — берём из script.js
+  const BASE = global.BASE;
+  const URLS = { events: `${BASE}/handleEvents.json` };
 
 /**
  * Менеджер для управления CSS стилями темы
@@ -1209,4 +1211,4 @@ const asd = 0;
         AssetsManager,
         EventEmitter
     });
-})(typeof window !== 'undefined' ? window : globalThis);
+})(typeof window !== 'undefined' ? window : globalThis)});

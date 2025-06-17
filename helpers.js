@@ -1,5 +1,5 @@
  /* ФУНКЦИИ ДЛЯ ПОМОЩИ */
-
+;(function(){
 
 /* Асинхронная загрузка изображения для коррекции */
 function loadImage(url) {
@@ -392,3 +392,4 @@ function setupSpotColЛичная(settings, styles) {
       styles.remove('playerButtonsInvertBackground');
   }
 }
+})(window.SpotCol);
