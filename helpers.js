@@ -392,4 +392,9 @@ function setupSpotColЛичная(settings, styles) {
       styles.remove('playerButtonsInvertBackground');
   }
 }
-})(window.SpotCol);
+  // экспортируем наружу
+  global.clickCustomText    = clickCustomText;
+  global.setupSpotColЛичная = setupSpotColЛичная;
+
+// Вызов IIFE с глобальным window, чтобы экспортировать именно туда
+})(typeof window !== 'undefined' ? window : this);

@@ -1,5 +1,10 @@
+;(function() {
+  const BASE = 'https://cdn.jsdelivr.net/gh/Imperiadicks/SpotCol-Scripts@13503c7';
+  const URLS = {
+    noCover: `${BASE}/Assets/no-cover-image.png`,
+    events: `${BASE}/handleEvents.json`
+  };
 
-(function() {
   /**
    * Конструктор плагина ScreenSpotify — получает экземпляр темы SpotCol
    * @param {import('ImperiaLibrary').Theme} theme
@@ -104,12 +109,11 @@
 
     // 4) Обновление UI при смене трека/открытии плеера
     function updateUI(state) {
-        // Если нет данных о треке — скрываем весь оверлей и выходим
-    if (!state.track || !state.track.title) {
-      if ($root) $root.style.display = 'none';
-      return;
-    }
-    buildUI();
+      if (!state.track || !state.track.title) {
+        if ($root) $root.style.display = 'none';
+        return;
+      }
+      buildUI();
       if (!$origLike || !document.contains($origLike)) {
         const fresh = createLikeClone();
         $like.replaceWith(fresh);
@@ -131,10 +135,10 @@
     // 5) Подписываемся на события плеера
     theme.player.on('openPlayer',  ({state}) => updateUI(state));
     theme.player.on('trackChange', ({state}) => updateUI(state));
-// при закрытии плеера скрываем оверлей
-theme.player.on('closePlayer', () => {
-  if ($root) $root.style.display = 'none';
-});
+    theme.player.on('closePlayer', () => {
+      if ($root) $root.style.display = 'none';
+    });
+
     // 6) GPT / Wiki Helper — _внутри_ конструктора, чтобы сразу получить theme
     const UI = {
       artist: () => document.querySelector('.Search_Info'),
@@ -182,7 +186,7 @@ theme.player.on('closePlayer', () => {
           try {
             const j = JSON.parse(json);
             acc += j.choices[0].delta.content || '';
-            UI.track() && (UI.track().innerHTML = acc.replace(/\n/g, '<br>'));
+            UI.track() && (UI.track().innerHTML = acc.replace(/\\n/g, '<br>'));
           } catch {}
         });
       }
@@ -214,7 +218,7 @@ theme.player.on('closePlayer', () => {
           });
           const j   = await resp.json();
           const txt = j.choices?.[0]?.message?.content || 'Нет данных';
-          UI.track() && (UI.track().innerHTML = txt.replace(/\n/g, '<br>'));
+          UI.track() && (UI.track().innerHTML = txt.replace(/\\n/g, '<br>'));
         }
       } catch {
         UI.track() && (UI.track().innerHTML = '<b>Ошибка GPT</b>');
@@ -231,7 +235,7 @@ theme.player.on('closePlayer', () => {
         const res = await fetch(url);
         const j   = await res.json();
         const page = Object.values(j.query.pages)[0] || {};
-        out.innerHTML = (page.extract || 'Информация не найдена').replace(/\r?\n/g, '<br>');
+        out.innerHTML = (page.extract || 'Информация не найдена').replace(/\\r?\\n/g, '<br>');
         al && (al.style.display = 'block');
       } catch {
         out && (out.innerHTML = '<b>Ошибка Wiki</b>');
@@ -253,6 +257,6 @@ theme.player.on('closePlayer', () => {
     setInterval(refresh, 1200);
   }
 
-  // Регистрируем конструктор, чтобы script.js мог сделать new ScreenSpotify(SpotCol)
+  // Регистрируем конструктор
   window.ScreenSpotify = ScreenSpotify;
 })();
