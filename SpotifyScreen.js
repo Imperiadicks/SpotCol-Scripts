@@ -180,7 +180,19 @@ const sm = SpotColЛичная.settingsManager;
 /*_____________________________________________________________________________________________*/
 
 /*_____________________________________________________________________________________________*/
+if (!window.Theme) window.Theme = {};
+Theme.getThemeId = () => {
+  try {
+    const scripts = [...document.querySelectorAll('script[src]')];
+    const current = scripts.find(s => s.src.includes('script.js'));
+    const match = current?.src.match(/\/([^/]+)\/script\.js/);
+    return match?.[1] || 'SpotColЛичная';
+  } catch {
+    return 'SpotColЛичная';
+  }
+};
 
+// === GPT / WIKI SECTION FIRST ===
 let fetchWiki;
 
 const modelMap = {
