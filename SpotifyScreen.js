@@ -184,6 +184,8 @@ const sm = SpotColЛичная.settingsManager;
  * SpotColЛичная — GPT / Wiki helper (rev‑2025‑05‑11‑i2)
  * Полностью завершённый скрипт без ссылок; устойчив к изменениям DOM/настроек.
  */
+
+(() => {
   /* === SETTINGS === */
   const modelMap = {
     1: 'searchgpt',
@@ -360,6 +362,8 @@ const sm = SpotColЛичная.settingsManager;
 
   refresh();
   setInterval(refresh, 1200);
+})();
+
 
 /*_____________________________________________________________________________________________*/
 
