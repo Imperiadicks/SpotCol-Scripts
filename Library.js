@@ -4,32 +4,17 @@
   // ---------------- EventEmitter ----------------
   class EventEmitter {
     #ev = {};
-    on(e, f) {
-      (this.#ev[e] ??= []).push(f);
-    }
-    off(e, f) {
-      this.#ev[e] = (this.#ev[e] || []).filter(x => x !== f);
-    }
-    emit(e, d) {
-      (this.#ev[e] || []).forEach(f => f(d));
-    }
+    on(e, f) { (this.#ev[e] ??= []).push(f); }
+    off(e, f) { this.#ev[e] = (this.#ev[e] || []).filter(x => x !== f); }
+    emit(e, d) { (this.#ev[e] || []).forEach(f => f(d)); }
   }
 
   // ---------------- StylesManager ----------------
   class StylesManager {
     #store = {};
-    add(id, css) {
-      this.#store[id] = css;
-      this.#flush();
-    }
-    remove(id) {
-      delete this.#store[id];
-      this.#flush();
-    }
-    clear() {
-      this.#store = {};
-      this.#flush();
-    }
+    add(id, css) { this.#store[id] = css; this.#flush(); }
+    remove(id) { delete this.#store[id]; this.#flush(); }
+    clear() { this.#store = {}; this.#flush(); }
     #flush() {
       let s = document.getElementById('wolfy-stub-style');
       if (!s) {
@@ -44,36 +29,27 @@
   // ---------------- PlayerEvents ----------------
   class PlayerEvents extends EventEmitter {
     state = { status: 'paused', track: {}, volume: 0 };
-    constructor() {
-      super();
-      this.#init();
-    }
+    constructor() { super(); this.#init(); }
     #init() {
       const wait = setInterval(() => {
         const sonata = window.sonataState || window.player;
         if (!sonata?.state?.playerState) return;
         clearInterval(wait);
-
         const ps = sonata.state.playerState;
         const qs = sonata.state.queueState;
 
-        // начальные значения
         try {
           this.state.track =
             qs.currentEntity?.value?.entity?.data?.meta ||
             qs.currentEntity?.value?.entity_data_meta ||
             {};
-        } catch (e) {
-          this.state.track = {};
-        }
+        } catch { this.state.track = {}; }
 
         this.state.status = ps.status.value;
 
         ps.status.onChange(st => {
           this.state.status = st;
-          this.emit(st === 'playing' ? 'play' : 'pause', {
-            state: this.state
-          });
+          this.emit(st === 'playing' ? 'play' : 'pause', { state: this.state });
         });
 
         qs.currentEntity.onChange(() => {
@@ -82,9 +58,7 @@
               qs.currentEntity?.value?.entity?.data?.meta ||
               qs.currentEntity?.value?.entity_data_meta ||
               {};
-          } catch (e) {
-            this.state.track = {};
-          }
+          } catch { this.state.track = {}; }
           this.emit('trackChange', { state: this.state });
         });
       }, 200);
@@ -99,47 +73,29 @@
       this.#store = JSON.parse(localStorage.getItem('spotcol_settings') || '{}');
     }
 
-    get(key) {
-      return this.#store[key];
-    }
-
+    get(key) { return this.#store[key]; }
     set(key, value) {
       this.#store[key] = value;
       localStorage.setItem('spotcol_settings', JSON.stringify(this.#store));
       this.emit('change', { key, value });
     }
 
-    has(key) {
-      return Object.prototype.hasOwnProperty.call(this.#store, key);
-    }
-
+    has(key) { return Object.prototype.hasOwnProperty.call(this.#store, key); }
     clear() {
       this.#store = {};
       localStorage.removeItem('spotcol_settings');
       this.emit('clear');
     }
 
-    /** Возвращает копию всех настроек */
-    getAll() {
-      return { ...this.#store };
-    }
-
-    /** Подписка на изменение конкретного ключа */
+    getAll() { return { ...this.#store }; }
     onChange(key, callback) {
-      this.on('change', ({ key: k, value }) => {
-        if (k === key) callback(value);
-      });
+      this.on('change', ({ key: k, value }) => { if (k === key) callback(value); });
     }
-
-    /** Переключает значение true/false */
     toggle(key) {
-      const current = Boolean(this.#store[key]);
-      const next = !current;
+      const next = !Boolean(this.#store[key]);
       this.set(key, next);
       return next;
     }
-
-    /** Задаёт значения по умолчанию, если они отсутствуют */
     defaults(obj = {}) {
       let changed = false;
       for (const [key, value] of Object.entries(obj)) {
@@ -152,7 +108,6 @@
     }
   }
 
-
   // ---------------- Theme ----------------
   class Theme {
     constructor(id) {
@@ -161,7 +116,38 @@
       this.settingsManager = new SettingsManager();
       this.player = new PlayerEvents();
       this.sonataState = this.player;
+      this.context = {
+        handle: null,
+        getHandleValue: key => this.context.handle?.[key]
+      };
+      this.#loadHandle();
     }
+
+    async #loadHandle() {
+      const themeId = Theme.getThemeId();
+      try {
+        const url = `http://localhost:2007/get_handle?theme=${encodeURIComponent(themeId)}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        this.context.handle = json;
+        console.log(`[Theme] Загружен handle.json для "${themeId}"`);
+      } catch (e) {
+        console.warn('[Theme] Не удалось загрузить handle.json:', e);
+      }
+    }
+
+    static getThemeId() {
+      try {
+        const scripts = [...document.querySelectorAll('script[src]')];
+        const target = scripts.find(s => s.src.includes('script.js'));
+        if (!target) return 'unknown';
+        const pathParts = new URL(target.src).pathname.split('/');
+        return pathParts[pathParts.length - 2]; // имя папки перед script.js
+      } catch {
+        return 'unknown';
+      }
+    }
+
     start() {}
     addAction() {}
   }
