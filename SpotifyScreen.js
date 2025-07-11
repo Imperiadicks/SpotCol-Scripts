@@ -1,3 +1,16 @@
+if (!window.Theme) window.Theme = {};
+Theme.getThemeId = () => {
+  try {
+    const scripts = [...document.querySelectorAll('script[src]')];
+    const current = scripts.find(s => s.src.includes('script.js'));
+    if (!current) return 'unknown';
+    const match = current.src.match(/\/([^/]+)\/script\.js/);
+    return match?.[1] || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+};
+
 const SpotColЛичная = new Theme(Theme.getThemeId());
 const sm = SpotColЛичная.settingsManager;
     //Spotify Screen
@@ -171,8 +184,6 @@ const sm = SpotColЛичная.settingsManager;
  * SpotColЛичная — GPT / Wiki helper (rev‑2025‑05‑11‑i2)
  * Полностью завершённый скрипт без ссылок; устойчив к изменениям DOM/настроек.
  */
-
-(() => {
   /* === SETTINGS === */
   const modelMap = {
     1: 'searchgpt',
@@ -349,8 +360,6 @@ const sm = SpotColЛичная.settingsManager;
 
   refresh();
   setInterval(refresh, 1200);
-})();
-
 
 /*_____________________________________________________________________________________________*/
 
