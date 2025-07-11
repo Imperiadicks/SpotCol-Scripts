@@ -3,7 +3,7 @@
   const scripts = [
     'Library.js',
     'colorize 2.js',
-    'BetterPlayer.js',
+    /* 'BetterPlayer.js', */
     'SpotifyScreen.js',
     'Main.js'
   ];

@@ -11,6 +11,7 @@
   "tags": ["Spotify", "Colored", "theme"],
   "allowedUrls": [
         "https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/",
-        "https://ru.wikipedia.org/w/api.php?action=query&format=json&origin=*"
+        "https://ru.wikipedia.org/w/api.php?action=query&format=json&origin=*",
+        "https://api.onlysq.ru/ai/v2"
     ]
 }

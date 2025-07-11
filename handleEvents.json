@@ -32,7 +32,7 @@
                     "name": "прозрачность",
                     "description": "убирает весь background, там где это уместно",
                     "type": "button",
-                    "bool": false,
+                    "bool": true,
                     "defaultParameter": false
                 },
                 {
