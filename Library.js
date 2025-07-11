@@ -1,11 +1,7 @@
-// ====================================================================
-//      WOLFY-STUB  – минимальная замена WolfyLibrary (≈ 120 строк)
-//      вставьте ЭТО в самый-самый верх скрипта темы
-// ====================================================================
 (() => {
-  if (window.WolfyLibrary) return;           // если библиотека всё-таки ожила – ничего не делаем
+  if (window.WolfyLibrary) return;
 
-  /* -------- EventEmitter (нужно SpotifyScreen / PlayerEvents) ------- */
+  // ========== EventEmitter ==========
   class EventEmitter {
     #ev = {};
     on(e, f){ (this.#ev[e] ??= []).push(f) }
@@ -13,7 +9,7 @@
     emit(e, d){ (this.#ev[e]||[]).forEach(f=>f(d)) }
   }
 
-  /* ----------------- StylesManager (add / remove) ------------------- */
+  // ========== StylesManager ==========
   class StylesManager {
     #store = {};
     add(id, css){ this.#store[id]=css; this.#flush() }
@@ -26,85 +22,99 @@
     }
   }
 
-  /* ---------------- PlayerEvents (подписки play/track) -------------- */
+  // ========== PlayerEvents ==========
   class PlayerEvents extends EventEmitter {
     state = { status:'paused', track:{}, volume:0 };
     constructor(){ super(); this.#init(); }
+
     #init(){
       const wait = setInterval(()=>{
         const sonata = window.sonataState || window.player;
-        if(!sonata?.state?.playerState) return;   // ждём пока ЯМ инициализируется
+        if (!sonata?.state?.playerState || !sonata?.state?.queueState) return;
         clearInterval(wait);
 
         const ps = sonata.state.playerState;
         const qs = sonata.state.queueState;
 
-        /* стартовые значения */
-        this.state.track  = qs.currentEntity.value.entity.data.meta;
+        // безопасное получение трека
+        const safeTrack =
+          qs?.currentEntity?.value?.entity_data_meta ||
+          qs?.currentEntity?.value?.entity?.data?.meta ||
+          {};
+
+        this.state.track = safeTrack;
         this.state.status = ps.status.value;
 
-        /* слушатели */
-        ps.status.onChange(st=>{
+        ps.status.onChange(st => {
           this.state.status = st;
-          this.emit(st==='playing'?'play':'pause', {state:this.state});
+          this.emit(st === 'playing' ? 'play' : 'pause', { state: this.state });
         });
 
-        qs.currentEntity.onChange(()=>{
-          this.state.track = qs.currentEntity.value.entity.data.meta;
-          this.emit('trackChange', {state:this.state});
+        qs.currentEntity.onChange(() => {
+          const newTrack =
+            qs?.currentEntity?.value?.entity_data_meta ||
+            qs?.currentEntity?.value?.entity?.data?.meta ||
+            {};
+          this.state.track = newTrack;
+          this.emit('trackChange', { state: this.state });
         });
       }, 200);
     }
   }
 
-  /* --------------- SettingsManager-заглушка (noop) ------------------ */
+  // ========== SettingsManager ==========
   class SettingsManager extends EventEmitter {
-    get(){ return { value:false, default:false } }      // чтобы .get('что-угодно') не рушило код
+    get(key) {
+      const raw = window.SETTINGS.get(key);
+      return { value: raw ?? false, default: false };
+    }
     hasChanged(){ return false }
-    on(){ /* из EventEmitter */ super.on(...arguments) }
+    on(){ super.on(...arguments) }
   }
 
-  /* ------------------- Theme (минималка) ---------------------------- */
+  // ========== Theme ==========
   class Theme {
     constructor(id){
       this.id = id;
       this.stylesManager   = new StylesManager();
-      this.settingsManager = new SettingsManager(this);
-      this.player = new PlayerEvents(this);        // сохранили старое имя
-      this.sonataState = this.player;             // для вашего скрипта
+      this.settingsManager = new SettingsManager();
+      this.player = new PlayerEvents();
+      this.sonataState = this.player;
     }
-    /* методы, которые вызывают BetterPlayer/тема */
-    start(){ /* таймер настройки не нужен – всё делают ваши скрипты */ }
-    addAction(){ /* noop */ }
+
+    start() { }
+    addAction() { }
   }
-window.SETTINGS = {
-  store: JSON.parse(localStorage.getItem('spotcol_settings') || '{}'),
 
-  set(key, value) {
-    this.store[key] = value;
-    localStorage.setItem('spotcol_settings', JSON.stringify(this.store));
-  },
+  // ========== spotcol_settings ==========
+  window.SETTINGS = {
+    store: JSON.parse(localStorage.getItem('spotcol_settings') || '{}'),
 
-  get(key) {
-    return this.store[key];
-  },
+    set(key, value) {
+      this.store[key] = value;
+      localStorage.setItem('spotcol_settings', JSON.stringify(this.store));
+    },
 
-  has(key) {
-    return Object.prototype.hasOwnProperty.call(this.store, key);
-  },
+    get(key) {
+      return this.store[key];
+    },
 
-  clear() {
-    this.store = {};
-    localStorage.removeItem('spotcol_settings');
-  }
-};
+    has(key) {
+      return Object.prototype.hasOwnProperty.call(this.store, key);
+    },
 
-  /* ---------- экспортируем в глобал, как делает WolfyLibrary -------- */
-  window.EventEmitter   = EventEmitter;
-  window.StylesManager  = StylesManager;
-  window.PlayerEvents   = PlayerEvents;
-  window.SettingsManager= SettingsManager;
-  window.Theme          = Theme;
+    clear() {
+      this.store = {};
+      localStorage.removeItem('spotcol_settings');
+    }
+  };
+
+  // ========== Экспорт ==========
+  window.EventEmitter    = EventEmitter;
+  window.StylesManager   = StylesManager;
+  window.PlayerEvents    = PlayerEvents;
+  window.SettingsManager = SettingsManager;
+  window.Theme           = Theme;
 
   window.WolfyLibrary = {
     EventEmitter, StylesManager, PlayerEvents, SettingsManager, Theme
@@ -112,5 +122,3 @@ window.SETTINGS = {
 
   console.log('[Wolfy-stub] активирован: WolfyLibrary временно заменён');
 })();
-
-// ====================================================================

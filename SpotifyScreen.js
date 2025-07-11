@@ -19,10 +19,13 @@ const SpotColЛичная = new Theme('SpotColЛичная');
    );
    
 /*_____________________________________________________________________________________________*/
-   (function(theme){
-     let $root,$bg,$cover,$track,$artist,$like,$origLike,observer;
-     let prevLiked=null;
-   
+(function(theme){
+  const sm = spotcol_settings;
+  const gptEnabled = sm.get('gptSearch')?.value ?? false;
+
+  let $root,$bg,$cover,$track,$artist,$like,$origLike,observer;
+  let prevLiked=null;
+
 
 /*_____________________________________________________________________________________________*/
 
@@ -136,14 +139,20 @@ const SpotColЛичная = new Theme('SpotColЛичная');
 /*_____________________________________________________________________________________________*/
 
 
-       const t=state.track||{};
-       const img=t.coverUri?`https://${t.coverUri.replace('%%','1000x1000')}`:'http://127.0.0.1:2007/Assets/no-cover-image.png';
-       [$bg,$cover].forEach(n=>n.style.background=`url(${img}) center/cover no-repeat`);
-       $track.textContent=t.title||'';
-       $artist.textContent=(t.artists||[]).map(a=>a.name).join(', ');
-       syncState();
-       $root.style.display='block';
-     };
+      const t=state.track||{};
+      const img=t.coverUri?`https://${t.coverUri.replace('%%','1000x1000')}`:'http://127.0.0.1:2007/Assets/no-cover-image.png';
+      [$bg,$cover].forEach(n=>n.style.background=`url(${img}) center/cover no-repeat`);
+      $track.textContent=t.title||'';
+      $artist.textContent=(t.artists||[]).map(a=>a.name).join(', ');
+      if (gptEnabled) {
+      fetchGPT($artist.textContent, $track.textContent);
+      } else {
+        fetchWiki($artist.textContent || $track.textContent);
+      }
+
+      syncState();
+      $root.style.display='block';
+    };
 
 /*_____________________________________________________________________________________________*/
 
@@ -164,7 +173,6 @@ const SpotColЛичная = new Theme('SpotColЛичная');
 
 (() => {
   /* === SETTINGS === */
-  const sm = SpotColЛичная.settingsManager;
   const modelMap = {
     1: 'searchgpt',
     2: 'gpt-4o-mini',

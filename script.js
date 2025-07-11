@@ -4,7 +4,7 @@
     'Library.js',
     'colorize 2.js',
     'BetterPlayer.js',
-    'ScreenSpotify.js',
+    'SpotifyScreen.js',
     'Main.js'
   ];
 
