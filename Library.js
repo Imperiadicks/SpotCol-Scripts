@@ -124,16 +124,20 @@
     }
 
     async #loadHandle() {
-      const themeId = Theme.getThemeId();
-      try {
-        const url = `http://localhost:2007/get_handle?theme=${encodeURIComponent(themeId)}`;
-        const res = await fetch(url);
-        const json = await res.json();
-        this.context.handle = json;
-        console.log(`[Theme] Загружен handle.json для "${themeId}"`);
-      } catch (e) {
-        console.warn('[Theme] Не удалось загрузить handle.json:', e);
-      }
+const Theme = window.Theme || {}; // если это не сделано
+
+Theme.getThemeId = function() {
+  try {
+    const scriptSrc = [...document.scripts].find(s => s.src.includes('script.js'))?.src || '';
+    const parts = scriptSrc.split('/');
+    const themeName = parts[parts.indexOf('SpotCol-Scripts') + 1]; // 'SpotColЛичная'
+    return themeName || 'unknown';
+  } catch {
+    return 'unknown';
+  }
+};
+const themeId = Theme.getThemeId(); // должно вернуть 'SpotColЛичная'
+console.log(themeId)
     }
 
 static getThemeId() {
