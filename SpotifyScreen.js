@@ -1,3 +1,6 @@
+const theme = new Theme(Theme.getThemeId());
+console.log(theme.context.getHandleValue('accent'));
+
 const SpotColЛичная = new Theme('SpotColЛичная');
     //Spotify Screen
 /*_____________________________________________________________________________________________*/
