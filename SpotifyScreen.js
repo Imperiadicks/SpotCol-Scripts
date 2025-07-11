@@ -1,4 +1,5 @@
 const SpotColЛичная = new Theme(Theme.getThemeId());
+const sm = SpotColЛичная.settingsManager;
     //Spotify Screen
 /*_____________________________________________________________________________________________*/
 

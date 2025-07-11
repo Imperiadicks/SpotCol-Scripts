@@ -410,12 +410,13 @@ SpotColЛичная.sonataState.on('openPlayer', ({ settings, styles, state }) =
   setupSpotColЛичная(settings, styles);
 });
 
-SpotColЛичная.sonataState.on('trackChange', ({ settings, state }) => {
-  const setting = settings.get('playerBackground');
+SpotColЛичная.sonataState.on('trackChange', ({ state }) => {
+  const setting = SpotColЛичная.settingsManager.get('playerBackground');
   if (!setting) return;
+
   if (setting.value) {
-      const image = 'https://'+state.track.coverUri.replace('%%', '1000x1000');
-      setPlayerBackground(settings, image);
+    const image = 'https://' + state.track.coverUri.replace('%%', '1000x1000');
+    setPlayerBackground(SpotColЛичная.settingsManager, image);
   }
 
   // Отключение кнопочки, если текст недоступен
