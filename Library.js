@@ -136,17 +136,22 @@
       }
     }
 
-    static getThemeId() {
-      try {
-        const scripts = [...document.querySelectorAll('script[src]')];
-        const target = scripts.find(s => s.src.includes('script.js'));
-        if (!target) return 'unknown';
-        const pathParts = new URL(target.src).pathname.split('/');
-        return pathParts[pathParts.length - 2]; // имя папки перед script.js
-      } catch {
-        return 'unknown';
-      }
-    }
+static getThemeId() {
+  try {
+    const scripts = [...document.querySelectorAll('script[src]')];
+    const target = scripts.find(s => s.src.includes('script.js'));
+    if (!target) return 'unknown';
+
+    const url = new URL(target.src);
+    const parts = url.pathname.split('/').filter(Boolean);
+    const index = parts.findIndex(p => p === 'script.js');
+    if (index > 0) return parts[index - 1];
+    return 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 
     start() {}
     addAction() {}
