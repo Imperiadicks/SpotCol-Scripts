@@ -142,6 +142,17 @@ const sm = SpotColЛичная.settingsManager;
 
 /*_____________________________________________________________________________________________*/
 
+  /* === WIKI FALLBACK === */
+  async function fetchWiki(artist) {
+    const out = UI.artist(); const alert = UI.alert(); if (!out) return;
+    try {
+      const url = 'https://ru.wikipedia.org/w/api.php?action=query&format=json&origin=*' +
+                  '&titles=' + encodeURIComponent(artist) + '&prop=extracts&exintro&explaintext';
+      const res = await fetch(url); if (!res.ok) throw 0;
+      const j = await res.json(); const page = Object.values(j.query.pages)[0] || {}; const text = page.extract || 'Информация не найдена';
+      out.innerHTML = md2html(text); alert.style.display = 'block';
+    } catch { out.innerHTML = '<b>Ошибка Wiki</b>'; alert.style.display = 'none'; }
+  }
 
      const update=state=>{
        build();
@@ -230,17 +241,6 @@ const sm = SpotColЛичная.settingsManager;
     return md.replace(/\r?\n/g, '<br>');
   }
 
-  /* === WIKI FALLBACK === */
-  async function fetchWiki(artist) {
-    const out = UI.artist(); const alert = UI.alert(); if (!out) return;
-    try {
-      const url = 'https://ru.wikipedia.org/w/api.php?action=query&format=json&origin=*' +
-                  '&titles=' + encodeURIComponent(artist) + '&prop=extracts&exintro&explaintext';
-      const res = await fetch(url); if (!res.ok) throw 0;
-      const j = await res.json(); const page = Object.values(j.query.pages)[0] || {}; const text = page.extract || 'Информация не найдена';
-      out.innerHTML = md2html(text); alert.style.display = 'block';
-    } catch { out.innerHTML = '<b>Ошибка Wiki</b>'; alert.style.display = 'none'; }
-  }
 
   /* === PROMPT BUILDER === */
   function buildPrompt(artist, track) {
