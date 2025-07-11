@@ -23,7 +23,7 @@ const SpotColЛичная = new Theme('SpotColЛичная');
    
 /*_____________________________________________________________________________________________*/
 (function(theme){
-  const sm = SpotColЛичная.settingsManager;
+  const sm = theme.settingsManager;
   const gptEnabled = sm.get('gptSearch')?.value ?? false;
 
   let $root,$bg,$cover,$track,$artist,$like,$origLike,observer;
