@@ -41,7 +41,7 @@
   // -------------------------------------------------------------
   let neuroSearch = sm.get('gptSearch')?.value ?? false;
   let useStream   = sm.get('useStream')?.value ?? false;
-  let useModel    = 'gpt-4o-mini'
+  let useModel    = 'llama-3.3'
 
   sm.on('change:gptSearch', ({settings}) => {
     neuroSearch = settings.get('gptSearch').value;
