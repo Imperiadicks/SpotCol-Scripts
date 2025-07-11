@@ -13,6 +13,7 @@
         "https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/",
         "https://ru.wikipedia.org/w/api.php?action=query&format=json&origin=*",
         "https://api.onlysq.ru/ai/v2",
-        "https://raw.githubusercontent.com/Open-Blocker-FYM/Open-Blocker/refs/heads/main/blocker-css/"
+        "https://raw.githubusercontent.com/Open-Blocker-FYM/Open-Blocker/refs/heads/main/blocker-css/",
+        "http://127.0.0.1:2007/Assets/no-cover-image.png"
     ]
 }
