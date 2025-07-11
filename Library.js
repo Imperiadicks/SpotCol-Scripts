@@ -121,4 +121,5 @@
   };
 
   console.log('[Wolfy-stub] активирован: WolfyLibrary временно заменён');
+  window.spotcol_settings = SETTINGS.store;
 })();
