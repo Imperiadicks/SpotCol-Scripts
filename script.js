@@ -5,7 +5,8 @@
     'colorize 2.js',
     /* 'BetterPlayer.js', */
     'SpotifyScreen.js',
-    'Main.js'
+    'Main.js',
+    'SpotColЛичная.css'
   ];
 
   async function loadScript(name) {
