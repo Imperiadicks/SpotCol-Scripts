@@ -115,6 +115,16 @@
       this.stylesManager = new StylesManager();
       this.settingsManager = new SettingsManager();
       this.player = new PlayerEvents();
+      /* ───── Global event-bus ───── */
+      this.bus  = new EventEmitter();
+      this.on   = (...a) => this.bus.on (...a);
+      this.off  = (...a) => this.bus.off(...a);
+      this.emit = (...a) => this.bus.emit(...a);
+
+      /* Генерируем событие очистки, когда меняется трек  */
+      this.player.on('trackChange', ({ state }) => {
+        this.emit('clear-screen', state);     // ← событие, на которое подпишется SpotifyScreen
+      });
       this.sonataState = this.player;
       this.context = {
         handle: null,
