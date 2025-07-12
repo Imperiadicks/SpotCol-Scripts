@@ -22,10 +22,22 @@
       console.error(`[SpotCol] ❌ Не удалось загрузить ${name}:`, e);
     }
   }
+  async function loadCss(name) {
+    const url = GH_BASE + encodeURIComponent(name);
+    console.log('[SpotCol] 📦 Загружаю CSS →', url);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const css = await res.text();
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
+    console.log('[SpotCol] ✅ CSS подключён');
+  }
 
   (async () => {
     for (const file of scripts) {
       await loadScript(file);
+      await loadCss(file);
     }
     console.log('[SpotCol] 🟢 Все модули загружены');
   })();
