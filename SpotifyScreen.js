@@ -25,7 +25,9 @@
 
   let neuroSearch = sm.get('gptSearch')?.value ?? false;
   let useStream   = sm.get('useStream')?.value ?? false;
-  let useModel    = modelMap[sm.get('useModel')?.value] || 'searchgpt';
+  let useModel    = modelMap[Number(sm.get('useModel')?.value)] || 'searchgpt';
+
+  console.log('[Settings] Инициализация:', { neuroSearch, useStream, useModel });
 
   sm.onChange('gptSearch', val => {
     neuroSearch = val;
@@ -38,7 +40,7 @@
   });
 
   sm.onChange('useModel', val => {
-    useModel = modelMap[val] || 'searchgpt';
+    useModel = modelMap[Number(val)] || 'searchgpt';
     console.log('[Settings] Изменена модель:', useModel);
   });
 
@@ -46,6 +48,7 @@
   const RE_T = /===\s*(Трек|Track|Song|Песня)\s*===/i;
 
   function el(tag, cls, par = document.body, txt) {
+    console.log('[DOM] Создание элемента:', tag, cls);
     const n = document.createElement(tag);
     if (cls) n.className = cls;
     if (txt !== undefined) n.textContent = txt;
@@ -54,6 +57,7 @@
   }
 
   function md2html(md = '') {
+    console.log('[Markdown] Преобразование');
     return md.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
              .replace(/\[(.+?)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
              .replace(/^(#{1,6})\s+(.+)$/gm, (_, h, t) => `<h${h.length}>${t}</h${h.length}>`)
@@ -63,6 +67,7 @@
   }
 
   function split(txt) {
+    console.log('[Split] Исходный текст:', txt);
     const ai = txt.search(RE_A), ti = txt.search(RE_T);
     let a = '', t = '';
     if (ai >= 0 && ti >= 0) {
@@ -78,7 +83,7 @@
   }
 
   async function streamGPT(prompt, onChunk) {
-    console.log('[GPT-STREAM] Модель:', useModel);
+    console.log('[GPT-STREAM] Отправка запроса. Модель:', useModel);
     const res = await fetch(ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -114,7 +119,7 @@
   }
 
   async function fetchWiki(q) {
-    console.log('[Wiki] Загрузка для:', q);
+    console.log('[Wiki] Запрос для:', q);
     const elA = document.querySelector('.Search_Info');
     const alert = document.querySelector('.Achtung_Alert');
     if (!elA) return;
@@ -127,14 +132,14 @@
       const text = page.extract || 'Информация не найдена';
       elA.innerHTML = md2html(text);
       alert.style.display = 'block';
-    } catch {
+    } catch (e) {
       elA.innerHTML = '<b>Ошибка Wiki</b>';
       alert.style.display = 'none';
     }
   }
 
   async function fetchGPT(artist, track) {
-    console.log('[GPT] fetchGPT:', useModel, 'стрим:', useStream);
+    console.log('[GPT] Загрузка для:', artist, track);
     const elA = document.querySelector('.Search_Info');
     const elT = document.querySelector('.GPT_Search_Info');
     const alert = document.querySelector('.Achtung_Alert');
@@ -182,10 +187,16 @@
 
   let $root, $bg, $cover, $track, $artist;
   function buildUI() {
+    console.log('[UI] Создание интерфейса');
     if ($root) return;
     $root = el('div', 'Spotify_Screen');
     $bg   = el('div', 'SM_Background', $root);
     $cover= el('div', 'SM_Cover', $root);
+    const $like = el('div', 'LikeTrack', $root);
+    $like.onclick = () => {
+      $like.classList.add('animate');
+      setTimeout(() => $like.classList.remove('animate'), 300);
+    };
     const row = el('div', 'SM_Title_Line', $root);
     $track = el('div', 'SM_Track_Name', row);
     $artist = el('div', 'SM_Artist', $root);
@@ -200,6 +211,7 @@
   }
 
   function clearUI() {
+    console.log('[UI] Очистка информации');
     document.querySelector('.Search_Info')?.replaceChildren();
     document.querySelector('.GPT_Search_Info')?.replaceChildren();
     const a = document.querySelector('.Achtung_Alert');
@@ -209,6 +221,7 @@
   theme.on('clear-screen', clearUI);
 
   function updateUI(state) {
+    console.log('[UI] Обновление UI по треку:', state.track);
     buildUI();
     const t = state.track || {};
     const img = t.coverUri ? `https://${t.coverUri.replace('%%', '1000x1000')}` : DEFAULT_IMG;
@@ -225,19 +238,49 @@
     $root.style.display = 'block';
   }
 
-  player.on('trackChange', ({ state }) => updateUI(state));
-  player.on('play',        ({ state }) => updateUI(state));
+  player.on('trackChange', ({ state }) => {
+    console.log('[Player] trackChange event');
+    updateUI(state);
+  });
 
-  if (player.state?.track) updateUI(player.state);
+  player.on('play', ({ state }) => {
+    console.log('[Player] play event');
+    updateUI(state);
+  });
+
+  if (player.state?.track) {
+    console.log('[Init] Обнаружен активный трек');
+    updateUI(player.state);
+  }
 
   let pa = '', pt = '';
   setInterval(() => {
     const a = player.state.track?.artists?.map(x => x.name).join(', ') || '';
     const t = player.state.track?.title || '';
     if (a !== pa || t !== pt) {
+      console.log('[Loop] Трек изменился');
       pa = a; pt = t;
       updateUI(player.state);
     }
   }, 1600);
+
+  styles.add('spotify-like-wrapper', `
+.LikeTrack {
+  flex: 0 0 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  top: 10px;
+  right: 14px;
+}
+@keyframes likePulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.LikeTrack.animate {
+  animation: likePulse 0.3s ease-in-out;
+}`);
+
 })();
-ы
