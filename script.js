@@ -10,7 +10,7 @@
   ];
 
   const styles = [
-    'SpotColЛичная.css'
+    'SpotCol.css'
   ];
 
   async function loadScript(name) {
