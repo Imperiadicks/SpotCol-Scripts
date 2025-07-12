@@ -10,7 +10,9 @@
   ];
 
   const styles = [
-    'SpotCol.css'
+    'SpotCol.css',
+    'Colorize 2.css',
+    '',
   ];
 
   async function loadScript(name) {
