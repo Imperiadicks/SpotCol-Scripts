@@ -10,7 +10,7 @@
 
   const sm     = theme.settingsManager;
   const styles = theme.stylesManager;
-  const player = theme.player;
+  const player = theme.sonataState;
 
   const modelMap = {
     1: 'searchgpt',
@@ -240,3 +240,4 @@
     }
   }, 1600);
 })();
+ы

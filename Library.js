@@ -29,38 +29,40 @@
   // ---------------- PlayerEvents ----------------
   class PlayerEvents extends EventEmitter {
     state = { status: 'paused', track: {}, volume: 0 };
-    constructor() { super(); this.#init(); }
+    constructor() {
+      super();
+      this.#init();
+    }
     #init() {
       const wait = setInterval(() => {
-        const sonata = window.sonataState || window.player;
-        if (!sonata?.state?.playerState) return;
+        const sonata = window.sonataState;
+        if (!sonata?.state?.playerState || !sonata?.state?.queueState) return;
         clearInterval(wait);
+
         const ps = sonata.state.playerState;
         const qs = sonata.state.queueState;
 
-        try {
-          this.state.track =
-            qs.currentEntity?.value?.entity?.data?.meta ||
-            qs.currentEntity?.value?.entity_data_meta ||
-            {};
-        } catch { this.state.track = {}; }
+        const extractTrack = () => {
+          return qs.currentEntity?.value?.entity?.data?.meta ||
+                 qs.currentEntity?.value?.entity_data_meta || {};
+        };
 
+        this.state.track = extractTrack();
         this.state.status = ps.status.value;
 
-        ps.status.onChange(st => {
-          this.state.status = st;
-          this.emit(st === 'playing' ? 'play' : 'pause', { state: this.state });
-        });
+        if (typeof ps.status.onChange === 'function') {
+          ps.status.onChange(st => {
+            this.state.status = st;
+            this.emit(st === 'playing' ? 'play' : 'pause', { state: this.state });
+          });
+        }
 
-        qs.currentEntity.onChange(() => {
-          try {
-            this.state.track =
-              qs.currentEntity?.value?.entity?.data?.meta ||
-              qs.currentEntity?.value?.entity_data_meta ||
-              {};
-          } catch { this.state.track = {}; }
-          this.emit('trackChange', { state: this.state });
-        });
+        if (typeof qs.currentEntity.onChange === 'function') {
+          qs.currentEntity.onChange(() => {
+            this.state.track = extractTrack();
+            this.emit('trackChange', { state: this.state });
+          });
+        }
       }, 200);
     }
   }
@@ -115,63 +117,61 @@
       this.stylesManager = new StylesManager();
       this.settingsManager = new SettingsManager();
       this.player = new PlayerEvents();
-      /* ───── Global event-bus ───── */
-      this.bus  = new EventEmitter();
+      this.bus = new EventEmitter();
+
       this.on   = (...a) => this.bus.on (...a);
       this.off  = (...a) => this.bus.off(...a);
       this.emit = (...a) => this.bus.emit(...a);
 
-      /* Генерируем событие очистки, когда меняется трек  */
       this.player.on('trackChange', ({ state }) => {
-        this.emit('clear-screen', state);     // ← событие, на которое подпишется SpotifyScreen
+        this.emit('clear-screen', state);
       });
+
       this.sonataState = this.player;
       this.context = {
         handle: null,
         getHandleValue: key => this.context.handle?.[key]
       };
+
       this.#loadHandle();
     }
 
     async #loadHandle() {
-const Theme = window.Theme || {}; // если это не сделано
-
-Theme.getThemeId = function() {
-  try {
-    const scriptSrc = [...document.scripts].find(s => s.src.includes('script.js'))?.src || '';
-    const parts = scriptSrc.split('/');
-    const themeName = parts[parts.indexOf('SpotCol-Scripts') + 1]; // 'SpotColЛичная'
-    return themeName || 'unknown';
-  } catch {
-    return 'unknown';
-  }
-};
-const themeId = Theme.getThemeId(); // должно вернуть 'SpotColЛичная'
-console.log(themeId)
+      const Theme = window.Theme || {};
+      Theme.getThemeId = function() {
+        try {
+          const scriptSrc = [...document.scripts].find(s => s.src.includes('script.js'))?.src || '';
+          const parts = scriptSrc.split('/');
+          const themeName = parts[parts.indexOf('SpotCol-Scripts') + 1];
+          return themeName || 'unknown';
+        } catch {
+          return 'unknown';
+        }
+      };
+      const themeId = Theme.getThemeId();
+      console.log('[Theme] ID:', themeId);
     }
 
-static getThemeId() {
-  try {
-    const scripts = [...document.querySelectorAll('script[src]')];
-    const target = scripts.find(s => s.src.includes('script.js'));
-    if (!target) return 'unknown';
-
-    const url = new URL(target.src);
-    const parts = url.pathname.split('/').filter(Boolean);
-    const index = parts.findIndex(p => p === 'script.js');
-    if (index > 0) return parts[index - 1];
-    return 'unknown';
-  } catch {
-    return 'unknown';
-  }
-}
-
+    static getThemeId() {
+      try {
+        const scripts = [...document.querySelectorAll('script[src]')];
+        const target = scripts.find(s => s.src.includes('script.js'));
+        if (!target) return 'unknown';
+        const url = new URL(target.src);
+        const parts = url.pathname.split('/').filter(Boolean);
+        const index = parts.findIndex(p => p === 'script.js');
+        if (index > 0) return parts[index - 1];
+        return 'unknown';
+      } catch {
+        return 'unknown';
+      }
+    }
 
     start() {}
     addAction() {}
   }
 
-  // ---------------- Глобальный экспорт ----------------
+  // ---------------- Export ----------------
   window.EventEmitter = EventEmitter;
   window.StylesManager = StylesManager;
   window.PlayerEvents = PlayerEvents;
@@ -186,5 +186,5 @@ static getThemeId() {
     Theme
   };
 
-  console.log('[Wolfy-stub] ✅ Заглушка активна: WolfyLibrary подменён');
+  console.log('[SpotCol] ✅ Library запущен ');
 })();
