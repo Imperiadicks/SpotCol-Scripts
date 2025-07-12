@@ -6,7 +6,7 @@
     /* 'BetterPlayer.js', */
     'SpotifyScreen.js',
     'Main.js',
-    'SpotColЛичная.css'
+    'SpotCol.css'
   ];
 
   async function loadScript(name) {
