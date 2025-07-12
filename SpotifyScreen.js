@@ -1,9 +1,8 @@
 (function () {
   'use strict';
 
-  console.log('[SpotifyScreen] Скрипт запущен');
+  console.log('[SpotifyScreen] Запуск');
 
-  if (!window.Theme) window.Theme = {};
   const theme = window.Imperiadicks instanceof Theme
     ? window.Imperiadicks
     : new Theme(Theme.getThemeId());
@@ -28,21 +27,23 @@
   let useStream   = sm.get('useStream')?.value ?? false;
   let useModel    = modelMap[sm.get('useModel')?.value] || 'searchgpt';
 
-  console.log('[Settings] Инициализация: neuroSearch =', neuroSearch, ', useModel =', useModel);
+  sm.onChange('gptSearch', val => {
+    neuroSearch = val;
+    console.log('[Settings] Изменён gptSearch:', val);
+  });
 
-  sm.on('change:gptSearch', ({settings}) => {
-    neuroSearch = settings.get('gptSearch')?.value;
-    console.log('[Settings] Изменён gptSearch:', neuroSearch);
+  sm.onChange('useStream', val => {
+    useStream = val;
+    console.log('[Settings] Изменён useStream:', val);
   });
-  sm.on('change:useStream', ({settings}) => {
-    useStream = settings.get('useStream')?.value;
-    console.log('[Settings] Изменён useStream:', useStream);
-  });
-  sm.on('change:useModel',  ({settings}) => {
-    const id = settings.get('useModel')?.value;
-    useModel = modelMap[id] || 'searchgpt';
+
+  sm.onChange('useModel', val => {
+    useModel = modelMap[val] || 'searchgpt';
     console.log('[Settings] Изменена модель:', useModel);
   });
+
+  const RE_A = /===\s*(Артист|Artist|Исполнитель)\s*===/i;
+  const RE_T = /===\s*(Трек|Track|Song|Песня)\s*===/i;
 
   function el(tag, cls, par = document.body, txt) {
     const n = document.createElement(tag);
@@ -61,70 +62,7 @@
              .replace(/\r?\n/g, '<br>');
   }
 
-  let $root, $bg, $cover, $track, $artist, $like, $origLike, likeObs;
-
-  styles.add('imp-like', `
-    .LikeTrack{flex:0 0 42px;display:flex;align-items:center;justify-content:center;cursor:pointer}
-    @keyframes pulse{0%{transform:scale(1)}45%{transform:scale(1.25)}100%{transform:scale(1)}}
-    .LikeTrack.animate{animation:pulse .35s ease-out}
-  `);
-
-  function isLiked(n) {
-    const liked = n?.getAttribute('aria-checked') === 'true' ||
-                  n?.classList.contains('Like_active') ||
-                  !!n?.querySelector('svg[class*="_active"]');
-    console.log('[Like] isLiked:', liked);
-    return liked;
-  }
-
-  function syncLike() {
-    if (!$origLike || !$like) return;
-    const src = $origLike.querySelector('svg');
-    const dst = $like.querySelector('svg');
-    if (src) {
-      dst ? dst.replaceWith(src.cloneNode(true)) : $like.append(src.cloneNode(true));
-    }
-    const liked = isLiked($origLike);
-    const prev = $like.dataset.prev === '1';
-    $like.classList.toggle('Like_active', liked);
-    if (liked !== prev) {
-      $like.classList.add('animate');
-      setTimeout(() => $like?.classList.remove('animate'), 350);
-    }
-    $like.dataset.prev = liked ? '1' : '0';
-    console.log('[Like] syncLike complete:', liked);
-  }
-
-  function findLike() {
-    console.log('[Like] findLike');
-    return [
-      '.FullscreenPlayerDesktopControls_likeButton__vpJ7S[data-test-id="LIKE_BUTTON"]',
-      '.PlayerBarDesktop_root__d2Hwi [data-test-id="LIKE_BUTTON"]',
-      '[data-test-id="PLAYERBAR_DESKTOP_LIKE_BUTTON"]',
-      '[data-test-id="LIKE_BUTTON"]'
-    ].map(q => document.querySelector(q)).find(Boolean) || null;
-  }
-
-  function cloneLike() {
-    console.log('[Like] cloneLike');
-    $origLike = findLike();
-    if (!$origLike) return el('div', 'LikeTrack');
-    const c = $origLike.cloneNode(true);
-    c.classList.add('LikeTrack');
-    c.removeAttribute('data-test-id');
-    c.onclick = () => { $origLike.click(); };
-    likeObs?.disconnect();
-    likeObs = new MutationObserver(syncLike);
-    likeObs.observe($origLike, { attributes: true, childList: true, subtree: true });
-    syncLike();
-    return c;
-  }
-
-  const RE_A = /===\s*(Артист|Artist|Исполнитель)\s*===/i;
-  const RE_T = /===\s*(Трек|Track|Song|Песня)\s*===/i;
-
   function split(txt) {
-    console.log('[Parser] split text');
     const ai = txt.search(RE_A), ti = txt.search(RE_T);
     let a = '', t = '';
     if (ai >= 0 && ti >= 0) {
@@ -139,8 +77,44 @@
     };
   }
 
+  async function streamGPT(prompt, onChunk) {
+    console.log('[GPT-STREAM] Модель:', useModel);
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: useModel,
+        request: {
+          messages: [{ role: 'user', content: prompt }],
+          stream: true
+        }
+      })
+    });
+    const rd = res.body.getReader();
+    const dec = new TextDecoder('utf-8');
+    let acc = '';
+    while (true) {
+      const { done, value } = await rd.read();
+      if (done) break;
+      const chunk = dec.decode(value, { stream: true });
+      for (let line of chunk.split('\n')) {
+        if (!(line = line.trim()) || line === '[DONE]') continue;
+        if (line.startsWith('data:')) line = line.slice(5).trim();
+        try {
+          const js = JSON.parse(line);
+          const piece = js.choices?.[0]?.delta?.content || '';
+          acc += piece;
+          onChunk(acc);
+        } catch (e) {
+          console.log('[GPT-STREAM] Ошибка парсинга:', e);
+        }
+      }
+    }
+    console.log('[GPT-STREAM] Завершено');
+  }
+
   async function fetchWiki(q) {
-    console.log('[Wiki] fetch:', q);
+    console.log('[Wiki] Загрузка для:', q);
     const elA = document.querySelector('.Search_Info');
     const alert = document.querySelector('.Achtung_Alert');
     if (!elA) return;
@@ -148,21 +122,19 @@
       const url = 'https://ru.wikipedia.org/w/api.php?action=query&format=json&origin=*' +
                   '&titles=' + encodeURIComponent(q) + '&prop=extracts&exintro&explaintext';
       const r = await fetch(url);
-      if (!r.ok) throw 0;
       const j = await r.json();
-      const p = Object.values(j.query.pages)[0] || {};
-      const text = p.extract || 'Информация не найдена';
+      const page = Object.values(j.query.pages)[0] || {};
+      const text = page.extract || 'Информация не найдена';
       elA.innerHTML = md2html(text);
       alert.style.display = 'block';
-    } catch (e) {
-      console.log('[Wiki] Ошибка', e);
+    } catch {
       elA.innerHTML = '<b>Ошибка Wiki</b>';
       alert.style.display = 'none';
     }
   }
 
   async function fetchGPT(artist, track) {
-    console.log('[GPT] fetch:', useModel, 'stream:', useStream);
+    console.log('[GPT] fetchGPT:', useModel, 'стрим:', useStream);
     const elA = document.querySelector('.Search_Info');
     const elT = document.querySelector('.GPT_Search_Info');
     const alert = document.querySelector('.Achtung_Alert');
@@ -179,41 +151,43 @@
     ].join('\n');
 
     try {
-      const r = await fetch(ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: useModel,
-          request: {
-            messages: [{ role: 'user', content: prompt }],
-            stream: false
-          }
-        })
-      });
-      const j = await r.json();
-      const txt = j.choices?.[0]?.message?.content || 'Информация не найдена';
-      const { artist: a, track: t } = split(txt);
-      elA.innerHTML = md2html(a);
-      elT.innerHTML = md2html(t);
+      if (useStream) {
+        await streamGPT(prompt, (acc) => {
+          const { artist: a, track: t } = split(acc);
+          elA.innerHTML = md2html(a);
+          elT.innerHTML = md2html(t);
+        });
+      } else {
+        const r = await fetch(ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: useModel,
+            request: { messages: [{ role: 'user', content: prompt }] }
+          })
+        });
+        const j = await r.json();
+        const txt = j.choices?.[0]?.message?.content || 'Информация не найдена';
+        const { artist: a, track: t } = split(txt);
+        elA.innerHTML = md2html(a);
+        elT.innerHTML = md2html(t);
+      }
       alert.style.display = 'block';
-      console.log('[GPT] Ответ получен');
     } catch (e) {
-      console.log('[GPT] Ошибка', e);
       elA.innerHTML = '<b>Ошибка GPT</b>';
       elT.textContent = '';
       alert.style.display = 'none';
     }
   }
 
+  let $root, $bg, $cover, $track, $artist;
   function buildUI() {
-    console.log('[UI] buildUI');
     if ($root) return;
     $root = el('div', 'Spotify_Screen');
     $bg   = el('div', 'SM_Background', $root);
     $cover= el('div', 'SM_Cover', $root);
     const row = el('div', 'SM_Title_Line', $root);
     $track = el('div', 'SM_Track_Name', row);
-    $like  = cloneLike(); row.appendChild($like);
     $artist = el('div', 'SM_Artist', $root);
     const info = el('div', 'All_Info_Container', $root);
     const art  = el('div', 'Artist_Info_Container', info);
@@ -226,7 +200,6 @@
   }
 
   function clearUI() {
-    console.log('[UI] clearUI');
     document.querySelector('.Search_Info')?.replaceChildren();
     document.querySelector('.GPT_Search_Info')?.replaceChildren();
     const a = document.querySelector('.Achtung_Alert');
@@ -235,38 +208,26 @@
 
   theme.on('clear-screen', clearUI);
 
-  function updateUI(st) {
-    console.log('[UI] updateUI');
+  function updateUI(state) {
     buildUI();
-    if (!$origLike || !document.contains($origLike)) {
-      const fresh = cloneLike();
-      $like.replaceWith(fresh);
-      $like = fresh;
-    }
-
-    const t = st.track || {};
+    const t = state.track || {};
     const img = t.coverUri ? `https://${t.coverUri.replace('%%', '1000x1000')}` : DEFAULT_IMG;
-    [$bg, $cover].forEach(n => n.style.background = `url(${img}) center/cover no-repeat`);
-
     const art = (t.artists || []).map(a => a.name).join(', ');
     const ttl = t.title || '';
+    [$bg, $cover].forEach(n => n.style.background = `url(${img}) center/cover no-repeat`);
     const changed = $track.textContent !== ttl || $artist.textContent !== art;
-
     $track.textContent = ttl;
     $artist.textContent = art;
-    syncLike();
-
     if (changed) {
-      console.log('[UI] Трек изменился, обновляем...');
       clearUI();
       neuroSearch ? fetchGPT(art, ttl) : fetchWiki(art || ttl);
     }
-
     $root.style.display = 'block';
   }
 
   player.on('trackChange', ({ state }) => updateUI(state));
-  player.on('play', ({ state }) => updateUI(state));
+  player.on('play',        ({ state }) => updateUI(state));
+
   if (player.state?.track) updateUI(player.state);
 
   let pa = '', pt = '';
