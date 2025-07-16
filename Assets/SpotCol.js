@@ -6,13 +6,12 @@
     'colorize 2.js',
     // 'BetterPlayer.js',
     'SpotifyScreen.js',
-    'Main.js',
+    'Main.js'
   ];
 
   const styles = [
     'SpotCol.css',
-    'Colorize 2.css',
-    '',
+    'Colorize 2.css'
   ];
 
   //asd
