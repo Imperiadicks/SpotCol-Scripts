@@ -2,7 +2,7 @@
  * SpotifyScreen.js  (SpotCol, rev‑2025‑07‑16)
  * Работает с WolfyLibrary: Theme, UI, SettingsManager, PlayerEvents
  * =================================================================================== */
-console.log("Проеврка на коммит")
+console.log("Проверка на коммит1")
 /* ------------------------- получение / создание темы ------------------------------ */
 const { Theme, UI } = window.WolfyLibrary;
 const SpotColЛичная = window.SpotColЛичная ?? (
