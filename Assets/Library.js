@@ -257,8 +257,8 @@ class PlayerEvents extends EventEmitter {
 
     /* ---------- fullscreen‑player / lyrics / queue ---------- */
     const test = {
-      player : n => n.querySelector?.('[data-test-id=\"FULLSCREEN_PLAYER_MODAL\"]'),
-      text   : n => n.querySelector?.('[data-test-id=\"SYNC_LYRICS_CONTENT\"]'),
+      player : n => n.querySelector?.('[data-test-id="FULLSCREEN_PLAYER_MODAL"]'),
+      text   : n => n.querySelector?.('[data-test-id="SYNC_LYRICS_CONTENT"]'),
       queue  : n => n.querySelector?.('.PlayQueue_root__ponhw')
     };
     new MutationObserver(muts=>{
@@ -291,6 +291,168 @@ class PlayerEvents extends EventEmitter {
       history[fn] = function(...a){ o.apply(this,a); upd(); };
     });
     addEventListener('popstate', upd);
+  }
+
+  /* ---------- безопасный getter текущего трека ---------- */
+  getCurrentTrack() {
+    if (this.state?.track?.title) return this.state.track;
+
+    try {
+      const img = document.querySelector('[class*="PlayerBarDesktop_cover"] img');
+      const titleEl = document.querySelector('[class*="TrackInfo_title"]');
+      const artistEls = [...document.querySelectorAll('[class*="TrackInfo_artists"] a')];
+
+      return {
+        coverUri: img?.src?.split('https://')[1]?.replace('100x100', '%%') || '',
+        title: titleEl?.textContent || '',
+        artists: artistEls.map(a => ({ name: a.textContent }))
+      };
+    } catch (e) {
+      console.warn('[PlayerEvents] getCurrentTrack() fallback error:', e);
+      return {};
+    }
+  }
+}
+
+
+// 📦 Добавление SpotifyScreen в библиотеку
+class SpotifyScreen {
+  #theme;
+  #player;
+  #root = null;
+  #bg = null;
+  #cover = null;
+  #track = null;
+  #artist = null;
+  #like = null;
+  #origLike = null;
+  #observer = null;
+  #prevLiked = null;
+
+  constructor(theme) {
+    this.#theme = theme;
+    this.#player = theme?.player;
+
+    if (!this.#player) {
+      console.warn('[SpotifyScreen] Нет player, инициализация невозможна.');
+      return;
+    }
+
+    this.#player.on('openPlayer',  ({ state }) => this.#update(state));
+    this.#player.on('trackChange', ({ state }) => this.#update(state));
+  }
+
+  #el(tag, cls, parent, txt = '') {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (txt) n.textContent = txt;
+    (parent ?? document.body).appendChild(n);
+    return n;
+  }
+
+  #isLiked(node) {
+    if (!node) return false;
+    if (node.getAttribute('aria-checked') !== null)
+      return node.getAttribute('aria-checked') === 'true';
+    return node.classList.contains('Like_active') ||
+           !!node.querySelector('svg[class*="_active"],svg[class*="-active"],svg .LikeIcon_active');
+  }
+
+  #syncState() {
+    if (!this.#origLike || !this.#like) return;
+
+    const src = this.#origLike.querySelector('svg');
+    const dst = this.#like.querySelector('svg');
+
+    if (src) dst ? dst.replaceWith(src.cloneNode(true))
+                 : this.#like.appendChild(src.cloneNode(true));
+
+    const liked = this.#isLiked(this.#origLike);
+    this.#like.classList.toggle('Like_active', liked);
+    if (liked !== this.#prevLiked) {
+      this.#like.classList.add('animate');
+      setTimeout(() => this.#like?.classList.remove('animate'), 350);
+      this.#prevLiked = liked;
+    }
+  }
+
+  #attachObserver() {
+    if (this.#observer) this.#observer.disconnect();
+    if (!this.#origLike) return;
+    this.#observer = new MutationObserver(() => this.#syncState());
+    this.#observer.observe(this.#origLike, { attributes: true, childList: true, subtree: true });
+  }
+
+  #findOriginalLike() {
+    const sels = [
+      '.FullscreenPlayerDesktopControls_likeButton__vpJ7S[data-test-id="LIKE_BUTTON"]',
+      '.PlayerBarDesktop_root__d2Hwi [data-test-id="LIKE_BUTTON"]',
+      '[data-test-id="PLAYERBAR_DESKTOP_LIKE_BUTTON"]',
+      '[data-test-id="LIKE_BUTTON"]'
+    ];
+    return sels.map(q => document.querySelector(q)).find(Boolean) || null;
+  }
+
+  #createClone() {
+    this.#origLike = this.#findOriginalLike();
+    this.#prevLiked = null;
+    if (!this.#origLike) return this.#el('div', 'LikeTrack');
+
+    const c = this.#origLike.cloneNode(true);
+    c.classList.add('LikeTrack');
+    c.removeAttribute('data-test-id');
+    c.onclick = () => this.#origLike.click();
+
+    this.#attachObserver();
+    this.#syncState();
+
+    return c;
+  }
+
+  #build() {
+    if (this.#root) return;
+
+    const layout = document.querySelector('div[class^="CommonLayout_root"]');
+    const content = layout?.querySelector('div[class*="Content_rootOld"]');
+
+    this.#root  = this.#el('div', 'Spotify_Screen');
+    this.#bg    = this.#el('div', 'SM_Background', this.#root);
+    this.#cover = this.#el('div', 'SM_Cover',      this.#root);
+
+    if (content) {
+      content.insertAdjacentElement('afterend', this.#root);
+    } else if (layout) {
+      layout.appendChild(this.#root);
+    } else {
+      document.body.appendChild(this.#root);
+    }
+
+    const row = this.#el('div', 'SM_Title_Line', this.#root);
+    this.#track  = this.#el('div', 'SM_Track_Name', row);
+    this.#like   = this.#createClone();
+    row.appendChild(this.#like);
+    this.#artist = this.#el('div', 'SM_Artist', this.#root);
+  }
+
+  #update(state) {
+    this.#build();
+
+    if (!this.#origLike || !document.contains(this.#origLike)) {
+      const fresh = this.#createClone();
+      this.#like.replaceWith(fresh);
+      this.#like = fresh;
+    }
+
+    const t = state.track || {};
+    const img = t.coverUri
+      ? `https://${t.coverUri.replace('%%', '1000x1000')}`
+      : 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/no-cover.png';
+
+    [this.#bg, this.#cover].forEach(n => n.style.background = `url(${img}) center/cover no-repeat`);
+    this.#track.textContent  = t.title || '';
+    this.#artist.textContent = (t.artists || []).map(a => a.name).join(', ');
+    this.#syncState();
+    this.#root.style.display = 'block';
   }
 }
 
@@ -357,6 +519,6 @@ class PlayerEvents extends EventEmitter {
   /* ════════════════════════════════════════════════════════════════════════════════════
    *  Export
    * ══════════════════════════════════════════════════════════════════════════════════ */
-  window.WolfyLibrary = { EventEmitter, StylesManager, SettingsManager, UI, PlayerEvents, Theme };
+  window.WolfyLibrary = { EventEmitter, StylesManager, SettingsManager, UI, PlayerEvents, Theme, SpotifyScreen };
   log('WolfyLibrary loaded ✓');
 })();
