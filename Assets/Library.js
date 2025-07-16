@@ -188,17 +188,21 @@
    * ══════════════════════════════════════════════════════════════════════════════════ */
   class Theme {
     id; stylesManager; settingsManager; assetsManager; player;
-    #ev=new EventEmitter(); #actions={}; #loop=null;
+    #ev=new EventEmitter(); #actions={}; #loop=null; context = Object.create(null);
 
-    constructor(id){
-      if(!id) throw Error('Theme id required');
-      this.id=id;
-      this.stylesManager   = new StylesManager();
-      this.settingsManager = new SettingsManager(this);
-      this.assetsManager   = new AssetsManager();
-      this.player          = new PlayerEvents(this);
-      log('Theme',id,'created');
-    }
+    constructor(id) {
+    if (!id) throw Error('Theme id required');
+    this.id              = id;
+    this.stylesManager   = new StylesManager();
+    this.settingsManager = new SettingsManager(this);
+
+    /*  ↓↓↓  Создаём менеджер ассетов лишь при наличии класса  ↓↓↓  */
+    if (typeof AssetsManager !== 'undefined')
+      this.assetsManager = new AssetsManager();
+
+    this.player = new PlayerEvents(this);
+    log('Theme', id, 'init');
+  }
 
     /* --- события темы --- */
     on (...a){ this.#ev.on (...a); }
