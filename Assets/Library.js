@@ -181,116 +181,119 @@
 class PlayerEvents extends EventEmitter {
   #theme;
   state = {
-    status  : 'paused',
-    page    : window.location.pathname,
-    volume  : 0,
-    shuffle : false,
-    repeat  : 'none',
-    progress: { duration: 0, position: 0, loaded: 0, played: 0 },
+    status : 'paused',
+    page   : location.pathname,
+    volume : 0,
+    shuffle: false,
+    repeat : 'none',
+    progress:{ duration:0, position:0, loaded:0, played:0 },
     track   : {}
   };
 
-  constructor(theme) {
+  constructor(theme){
     super();
     this.#theme = theme;
-    this.#waitForPlayer();
-    this.#watchPage();
+    this.#wait();        // ждём инициализации window.player
+    this.#watchPage();   // отлавливаем смену URL
   }
 
-  /* ждём пока window.player проинициализируется */
-  #waitForPlayer() {
-    const iv = setInterval(() => {
+  /* ---------- ожидание window.player ---------- */
+  #wait(){
+    const iv = setInterval(()=>{
       if (window?.player?.state?.playerState &&
-          window?.player?.state?.queueState?.currentEntity?.value?.entity?.data?.meta) {
+          window?.player?.state?.queueState?.currentEntity?.value?.entity?.data?.meta){
         clearInterval(iv);
         this.#hook();
       }
     }, 400);
   }
 
-  /* подписываемся на внутренние observables */
-  #hook() {
-    const ps = window.player.state.playerState;
-    const qs = window.player.state.queueState;
+  /* ---------- подписки на observables ---------- */
+  #hook(){
+    const ps = player.state.playerState;
+    const qs = player.state.queueState;
 
-    /* первичное заполнение */
     this.state.track  = qs.currentEntity.value.entity.data.meta;
     this.state.volume = ps.volume.value;
-    this.emit('trackChange', { state: this.state });
+    this.emit('trackChange', { state:this.state });
 
-    /* status */
-    ps.status.onChange(s => {
-      this.state.status = s === 'loadingMediaData' ? 'paused' : s;
-      this.emit(s === 'playing' ? 'play' : 'pause', { state: this.state });
-      if (s === 'loadingMediaData') {
+    ps.status.onChange(s=>{
+      this.state.status = s==='loadingMediaData' ? 'paused' : s;
+      this.emit(s==='playing' ? 'play' : 'pause', { state:this.state });
+      if (s==='loadingMediaData'){
         this.state.track = qs.currentEntity.value.entity.data.meta;
-        this.emit('trackChange', { state: this.state });
+        this.emit('trackChange', { state:this.state });
       }
     });
 
-    /* progress */
-    ps.progress.onChange(p => {
+    ps.event.onChange(ev=>{
+      if (ev==='audio-set-progress') this.emit('seek', { state:this.state });
+    });
+
+    ps.progress.onChange(p=>{
       this.state.progress = p;
-      this.emit('progress', { state: this.state });
+      this.emit('progress', { state:this.state });
     });
 
-    /* seek (drag‑bar) */
-    ps.event.onChange(ev => {
-      if (ev === 'audio-set-progress') this.emit('seek', { state: this.state });
+    ps.volume.onChange(v=>{
+      this.state.volume = Math.round(v*100)/100;
+      this.emit('volume', { state:this.state });
     });
 
-    /* volume */
-    ps.volume.onChange(v => {
-      this.state.volume = Math.round(v * 100) / 100;
-      this.emit('volume', { state: this.state });
+    qs.shuffle.onChange(sh=>{
+      this.state.shuffle = sh;
+      this.emit('shuffle', { state:this.state });
     });
 
-    /* shuffle / repeat */
-    qs.shuffle.onChange(sh => { this.state.shuffle = sh; this.emit('shuffle', { state: this.state }); });
-    qs.repeat .onChange(r  => { this.state.repeat  = r;  this.emit('repeat',  { state: this.state }); });
+    qs.repeat.onChange(r=>{
+      this.state.repeat = r;
+      this.emit('repeat', { state:this.state });
+    });
 
-    /* track change */
-    qs.currentEntity.onChange(() => {
+    qs.currentEntity.onChange(()=>{
       this.state.track = qs.currentEntity.value.entity.data.meta;
-      this.emit('trackChange', { state: this.state });
+      this.emit('trackChange', { state:this.state });
     });
 
-    /* fullscreen‑player / lyrics / queue via MutationObserver */
+    /* ---------- fullscreen‑player / lyrics / queue ---------- */
     const test = {
       player : n => n.querySelector?.('[data-test-id=\"FULLSCREEN_PLAYER_MODAL\"]'),
       text   : n => n.querySelector?.('[data-test-id=\"SYNC_LYRICS_CONTENT\"]'),
       queue  : n => n.querySelector?.('.PlayQueue_root__ponhw')
     };
-    const mo = new MutationObserver(muts => {
-      muts.forEach(m => {
-        m.addedNodes.forEach(n => {
-          if (test.player(n)) this.emit('openPlayer', { state: this.state });
-          if (test.text  (n)) this.emit('openText',   { state: this.state });
-          if (test.queue (n)) this.emit('openQueue',  { state: this.state });
+    new MutationObserver(muts=>{
+      muts.forEach(mu=>{
+        mu.addedNodes.forEach(n=>{
+          if (test.player(n)) this.emit('openPlayer',  { state:this.state });
+          if (test.text  (n)) this.emit('openText',    { state:this.state });
+          if (test.queue (n)) this.emit('openQueue',   { state:this.state });
         });
-        m.removedNodes.forEach(n => {
-          if (test.player(n)) this.emit('closePlayer', { state: this.state });
-          if (test.text  (n)) this.emit('closeText',   { state: this.state });
-          if (test.queue (n)) this.emit('closeQueue',  { state: this.state });
+        mu.removedNodes.forEach(n=>{
+          if (test.player(n)) this.emit('closePlayer', { state:this.state });
+          if (test.text  (n)) this.emit('closeText',   { state:this.state });
+          if (test.queue (n)) this.emit('closeQueue',  { state:this.state });
         });
       });
-    });
-    mo.observe(document.body, { childList:true, subtree:true });
+    }).observe(document.body,{ childList:true, subtree:true });
   }
 
-  /* слежение за сменой URL (pageChange) */
-  #watchPage() {
-    const update = () => {
-      const p = window.location.pathname;
-      if (p !== this.state.page) { this.state.page = p; this.emit('pageChange', { state: this.state }); }
+  /* ---------- слежение за сменой URL ---------- */
+  #watchPage(){
+    const upd = () => {
+      const p = location.pathname;
+      if (p !== this.state.page){
+        this.state.page = p;
+        this.emit('pageChange', { state:this.state });
+      }
     };
     ['pushState','replaceState'].forEach(fn=>{
-      const orig = history[fn];
-      history[fn] = function(...a){ orig.apply(this,a); update(); };
+      const o = history[fn];
+      history[fn] = function(...a){ o.apply(this,a); upd(); };
     });
-    window.addEventListener('popstate', update);
+    addEventListener('popstate', upd);
   }
 }
+
   /* ════════════════════════════════════════════════════════════════════════════════════
    *  Theme  (applyTheme, addAction, update, start, stop, destroy)
    * ══════════════════════════════════════════════════════════════════════════════════ */
