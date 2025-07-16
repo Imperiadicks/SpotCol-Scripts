@@ -94,32 +94,46 @@ SpotColЛичная.stylesManager.add('spotify-like-wrapper', `
   };
 
   /* ----------- построение интерфейса ----------- */
-  const build = () => {
-    if ($root) return;
-    const container = document.querySelector('[class*=\"Content_rootOld\"]')?.parentElement
-                   || document.body;
-    $root  = el('div', 'Spotify_Screen',   container);
-    $bg    = el('div', 'SM_Background',    $root);
-    $cover = el('div', 'SM_Cover',         $root);
+const build = () => {
+  if ($root) return;
 
-    const row = el('div', 'SM_Title_Line', $root);
-    $track = el('div', 'SM_Track_Name', row);
-    $like  = createClone();
-    row.appendChild($like);
-    $artist = el('div', 'SM_Artist', $root);
+  /* ① находим контейнер общего лэйаута */
+  const layout = document.querySelector('div[class^="CommonLayout_root"]');
+  /* ② целевой “контент”‑див, рядом с которым надо поставить экран */
+  const content = layout?.querySelector('div[class*="Content_rootOld"]');
 
-    /* Wiki / GPT блоки */
-    const info = el('div', 'All_Info_Container', $root);
-    const art  = el('div', 'Artist_Info_Container', info);
-    el('div', 'Info_Title',  art, 'Сведения об исполнителе');
-    el('div', 'Search_Info', art);
-    const gpt = el('div', 'GPT_Info_Container', info);
-    el('div', 'GPT_Info_Title', gpt, 'Сведения о треке');
-    el('div', 'GPT_Search_Info', gpt);
-    el('div', 'Achtung_Alert',   info,
-       'В сведениях иногда бывают неправильные результаты. Проверяйте информацию подробнее, если изначально вам не всё равно!');
-  };
+  /* создаём корневой узел */
+  $root  = el('div', 'Spotify_Screen');
+  $bg    = el('div', 'SM_Background', $root);
+  $cover = el('div', 'SM_Cover',      $root);
 
+  /* если нашли нужное место — вставляем сразу после .Content_rootOld__*  */
+  if (content) {
+    content.insertAdjacentElement('afterend', $root);
+  } else if (layout) {
+    layout.appendChild($root);                    // fallback — просто в конец лэйаута
+  } else {
+    document.body.appendChild($root);             // крайний случай
+  }
+
+  /* остальные элементы */
+  const row = el('div', 'SM_Title_Line', $root);
+  $track  = el('div', 'SM_Track_Name', row);
+  $like   = createClone();
+  row.appendChild($like);
+  $artist = el('div', 'SM_Artist', $root);
+
+  /* Wiki / GPT блоки (как было) */
+  const info = el('div', 'All_Info_Container', $root);
+  const art  = el('div', 'Artist_Info_Container', info);
+  el('div', 'Info_Title',  art, 'Сведения об исполнителе');
+  el('div', 'Search_Info', art);
+  const gpt = el('div', 'GPT_Info_Container', info);
+  el('div', 'GPT_Info_Title', gpt, 'Сведения о треке');
+  el('div', 'GPT_Search_Info', gpt);
+  el('div', 'Achtung_Alert',   info,
+     'В сведениях иногда бывают неправильные результаты. Проверяйте информацию подробнее, если изначально вам не всё равно!');
+};
   /* ----------- обновление данных экрана ----------- */
   const update = state => {
     build();
