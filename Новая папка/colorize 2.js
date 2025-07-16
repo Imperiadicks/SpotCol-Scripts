@@ -1,8 +1,7 @@
 (() => {
   /*──────────────────────── helpers ────────────────────────*/
-  const LOG = (...a) => console.log('[SpotCol]', ...a);
+  const LOG = (...a) => console.log('[Colorize 2]', ...a);
 
-  /* RGB → HSL */
   const rgb2hsl = (r, g, b) => {
     r /= 255; g /= 255; b /= 255;
     const max = Math.max(r, g, b);
@@ -23,7 +22,6 @@
   const H  = o      => `hsl(${o.h},${o.s}%,${o.l}%)`;
   const HA = (o, a) => `hsla(${o.h},${o.s}%,${o.l}%,${a})`;
 
-  /* HEX → HSL */
   const parseHEX = hex => {
     hex = hex.replace('#', '');
     if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
@@ -71,7 +69,6 @@
     return any?.src || null;
   };
 
-  /* читаем два пикселя → две HSL-точки */
   const CANVAS = document.createElement('canvas');
   CANVAS.width = CANVAS.height = 64;
   const CTX    = CANVAS.getContext('2d');
@@ -169,6 +166,8 @@
     --ym-controls-color-secondary-text-enabled: var(--color-light-10-10);
     --ym-controls-color-secondary-on_default-hovered: var(--color-light-10-10);
     --ym-controls-color-secondary-on_default-enabled: var(--color-light-10-10);
+    --id-default-color-dark-surface-elevated-0: var(--color-dark-6);
+
 
     /* отключаем фоновую краску контейнеров, чтобы был виден градиент */
     .DefaultLayout_root__*, .CommonLayout_root__*{
@@ -234,9 +233,18 @@
            var(--ym-background-color-secondary-enabled-blur)) 0,
       hsla(0 0% 5% / .90) 100%);
 }
+      .VibeContext_context__Z_82k, 
+      .VibeSettings_toggleSettingsButton__j6fIU,
+      .VibeContext_pinButton__b6SNF{
+          backdrop-filter: blur(25px);
+          background-color: rgba(0, 0, 0, 0.15); 
+      }
+
+      .Root{
+      background: var(--ym-background-color-primary-enabled-content) !important
+      }
 `;
 
-  /* вставка/обновление стиля с vars */
   const applyVars = vars => {
     let st = document.getElementById('spotcol-colorize-style');
     if (!st) {
@@ -269,27 +277,20 @@
     document.head.appendChild(st);
     document.body.classList.add('sc-has-grad');
   }
+const cover = document.querySelector('[class*="FullscreenPlayerDesktopPoster_cover"]');
+if (cover) {
+  cover.style.width = '600px';
+  cover.style.height = '600px';
+  cover.style.transition = 'all 0.3s ease';
+}
 
   /*──────────────────────── effects ───────────────────────*/
-/*   function setVibeBg(){
-  const v = document.querySelector('[class*="MainPage_vibe"]');
-  if (!v) return;
-
-  const stops = [
-    'var(--color-dark-8)   0%',
-    'var(--color-dark-4)  33%',
-    'var(--color-light-4) 66%',
-    'var(--color-light-8) 100%'
-  ].join(', ');
-
-  v.style.background = `linear-gradient(120deg, ${stops})`;
-} */
-// 🔁 Получение высокого качества обложки
 let SETTINGS = {};
 let lastSETTINGS_JSON = '';
 let lastSrc = '', lastHex = '', lastFullVibe_a = null, lastFullVibe_b = null;
+let lastBackgroundURL = '';
+let lastPageURL = location.href;
 
-// 🖼 Получение большого изображения обложки
 async function getHiResCover() {
   const img = document.querySelector('[class*="PlayerBarDesktopWithBackgroundProgressBar_cover"] img');
   if (img && img.src.includes('/100x100')) {
@@ -298,35 +299,86 @@ async function getHiResCover() {
   return null;
 }
 
-// 🔁 Замена фона
 function backgroundReplace(imageURL) {
   const target = document.querySelector('[class*="MainPage_vibe"]');
-  if (!target || !imageURL) return;
+  if (!target || !imageURL || imageURL === lastBackgroundURL) return;
 
-  target.style.backgroundImage = `
-    radial-gradient(circle at 70% 70%,
-      var(--color-light-1-5) 0%,
-      var(--color-dark-5-4) 70%,
-      var(--color-dark-8-3) 100%),
-    url("${imageURL}")
-  `;
-  target.style.backgroundSize = "cover";
-  target.style.backgroundRepeat = "no-repeat";
-  target.style.backgroundPosition = "center";
-  target.classList.add("vibe-background-animated");
-  console.log("✅ Полупрозрачный градиент + обложка применены.");
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = imageURL;
+
+  img.onload = () => {
+    lastBackgroundURL = imageURL;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'bg-layer';
+    wrapper.style.cssText = `
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    `;
+
+    const imageLayer = document.createElement('div');
+    imageLayer.className = 'bg-cover';
+    imageLayer.style.cssText = `
+      position: absolute;
+      inset: 0;
+      background-image: url("${imageURL}");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0;
+      transition: opacity 1s ease;
+      pointer-events: none;
+    `;
+
+    const gradient = document.createElement('div');
+    gradient.className = 'bg-gradient';
+    gradient.style.cssText = `
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 70% 70%,
+        var(--ym-background-color-secondary-enabled-blur, rgba(0,0,0,0)) 0%,
+        var(--ym-background-color-primary-enabled-content, rgba(0,0,0,0.2)) 70%,
+        var(--ym-background-color-primary-enabled-basic, rgba(0,0,0,0.3)) 100%);
+      opacity: 0.6;
+      pointer-events: none;
+      z-index: 1;
+    `;
+
+    const oldLayers = [...target.querySelectorAll('.bg-layer')];
+    oldLayers.forEach(layer => {
+      layer.style.opacity = '0';
+      layer.style.transition = 'opacity 0.6s ease';
+      setTimeout(() => layer.remove(), 700);
+    });
+
+    wrapper.appendChild(imageLayer);
+    wrapper.appendChild(gradient);
+    target.appendChild(wrapper);
+
+    requestAnimationFrame(() => {
+      imageLayer.offsetHeight;
+      imageLayer.style.opacity = '1';
+    });
+  };
+
+  img.onerror = () => {
+    console.warn('[backgroundReplace] Ошибка загрузки изображения:', imageURL);
+  };
 }
 
+
 function removeBackgroundImage() {
-  const target = document.querySelector('[class*="MainPage_vibe"]');
+  const target = document.querySelector('[class*="bg-layer"]');
   if (!target) return;
   target.style.background = "";
   target.style.backgroundImage = "none";
   target.classList.remove("vibe-background-animated");
-  console.log("🗑 Фоновое изображение удалено.");
+  console.log("Фоновое изображение удалено.");
 }
 
-// 🔎 Эффект зума
 function handleAvatarMouseMove(event) {
   const rect = this.getBoundingClientRect();
   const x = ((event.clientX - rect.left) / rect.width - 0.5) * 9;
@@ -335,9 +387,11 @@ function handleAvatarMouseMove(event) {
   const translateY = Math.max(-45, Math.min(45, -y * 11));
   this.style.transform = `scale(1.8) translate(${translateX}px, ${translateY}px)`;
 }
+
 function handleAvatarMouseLeave() {
   this.style.transform = 'scale(1)';
 }
+
 function setupAvatarZoomEffect() {
   const avatar = document.querySelector('[class*="PageHeaderCover_coverImage"]');
   if (!avatar || avatar.classList.contains('avatar-zoom-initialized')) return;
@@ -345,6 +399,7 @@ function setupAvatarZoomEffect() {
   avatar.addEventListener('mousemove', handleAvatarMouseMove);
   avatar.addEventListener('mouseleave', handleAvatarMouseLeave);
 }
+
 function removeAvatarZoomEffect() {
   const avatar = document.querySelector('[class*="PageHeaderCover_coverImage"]');
   if (avatar && avatar.classList.contains('avatar-zoom-initialized')) {
@@ -353,56 +408,93 @@ function removeAvatarZoomEffect() {
     avatar.classList.remove('avatar-zoom-initialized');
   }
 }
-function FullVibeClean() {
+
+/* function FullVibeClean(imageURL) {
   const vibe = document.querySelector('[class*="MainPage_vibe"]');
-  if (!vibe) return;
+  if (!vibe || !imageURL || imageURL === lastBackgroundURL) return;
 
-  // Скрываем все дочерние элементы
-  [...vibe.children].forEach(el => el.style.display = 'none');
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = imageURL;
 
-  // Устанавливаем высоту и фон
-  vibe.style.setProperty("min-height", "88vh", "important");
-  vibe.style.setProperty("height", "88vh", "important");
-  vibe.style.setProperty("max-height", "88vh", "important");
-  vibe.style.setProperty("backgroundSize", "cover", "important");
-  vibe.style.setProperty("backgroundRepeat", "no-repeat", "important");
-  vibe.style.setProperty("backgroundPosition", "center", "important");
-  const versionBadge = document.querySelector('.MainPage_beta__y32vb');
-  if (versionBadge) versionBadge.style.display = 'none';
-  vibe.classList.add("vibe-clean-active");
-  console.log("🔥 FullVibeClean: запущен");
-  console.log("🧼 FullVibeClean: скрыты внутренности, показан чистый фон");
+  const run = () => {
+    lastBackgroundURL = imageURL;
+
+    vibe.style.setProperty("height", "88.35vh", "important");
+
+    [...vibe.children].forEach(el => {
+      if (!el.classList.contains('bg-layer')) el.remove();
+    });
+
+    const temp = document.createElement('div');
+    temp.className = 'vibe-clean-temp';
+    temp.style.cssText = `
+      position: absolute;
+      inset: 0;
+      background-image: url("${imageURL}");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 1;
+      pointer-events: none;
+    `;
+
+    const old = vibe.querySelector('.vibe-clean-temp');
+    if (old) old.remove();
+
+    vibe.appendChild(temp);
+
+    requestAnimationFrame(() => {
+      temp.offsetHeight;
+      temp.style.opacity = '1';
+    });
+
+    vibe.classList.add('vibe-clean-active');
+  };
+
+  if (img.complete) {
+    run();
+  } else {
+    img.onload = run;
+  }
+
+  img.onerror = () => {
+    console.warn('[FullVibeClean] Ошибка загрузки изображения:', imageURL);
+  };
 }
 
 function RemoveFullVibeClean() {
   const vibe = document.querySelector('[class*="MainPage_vibe"]');
   if (!vibe) return;
 
-  // Возвращаем дочерние элементы
-  [...vibe.children].forEach(el => el.style.display = '');
+  const temp = vibe.querySelector('.vibe-clean-temp');
+  if (temp) temp.remove();
 
-    vibe.style.removeProperty("height");
-    vibe.style.removeProperty("min-height");
-    vibe.style.removeProperty("max-height");
-  const versionBadge = document.querySelector('.MainPage_beta__y32vb');
-  if (versionBadge) versionBadge.style.display = '';
-  vibe.classList.remove("vibe-clean-active");
+  vibe.style.removeProperty('height');
+  vibe.style.removeProperty('min-height');
+  vibe.style.removeProperty('max-height');
 
-  console.log("↩️ FullVibeClean: восстановлены элементы");
-}
+  [...vibe.children].forEach(el => {
+    if (el.style.display === 'none') el.style.display = '';
+  });
+
+  vibe.classList.remove('vibe-clean-active');
+
+  console.log('[FullVibeClean] Очистка выполнена');
+} */
 
 
-// 🧱 FullVibe
 function FullVibe() {
   const vibe = document.querySelector('[class*="MainPage_vibe"]');
-  if (vibe) vibe.style.setProperty("height", "88vh", "important");
+  if (vibe) vibe.style.setProperty("height", "88.35vh", "important");
 }
 function RemoveFullVibe() {
   const vibe = document.querySelector('[class*="MainPage_vibe"]');
   if (vibe) vibe.style.setProperty("height", "0", "important");
 }
 
-// 🎨 recolor + эффекты
 const recolor = async (force = false) => {
   const src = coverURL();
   const useHex = SETTINGS['Тема']?.useCustomColor;
@@ -440,19 +532,19 @@ const recolor = async (force = false) => {
   if (SETTINGS?.['Эффекты']?.enableAvatarZoom) setupAvatarZoomEffect();
   else removeAvatarZoomEffect();
 
-const fullVibeNow_a = !!SETTINGS?.['Эффекты']?.FullVibe_a;
+/* const fullVibeNow_a = !!SETTINGS?.['Эффекты']?.FullVibe_a;
 console.log('FullVibeA:', fullVibeNow_a, lastFullVibe_a);
 
-if (fullVibeNow_a !== lastFullVibe_a || force) {
+ if (fullVibeNow_a !== lastFullVibe_a || force) {
   if (fullVibeNow_a) {
     console.log('🔥 Включаем FullVibeClean');
-    FullVibeClean();
+    FullVibeClean(image);
   } else if (lastFullVibe_a) {
     console.log('🧼 Выключаем FullVibeClean');
     RemoveFullVibeClean();
   }
   lastFullVibe_a = fullVibeNow_a;
-}
+} */
 
 
 const fullVibeNow_b = !!SETTINGS?.['Эффекты']?.FullVibe_b;
@@ -463,7 +555,6 @@ if (fullVibeNow_b !== lastFullVibe_b || force) {
 }
 };
 
-// 🚀 Init
 const init = async () => {
   SETTINGS = await getSettings();
   lastSETTINGS_JSON = JSON.stringify(SETTINGS);
@@ -475,13 +566,6 @@ document.readyState === 'loading'
   ? document.addEventListener('DOMContentLoaded', init)
   : init();
 
-// 🧬 Watch DOM
-new MutationObserver(() => recolor()).observe(document.body, {
-  childList: true,
-  subtree: true
-});
-
-// 🔁 Автообновление
 setInterval(async () => {
   const newSettings = await getSettings();
   const newJSON = JSON.stringify(newSettings);
@@ -492,7 +576,7 @@ setInterval(async () => {
     await recolor(true);
   }
 }, 500);
-// 🔁 Следим за переходом между страницами
+
 function checkVibeReturn() {
   let lastCover = '';
   return setInterval(async () => {
@@ -510,8 +594,41 @@ function checkVibeReturn() {
   }, 1500);
 }
 
+const monitorPageChangeAndSetBackground = () => {
+  const checkPage = () => {
+    const currentURL = location.href;
+    if (currentURL !== lastPageURL) {
+      lastPageURL = currentURL;
+      console.log('[BackForce] Переход на новую страницу:', currentURL);
+      tryInjectBackground();
+    }
+  };
+  setInterval(checkPage, 300);
+};
 
+async function tryInjectBackground() {
+  const image = await getHiResCover();
+  if (!image) {
+    console.warn('[BackForce] Нет обложки для фона');
+    return;
+  }
 
+  console.log('[BackForce] Принудительный запуск backgroundReplace:', image);
+  lastBackgroundURL = '';
+  backgroundReplace(image);
+}
+
+function waitForVibeBlock() {
+  const timer = setInterval(() => {
+    const vibe = document.querySelector('[class*="MainPage_vibe"]');
+    if (vibe) {
+      clearInterval(timer);
+      tryInjectBackground();
+    }
+  }, 200);
+}
+
+monitorPageChangeAndSetBackground();
 
 })
 ();
