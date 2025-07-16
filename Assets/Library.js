@@ -110,7 +110,7 @@
    *  AssetsManager  (полная логика)
    * ══════════════════════════════════════════════════════════════════════════════════ */
   class AssetsManager {
-    #base = 'http://localhost:2007/assets';
+    #base = 'http://localhost:2007/Assets';
 
     /* --- сервисные --- */
     #url(f)    { return `${this.#base}/${encodeURIComponent(f)}`; }
