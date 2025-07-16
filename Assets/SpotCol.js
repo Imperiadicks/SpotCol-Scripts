@@ -15,6 +15,7 @@
     '',
   ];
 
+  //asd
   async function loadScript(name) {
     const url = GH_BASE + encodeURIComponent(name);
     console.log(`[SpotCol] 📦 Загружаю ${name} → ${url}`);
