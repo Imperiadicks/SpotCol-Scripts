@@ -176,11 +176,7 @@
   };
 
 /* ========================================================================== *
- *  PlayerEvents – полнофункциональная обёртка над window.player (Yandex Music)
- *  Генерируем события:
- *    play / pause / seek / trackChange / volume / progress / shuffle / repeat
- *    openPlayer / closePlayer / openText / closeText / openQueue / closeQueue
- *    pageChange
+ *  PlayerEvents – полноценная обёртка над window.player (Yandex Music)
  * ========================================================================== */
 class PlayerEvents extends EventEmitter {
   #theme;
@@ -201,28 +197,28 @@ class PlayerEvents extends EventEmitter {
     this.#watchPage();
   }
 
-  /* ----- ждём window.player ----- */
+  /* ждём пока window.player проинициализируется */
   #waitForPlayer() {
     const iv = setInterval(() => {
       if (window?.player?.state?.playerState &&
           window?.player?.state?.queueState?.currentEntity?.value?.entity?.data?.meta) {
         clearInterval(iv);
-        this.#hookPlayer();
+        this.#hook();
       }
     }, 400);
   }
 
-  /* ----- подписываемся на внутренние observables Yandex‑плеера ----- */
-  #hookPlayer() {
+  /* подписываемся на внутренние observables */
+  #hook() {
     const ps = window.player.state.playerState;
     const qs = window.player.state.queueState;
 
-    /* первичное состояние */
+    /* первичное заполнение */
     this.state.track  = qs.currentEntity.value.entity.data.meta;
     this.state.volume = ps.volume.value;
     this.emit('trackChange', { state: this.state });
 
-    /* status: playing / paused / loadingMediaData / ended */
+    /* status */
     ps.status.onChange(s => {
       this.state.status = s === 'loadingMediaData' ? 'paused' : s;
       this.emit(s === 'playing' ? 'play' : 'pause', { state: this.state });
@@ -232,15 +228,15 @@ class PlayerEvents extends EventEmitter {
       }
     });
 
-    /* перемотка через drag (audio-set-progress) */
-    ps.event.onChange(ev => {
-      if (ev === 'audio-set-progress') this.emit('seek', { state: this.state });
-    });
-
     /* progress */
     ps.progress.onChange(p => {
       this.state.progress = p;
       this.emit('progress', { state: this.state });
+    });
+
+    /* seek (drag‑bar) */
+    ps.event.onChange(ev => {
+      if (ev === 'audio-set-progress') this.emit('seek', { state: this.state });
     });
 
     /* volume */
@@ -259,43 +255,39 @@ class PlayerEvents extends EventEmitter {
       this.emit('trackChange', { state: this.state });
     });
 
-    /* fullscreen‑player / lyrics / queue open‑close через MutationObserver */
-    const check = {
+    /* fullscreen‑player / lyrics / queue via MutationObserver */
+    const test = {
       player : n => n.querySelector?.('[data-test-id=\"FULLSCREEN_PLAYER_MODAL\"]'),
       text   : n => n.querySelector?.('[data-test-id=\"SYNC_LYRICS_CONTENT\"]'),
       queue  : n => n.querySelector?.('.PlayQueue_root__ponhw')
     };
     const mo = new MutationObserver(muts => {
       muts.forEach(m => {
-        [...m.addedNodes].forEach(n => {
-          if (check.player(n)) this.emit('openPlayer', { state: this.state });
-          if (check.text  (n)) this.emit('openText',   { state: this.state });
-          if (check.queue (n)) this.emit('openQueue',  { state: this.state });
+        m.addedNodes.forEach(n => {
+          if (test.player(n)) this.emit('openPlayer', { state: this.state });
+          if (test.text  (n)) this.emit('openText',   { state: this.state });
+          if (test.queue (n)) this.emit('openQueue',  { state: this.state });
         });
-        [...m.removedNodes].forEach(n => {
-          if (check.player(n)) this.emit('closePlayer', { state: this.state });
-          if (check.text  (n)) this.emit('closeText',   { state: this.state });
-          if (check.queue (n)) this.emit('closeQueue',  { state: this.state });
+        m.removedNodes.forEach(n => {
+          if (test.player(n)) this.emit('closePlayer', { state: this.state });
+          if (test.text  (n)) this.emit('closeText',   { state: this.state });
+          if (test.queue (n)) this.emit('closeQueue',  { state: this.state });
         });
       });
     });
-    mo.observe(document.body, { childList: true, subtree: true });
+    mo.observe(document.body, { childList:true, subtree:true });
   }
 
-  /* ----- слежение за сменой URL (pageChange) ----- */
+  /* слежение за сменой URL (pageChange) */
   #watchPage() {
     const update = () => {
-      const path = window.location.pathname;
-      if (path !== this.state.page) {
-        this.state.page = path;
-        this.emit('pageChange', { state: this.state });
-      }
+      const p = window.location.pathname;
+      if (p !== this.state.page) { this.state.page = p; this.emit('pageChange', { state: this.state }); }
     };
-    const wrap = (type) => {
-      const fn = history[type];
-      history[type] = function(...a){ fn.apply(this,a); update(); };
-    };
-    wrap('pushState'); wrap('replaceState');
+    ['pushState','replaceState'].forEach(fn=>{
+      const orig = history[fn];
+      history[fn] = function(...a){ orig.apply(this,a); update(); };
+    });
     window.addEventListener('popstate', update);
   }
 }
