@@ -1,16 +1,6 @@
 /* ======================================================================================
- * SpotCol Universal Library (based on WolfyLibrary 2.1.0)  —  SINGLE‑FILE VERSION
- * ───────────────────────────────────────────────────────────────────────────────────────
- * Содержит полностью реализованные:
- *   • EventEmitter
- *   • StylesManager
- *   • SettingsManager  (расширенный – загрузка, события, hasChanged, defaults, onChange)
- *   • AssetsManager    (полная логика: list, getLink, getContent, putContent, remove)
- *   • UI               (alert, modal, confirm, prompt, toast, progressBar)
- *   • PlayerEvents     (минимальная обёртка над window.player, все основные события)
- *   • Theme            (полный: applyTheme, addAction, update, start, stop, destroy)
- * Экспортируется единым объектом window.WolfyLibrary — никаких глобальных утечек.
- * ==================================================================================== */
+ * SpotCol Universal Library 1.0.0
+ * ───────────────────────────────────────────────────────────────────────────────────────*/
 
 (() => {
   if (window.WolfyLibrary) return;     // защита от двойной загрузки
