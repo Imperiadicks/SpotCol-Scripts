@@ -105,44 +105,8 @@
       o[keys.at(-1)] = val;
     }
   }
-
   /* ════════════════════════════════════════════════════════════════════════════════════
-   *  AssetsManager  (полная логика)
-   * ══════════════════════════════════════════════════════════════════════════════════ */
-  class AssetsManager {
-    #base = 'http://localhost:2007/Assets';
-
-    /* --- сервисные --- */
-    #url(f)    { return `${this.#base}/${encodeURIComponent(f)}`; }
-    async #req(method, file, body) {
-      const opt = { method, headers:{} };
-      if (body instanceof Blob) opt.body = body;
-      if (typeof body === 'string') { opt.body = body; opt.headers['Content-Type']='text/plain;charset=utf-8'; }
-      const r = await fetch(this.#url(file), opt); if(!r.ok) throw new Error(`${method} ${file} -> ${r.status}`);
-      return r;
-    }
-
-    /* --- публичный API --- */
-    async list() {
-      const r = await fetch(this.#base); if(!r.ok) throw new Error(`HTTP ${r.status}`);
-      const j = await r.json(); return j.files || [];
-    }
-
-    getLink(file) { return this.#url(file); }
-
-    async getContent(file) {
-      const r = await fetch(this.#url(file)); if(!r.ok) throw new Error(r.status);
-      const ct = r.headers.get('content-type')||'';
-      return ct.includes('application/json') ? r.json() : r.text();
-    }
-
-    async putContent(file, content) { await this.#req('PUT', file, content); }
-
-    async remove(file) { await this.#req('DELETE', file); }
-  }
-
-  /* ════════════════════════════════════════════════════════════════════════════════════
-   *  UI  (alert, modal, toast, confirm, prompt, progressBar)
+   *                                          UI
    * ══════════════════════════════════════════════════════════════════════════════════ */
   const UI = {
     /* --- helpers --- */
