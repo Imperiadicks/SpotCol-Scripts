@@ -2,17 +2,17 @@
   const GH_BASE = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/';
   
   const scripts = [
-/*     'Library.js',
+    'Library.js',
     'colorize 2.js',
-    'BetterPlayer.js',
+    // 'BetterPlayer.js',
     'SpotifyScreen.js',
-    'Main.js' */,
+    'Main.js',
   ];
 
   const styles = [
+    'SpotCol.css',
     'Colorize 2.css',
-/*      'SpotCol.css', 
-    '', */
+    '',
   ];
 
   async function loadScript(name) {
