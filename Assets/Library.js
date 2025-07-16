@@ -61,7 +61,7 @@
     /* загрузка с PulseSync Controls */
     async update() {
       try {
-        const url = `http://127.0.0.1:2007/get_handle?name=${encodeURIComponent(this.#theme.id)}`;
+        const url = `http://localhost:2007/get_handle?name=${encodeURIComponent(this.#theme.id)}`;
         const r   = await fetch(url, {cache:'no-store'}); if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const { data } = await r.json(); if (!data?.sections) { log('settings: no sections'); return; }
         this.#prev = structuredClone(this.#cur);
@@ -299,8 +299,6 @@ class PlayerEvents extends EventEmitter {
     window.addEventListener('popstate', update);
   }
 }
-
-
   /* ════════════════════════════════════════════════════════════════════════════════════
    *  Theme  (applyTheme, addAction, update, start, stop, destroy)
    * ══════════════════════════════════════════════════════════════════════════════════ */
