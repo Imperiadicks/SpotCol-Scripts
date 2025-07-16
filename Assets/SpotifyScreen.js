@@ -1,4 +1,5 @@
-/* === SpotCol Spotify Screen === */
+const { Theme, UI } = window.WolfyLibrary;
+
 const SpotColЛичная = new Theme('SpotColЛичная');
 
 /* --- Добавим стили лайка --- */
