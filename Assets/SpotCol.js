@@ -10,8 +10,8 @@
   ];
 
   const styles = [
-    'SpotCol.css',
     'Colorize 2.css',
+    'SpotCol.css',
     '',
   ];
 
