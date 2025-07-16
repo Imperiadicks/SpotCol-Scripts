@@ -252,6 +252,6 @@
   /* ════════════════════════════════════════════════════════════════════════════════════
    *  Export
    * ══════════════════════════════════════════════════════════════════════════════════ */
-  window.WolfyLibrary = { EventEmitter, StylesManager, SettingsManager, AssetsManager, UI, PlayerEvents, Theme };
+  window.WolfyLibrary = { EventEmitter, StylesManager, SettingsManager, UI, PlayerEvents, Theme };
   log('WolfyLibrary loaded ✓');
 })();
