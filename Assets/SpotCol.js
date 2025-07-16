@@ -11,7 +11,7 @@
 
   const styles = [
     'Colorize 2.css',
-    'SpotCol.css',
+/*     'SpotCol.css', */
     '',
   ];
 
