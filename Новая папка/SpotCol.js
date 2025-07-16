@@ -1,5 +1,5 @@
 (() => {
-  const GH_BASE = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/';
+  const GH_BASE = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Новая папка/';
   
   const scripts = [
     'Library.js',
