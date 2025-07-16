@@ -137,6 +137,7 @@ const build = () => {
   /* ----------- обновление данных экрана ----------- */
   const update = state => {
     build();
+    console.log("build - сработал для SpotifyScreen")
 
     /* лайк-кнопка могла измениться при переходе из мини‑плеера */
     if (!$origLike || !document.contains($origLike)) {
