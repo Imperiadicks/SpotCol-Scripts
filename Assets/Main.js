@@ -1,4 +1,4 @@
-console.log("ПРОВЕРКА ДВА")
+console.log("ПРОВЕРКА ТРИ")
 window.Theme = new Theme('SpotColЛичная');
 /*--------------------------------------------*/
 const observer = new MutationObserver(() => {
