@@ -349,5 +349,20 @@ if (!SpotColЛичная) {
 /*_____________________________________________________________________________________________*/
 
 
+console.log('[SpotifyScreen] Пробуем build вручную');
+setTimeout(() => {
+  try {
+    const screen = document.querySelector('.Spotify_Screen');
+    if (!screen) {
+      console.log('[SpotifyScreen] Вставка вручную');
+      SpotColЛичная.player.emit('openPlayer', { state: SpotColЛичная.player.state });
+    }
+  } catch (e) {
+    console.warn('[SpotifyScreen] Ошибка ручной вставки:', e);
+  }
+}, 3000);
 
-   SpotColЛичная.start(1000);
+  SpotColЛичная.start(() => {
+  console.log('[SpotifyScreen] Запуск через');
+});
+
