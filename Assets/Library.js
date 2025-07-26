@@ -458,6 +458,22 @@ class SpotifyScreen {
   /* ════════════════════════════════════════════════════════════════════════════════════
    *  Theme  (applyTheme, addAction, update, start, stop, destroy)
    * ══════════════════════════════════════════════════════════════════════════════════ */
+  class SonataState {
+  constructor() {
+    this.events = {};
+  }
+
+  on(event, handler) {
+    this.events[event] ??= [];
+    this.events[event].push(handler);
+  }
+
+  emit(event, payload) {
+    (this.events[event] ?? []).forEach(fn => fn(payload));
+  }
+}
+
+  
   class Theme {
     id; stylesManager; settingsManager; assetsManager; player;
     #ev=new EventEmitter(); #actions={}; #loop=null; context = Object.create(null);
