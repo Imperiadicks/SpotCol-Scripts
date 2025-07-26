@@ -5,7 +5,7 @@
 
 // 🔁 Получение темы
 const SpotColЛичная = window.SpotColЛичная ??= new Theme('SpotColЛичная');
-
+console.log("[SpotifyScreen]", SpotColЛичная);
 // 🎨 Базовые стили Like‑кнопки
 SpotColЛичная.stylesManager.add('spotify-like-wrapper', `
   .LikeTrack {
