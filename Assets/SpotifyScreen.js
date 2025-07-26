@@ -362,6 +362,6 @@ setTimeout(() => {
   }
 }, 3000);
   SpotColЛичная.onStart(() => {
-  console.log('[SpotifyScreen] Запуск через');
+  console.log('[SpotifyScreen] Запуск через onStart');
 });
   SpotColЛичная.start(1000)
