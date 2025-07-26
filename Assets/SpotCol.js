@@ -1,10 +1,9 @@
 (() => {
   const GH_BASE = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/';
-  
+
   const scripts = [
     'Library.js',
     'colorize 2.js',
-    // 'BetterPlayer.js',
     'Main.js',
     'SpotifyScreen.js'
   ];
@@ -14,25 +13,24 @@
     'Colorize 2.css'
   ];
 
-function loadScript(name) {
-  const url = GH_BASE + encodeURIComponent(name);
-  console.log(`[SpotCol] 📦 Загружаю ${name} → ${url}`);
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = url;
-    s.onload = () => {
-      console.log(`[SpotCol] ✅ ${name} загружен и выполнен`);
-      resolve();
-    };
-    s.onerror = e => {
-      console.error(`[SpotCol] ❌ Не удалось загрузить ${name}:`, e);
-      reject(e);
-    };
-    s.async = false;
-    document.head.appendChild(s);
-  });
-}
-
+  async function loadScript(name) {
+    const url = GH_BASE + encodeURIComponent(name);
+    console.log(`[SpotCol] 📦 Загружаю ${name} → ${url}`);
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = url;
+      s.onload = () => {
+        console.log(`[SpotCol] ✅ ${name} загружен и выполнен`);
+        resolve();
+      };
+      s.onerror = e => {
+        console.error(`[SpotCol] ❌ Не удалось загрузить ${name}:`, e);
+        reject(e);
+      };
+      s.async = false; // <-- ключевой момент
+      document.head.appendChild(s);
+    });
+  }
 
   async function loadCss(name) {
     const url = GH_BASE + encodeURIComponent(name);
