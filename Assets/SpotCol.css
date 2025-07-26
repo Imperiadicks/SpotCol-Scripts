@@ -675,7 +675,7 @@ div[data-test-id="SYNC_LYRICS_CONTENT"]::before {
 /*------------------------------------------------------------------------------------*/
 .Spotify_Screen {
 	position: fixed;
-	display: block;
+	display: block !important;
 	height: calc(100% - 148px);
 	width: 300px;
 	right: 7px;
@@ -684,6 +684,7 @@ div[data-test-id="SYNC_LYRICS_CONTENT"]::before {
 	overflow-y: scroll;
 	background: var(--ym-background-color-primary-enabled-content) !important;
     border-radius: var(--ym-radius-size-l);
+	opacity: 1 !important;
 }
 .Spotify_Screen::-webkit-scrollbar {
 	display: none;
