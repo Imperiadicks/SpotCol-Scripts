@@ -3,9 +3,9 @@
  * ───────────────────────────────────────────────────────────────────────────────────────*/
 
 (() => {
-  if (window.WolfyLibrary) return;     // защита от двойной загрузки
-  const DEBUG = !!window.__WOLFY_DEBUG__;
-  const log   = (...a) => DEBUG && console.log('[WolfyLibrary]', ...a);
+  if (window.Library) return;     // защита от двойной загрузки
+  const DEBUG = !!window.__DEBUG__;
+  const log   = (...a) => DEBUG && console.log('[Library]', ...a);
 
   /* ════════════════════════════════════════════════════════════════════════════════════
    *  EventEmitter
@@ -24,7 +24,7 @@
    * ══════════════════════════════════════════════════════════════════════════════════ */
   class StylesManager {
     #bag = {};                       // id -> css
-    #id  = 'wolfy-style';
+    #id  = 'style';
     #flush() {
       let tag = document.getElementById(this.#id);
       if (!tag) { tag = document.createElement('style'); tag.id = this.#id; document.head.appendChild(tag); }
@@ -158,7 +158,7 @@
 
     /* --- toast (правый верх, стек) --- */
     toast(msg, ms=3000){
-      const areaId='wolfy-toast-area';
+      const areaId='toast-area';
       let area=document.getElementById(areaId);
       if(!area){ area=this._el('div',{position:'fixed',top:'16px',right:'16px',display:'flex',flexDirection:'column',gap:'8px',zIndex:10000}); area.id=areaId; }
       const itm=this._el('div',{background:'#333',color:'#fff',padding:'10px 16px',borderRadius:'8px',font:'14px/1 sans-serif',opacity:0,transition:'opacity .2s'},area,msg);
@@ -520,6 +520,6 @@ class SpotifyScreen {
    *  Export
    * ══════════════════════════════════════════════════════════════════════════════════ */
   window.Theme = Theme;
-  window.WolfyLibrary = { EventEmitter, StylesManager, SettingsManager, UI, PlayerEvents, Theme, SpotifyScreen };
+  window.Library = { EventEmitter, StylesManager, SettingsManager, UI, PlayerEvents, Theme, SpotifyScreen };
   console.log('Library loaded ✓');
 })();
