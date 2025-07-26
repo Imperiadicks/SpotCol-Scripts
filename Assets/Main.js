@@ -1,4 +1,5 @@
-console.log("ПРОВЕРКА РАЗ")
+console.log("ПРОВЕРКА ДВА")
+window.Theme = new Theme('SpotColЛичная');
 /*--------------------------------------------*/
 const observer = new MutationObserver(() => {
     let pin = document.querySelector('.PinItem_root__WSoCn > a[aria-label="Плейлист Мне нравится"]');
