@@ -1,5 +1,9 @@
-/* НАЧАЛО ТЕМЫ */
-const SpotColЛичная = new Theme('SpotColЛичная');
+const SpotColЛичная = window.Theme;
+console.log("проверка SPOTIFYSCREEN 2")
+if (!SpotColЛичная) {
+  console.error("[SpotifyScreen] Theme is not available.");
+  throw new Error("Theme not loaded");
+}
 
    SpotColЛичная.stylesManager.add(
      'spotify-like-wrapper',
