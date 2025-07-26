@@ -1,10 +1,4 @@
-/* =====================================================================================
- * SpotifyScreen.js  (SpotColЛичная, rev‑2025‑07‑16)
- * Работает с ImperiaLibrary: Theme, settingsManager, stylesManager, player
- * =================================================================================== */
-
-// 🔁 Получение темы
-const SpotColЛичная = window.SpotColЛичная ??= new Theme('SpotColЛичная');
+const SpotColЛичная = new Theme('SpotColЛичная');
 console.log("[SpotifyScreen]", SpotColЛичная);
 // 🎨 Базовые стили Like‑кнопки
 SpotColЛичная.stylesManager.add('spotify-like-wrapper', `
