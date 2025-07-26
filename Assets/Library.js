@@ -467,6 +467,8 @@ class SpotifyScreen {
     this.id              = id;
     this.stylesManager   = new StylesManager();
     this.settingsManager = new SettingsManager(this);
+    this.sonataState = new SonataState();
+    this.playerState = this.sonataState;
 
     /*  ↓↓↓  Создаём менеджер ассетов лишь при наличии класса  ↓↓↓  */
     if (typeof AssetsManager !== 'undefined')
