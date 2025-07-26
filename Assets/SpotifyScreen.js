@@ -1,4 +1,5 @@
 const SpotColЛичная = window.Theme;
+console.log("проверка SPOTIFYSCREEN")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
