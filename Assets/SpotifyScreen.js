@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN")
+console.log("проверка SPOTIFYSCREEN 1")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -152,3 +152,8 @@ const update = state => {
 // 🧩 События от плеера
 SpotColЛичная.player.on('openPlayer',  ({ state }) => update(state));
 SpotColЛичная.player.on('trackChange', ({ state }) => update(state));
+// 🚀 Принудительно запускаем update, если уже есть трек
+const track = SpotColЛичная.player.getCurrentTrack?.();
+if (track?.title || track?.coverUri) {
+  update({ track });
+}
