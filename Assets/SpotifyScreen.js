@@ -349,19 +349,23 @@ if (!SpotColЛичная) {
 /*_____________________________________________________________________________________________*/
 
 
-console.log('[SpotifyScreen] Пробуем build вручную');
+console.log('[SpotifyScreen] Пробуем build вручную', screen);
 setTimeout(() => {
   try {
-    const screen = document.querySelector('.Spotify_Screen');
-    if (!screen) {
-      console.log('[SpotifyScreen] Вставка вручную');
-      SpotColЛичная.player.emit('openPlayer', { state: SpotColЛичная.player.state });
-    }
+  const screen = document.querySelector('.Spotify_Screen');
+  if (!screen || !screen.classList.contains('SpotCol_Inserted')) {
+    console.log('[SpotifyScreen] Вставка вручную');
+    SpotColЛичная.player.emit('openPlayer', { state: SpotColЛичная.player.state });
+  }
   } catch (e) {
     console.warn('[SpotifyScreen] Ошибка ручной вставки:', e);
   }
 }, 3000);
-  SpotColЛичная.onStart(() => {
-  console.log('[SpotifyScreen] Запуск через onStart');
-});
+if (SpotColЛичная.player && SpotColЛичная.player.on) {
+  SpotColЛичная.player.on('openPlayer', ({ state }) => update(state));
+  SpotColЛичная.player.on('trackChange', ({ state }) => update(state));
+} else {
+  console.warn('[SpotifyScreen] Нет доступа к SpotColЛичная.player');
+}
+
   SpotColЛичная.start(1000)
