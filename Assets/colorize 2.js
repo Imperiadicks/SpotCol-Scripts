@@ -76,37 +76,73 @@
 
   const normL = o => ({ ...o, l: Math.min(85, Math.max(20, o.l)) });
 
-  const colorsFromCover = src => {
-    if (CACHE.has(src)) return Promise.resolve(CACHE.get(src));
+const colorsFromCover = (src) => {
+  if (CACHE.has(src)) return Promise.resolve(CACHE.get(src));
 
-    return new Promise(res => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        try {
-          CTX.clearRect(0, 0, 64, 64);
-          CTX.drawImage(img, 0, 0, 64, 64);
-          const d = CTX.getImageData(0, 0, 64, 64).data;
+  return new Promise((res) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const w = img.width;
+        const h = img.height;
+        const scale = 64 / Math.max(w, h);
+        CTX.clearRect(0, 0, 64, 64);
+        CTX.drawImage(img, 0, 0, w * scale, h * scale);
+        const d = CTX.getImageData(0, 0, 64, 64).data;
 
-          const px = [
-            [16, 16],
-            [48, 48]
-          ].map(([x, y]) => {
+        const hueMap = new Map();
+        let totalS = 0, totalL = 0, count = 0;
+
+        for (let y = 0; y < 64; y++) {
+          for (let x = 0; x < 64; x++) {
             const idx = (y * 64 + x) * 4;
             const r = d[idx], g = d[idx + 1], b = d[idx + 2];
-            return normL(rgb2hsl(r, g, b));
-          });
 
-          CACHE.set(src, px);
-          res(px);
-        } catch {
-          res(null);
+            if (r + g + b < 30 || r + g + b > 740) continue;
+
+            const hsl = rgb2hsl(r, g, b);
+            if (hsl.s < 20) continue;
+
+            const hueKey = Math.round(hsl.h / 10) * 10; // группируем по 10°
+            const current = hueMap.get(hueKey) || { count: 0, s: 0, l: 0 };
+            current.count++;
+            current.s += hsl.s;
+            current.l += hsl.l;
+            hueMap.set(hueKey, current);
+
+            count++;
+          }
         }
-      };
-      img.onerror = () => res(null);
-      img.src = src;
-    });
-  };
+
+        if (count === 0) {
+          console.warn('[colorsFromCover] Недостаточно подходящих пикселей');
+          res(null);
+          return;
+        }
+
+        let maxCount = -1;
+        let dominant = null;
+        for (const [hue, data] of hueMap.entries()) {
+          if (data.count > maxCount) {
+            maxCount = data.count;
+            dominant = { h: hue, s: +(data.s / data.count).toFixed(1), l: +(data.l / data.count).toFixed(1) };
+          }
+        }
+
+        const resultColor = normL(dominant);
+        const result = [resultColor, resultColor];
+        CACHE.set(src, result);
+        res(result);
+      } catch (e) {
+        console.warn('[colorsFromCover] ошибка обработки:', e);
+        res(null);
+      }
+    };
+    img.onerror = () => res(null);
+    img.src = src;
+  });
+};
 
   const fallbackHSL = () => {
     const root = document.querySelector('[class*="PlayerBarDesktop_root"]');
@@ -246,10 +282,10 @@
 `;
 
   const applyVars = vars => {
-    let st = document.getElementById('spotcol-colorize-style');
+    let st = document.getElementById('colorize-style');
     if (!st) {
       st = document.createElement('style');
-      st.id = 'spotcol-colorize-style';
+      st.id = 'colorize-style';
       document.head.appendChild(st);
     }
     let css = '.ym-dark-theme{\n';
@@ -287,7 +323,8 @@ if (cover) {
   /*──────────────────────── effects ───────────────────────*/
 let SETTINGS = {};
 let lastSETTINGS_JSON = '';
-let lastSrc = '', lastHex = '', lastFullVibe_a = null, lastFullVibe_b = null;
+let lastSrc = '', lastHex = '', lastFullVibe = null; let lastBackgroundImage = null;
+let lastAvatarZoom = null;
 let lastBackgroundURL = '';
 let lastPageURL = location.href;
 
@@ -369,14 +406,18 @@ function backgroundReplace(imageURL) {
   };
 }
 
-
 function removeBackgroundImage() {
-  const target = document.querySelector('[class*="bg-layer"]');
-  if (!target) return;
-  target.style.background = "";
-  target.style.backgroundImage = "none";
-  target.classList.remove("vibe-background-animated");
-  console.log("Фоновое изображение удалено.");
+  const layers = document.querySelectorAll('.bg-layer');
+  if (!layers.length) return;
+
+  layers.forEach(layer => {
+    layer.style.opacity = '0';
+    layer.style.transition = 'opacity 0.6s ease';
+    setTimeout(() => layer.remove(), 700);
+  });
+
+  lastBackgroundURL = null;
+  console.log("[removeBackgroundImage] Фоновое изображение удалено.");
 }
 
 function handleAvatarMouseMove(event) {
@@ -398,6 +439,7 @@ function setupAvatarZoomEffect() {
   avatar.classList.add('avatar-zoom-initialized');
   avatar.addEventListener('mousemove', handleAvatarMouseMove);
   avatar.addEventListener('mouseleave', handleAvatarMouseLeave);
+  console.log("[setupAvatarZoomEffect] Запущен зум аватара.");
 }
 
 function removeAvatarZoomEffect() {
@@ -406,95 +448,27 @@ function removeAvatarZoomEffect() {
     avatar.removeEventListener('mousemove', handleAvatarMouseMove);
     avatar.removeEventListener('mouseleave', handleAvatarMouseLeave);
     avatar.classList.remove('avatar-zoom-initialized');
+    console.log("[removeAvatarZoomEffect] отключен зум аватара.");
   }
 }
-
-/* function FullVibeClean(imageURL) {
-  const vibe = document.querySelector('[class*="MainPage_vibe"]');
-  if (!vibe || !imageURL || imageURL === lastBackgroundURL) return;
-
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.src = imageURL;
-
-  const run = () => {
-    lastBackgroundURL = imageURL;
-
-    vibe.style.setProperty("height", "88.35vh", "important");
-
-    [...vibe.children].forEach(el => {
-      if (!el.classList.contains('bg-layer')) el.remove();
-    });
-
-    const temp = document.createElement('div');
-    temp.className = 'vibe-clean-temp';
-    temp.style.cssText = `
-      position: absolute;
-      inset: 0;
-      background-image: url("${imageURL}");
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      opacity: 0;
-      transition: opacity 0.5s ease;
-      z-index: 1;
-      pointer-events: none;
-    `;
-
-    const old = vibe.querySelector('.vibe-clean-temp');
-    if (old) old.remove();
-
-    vibe.appendChild(temp);
-
-    requestAnimationFrame(() => {
-      temp.offsetHeight;
-      temp.style.opacity = '1';
-    });
-
-    vibe.classList.add('vibe-clean-active');
-  };
-
-  if (img.complete) {
-    run();
-  } else {
-    img.onload = run;
-  }
-
-  img.onerror = () => {
-    console.warn('[FullVibeClean] Ошибка загрузки изображения:', imageURL);
-  };
-}
-
-function RemoveFullVibeClean() {
-  const vibe = document.querySelector('[class*="MainPage_vibe"]');
-  if (!vibe) return;
-
-  const temp = vibe.querySelector('.vibe-clean-temp');
-  if (temp) temp.remove();
-
-  vibe.style.removeProperty('height');
-  vibe.style.removeProperty('min-height');
-  vibe.style.removeProperty('max-height');
-
-  [...vibe.children].forEach(el => {
-    if (el.style.display === 'none') el.style.display = '';
-  });
-
-  vibe.classList.remove('vibe-clean-active');
-
-  console.log('[FullVibeClean] Очистка выполнена');
-} */
-
 
 function FullVibe() {
   const vibe = document.querySelector('[class*="MainPage_vibe"]');
-  if (vibe) vibe.style.setProperty("height", "88.35vh", "important");
-}
-function RemoveFullVibe() {
-  const vibe = document.querySelector('[class*="MainPage_vibe"]');
-  if (vibe) vibe.style.setProperty("height", "0", "important");
+  if (vibe) {
+    vibe.style.setProperty("height", "88.35vh", "important");
+    console.log("[FullVibe] включено увеличение VIBE до 88.35vh.");
+  }
 }
 
+function RemoveFullVibe() {
+  const vibe = document.querySelector('[class*="MainPage_vibe"]');
+  if (vibe) {
+    vibe.style.setProperty("height", "0", "important");
+    console.log("[RemoveFullVibe] отключение VIBE до 0.");
+  }
+}
+
+/*──────────────────────── Setting HandleEvents ───────────────────────*/
 const recolor = async (force = false) => {
   const src = coverURL();
   const useHex = SETTINGS['Тема']?.useCustomColor;
@@ -506,8 +480,9 @@ const recolor = async (force = false) => {
     if (!force && hex === lastHex) return;
     gradC1 = gradC2 = base = normL(parseHEX(hex));
     lastHex = hex;
-    console.log('HEX-режим:', hex, base);
-  } else {
+    console.log("[recolor]  ",'HEX-режим:', hex, base);
+  } 
+  else {
     if (!force && src === lastSrc) return;
     const pair = await colorsFromCover(src) || fallbackHSL();
     if (!pair) return;
@@ -518,7 +493,7 @@ const recolor = async (force = false) => {
       l: +((gradC1.l + gradC2.l) / 2).toFixed(1)
     };
     lastSrc = src;
-    console.log('Cover-режим:', src, gradC1, gradC2, '→ base', base);
+    console.log("[recolor]  ", 'Cover-режим:', src, gradC1, gradC2, '→ base', base);
   }
 
   applyVars(buildVars(base));
@@ -526,33 +501,25 @@ const recolor = async (force = false) => {
 
   const image = await getHiResCover();
 
-  if (SETTINGS?.['Эффекты']?.enableBackgroundImage) backgroundReplace(image);
+const backgroundImageNow = !!SETTINGS?.['Эффекты']?.enableBackgroundImage;
+if (backgroundImageNow !== lastBackgroundImage || force) {
+  lastBackgroundImage = backgroundImageNow;
+  if (backgroundImageNow) backgroundReplace(image);
   else removeBackgroundImage();
-
-  if (SETTINGS?.['Эффекты']?.enableAvatarZoom) setupAvatarZoomEffect();
-  else removeAvatarZoomEffect();
-
-/* const fullVibeNow_a = !!SETTINGS?.['Эффекты']?.FullVibe_a;
-console.log('FullVibeA:', fullVibeNow_a, lastFullVibe_a);
-
- if (fullVibeNow_a !== lastFullVibe_a || force) {
-  if (fullVibeNow_a) {
-    console.log('🔥 Включаем FullVibeClean');
-    FullVibeClean(image);
-  } else if (lastFullVibe_a) {
-    console.log('🧼 Выключаем FullVibeClean');
-    RemoveFullVibeClean();
-  }
-  lastFullVibe_a = fullVibeNow_a;
-} */
-
-
-const fullVibeNow_b = !!SETTINGS?.['Эффекты']?.FullVibe_b;
-if (fullVibeNow_b !== lastFullVibe_b || force) {
-  lastFullVibe_b = fullVibeNow_b;
-  if (fullVibeNow_b) FullVibe();
-  else RemoveFullVibe();
 }
+
+const avatarZoomNow = !!SETTINGS?.['Эффекты']?.enableAvatarZoom;
+if (avatarZoomNow !== lastAvatarZoom || force) {
+  lastAvatarZoom = avatarZoomNow;
+  if (avatarZoomNow) setupAvatarZoomEffect();
+  else removeAvatarZoomEffect();
+}
+const fullVibeNow = !!SETTINGS?.['Эффекты']?.FullVibe;
+if (fullVibeNow !== lastFullVibe || force) {
+  lastFullVibe = fullVibeNow;
+  if (fullVibeNow) FullVibe();
+  else RemoveFullVibe();
+  }
 };
 
 const init = async () => {
@@ -566,13 +533,19 @@ document.readyState === 'loading'
   ? document.addEventListener('DOMContentLoaded', init)
   : init();
 
+  new MutationObserver(() => recolor()).observe(document.body, {
+  childList: true,
+  subtree: true
+  }
+);
+
 setInterval(async () => {
   const newSettings = await getSettings();
   const newJSON = JSON.stringify(newSettings);
   if (newJSON !== lastSETTINGS_JSON) {
     SETTINGS = newSettings;
     lastSETTINGS_JSON = newJSON;
-    console.log('[SpotCol] Настройки изменились → перекрашиваем');
+    console.log('[Colorize 2] Настройки изменились → перекрашиваем');
     await recolor(true);
   }
 }, 500);
@@ -587,7 +560,7 @@ function checkVibeReturn() {
     const hasBackground = vibe.style.backgroundImage?.includes('url(');
 
     if (!hasBackground || src !== lastCover) {
-      console.log('[SpotCol] Vibe пустой или обложка изменилась → обновляем');
+      console.log('[Colorize 2] Vibe пустой или обложка изменилась → обновляем');
       lastCover = src;
       await recolor(true);
     }
@@ -599,7 +572,7 @@ const monitorPageChangeAndSetBackground = () => {
     const currentURL = location.href;
     if (currentURL !== lastPageURL) {
       lastPageURL = currentURL;
-      console.log('[BackForce] Переход на новую страницу:', currentURL);
+      console.log('[Colorize 2] Переход на новую страницу:', currentURL);
       tryInjectBackground();
     }
   };
@@ -609,23 +582,13 @@ const monitorPageChangeAndSetBackground = () => {
 async function tryInjectBackground() {
   const image = await getHiResCover();
   if (!image) {
-    console.warn('[BackForce] Нет обложки для фона');
+    console.warn('[Colorize 2] Нет обложки для фона');
     return;
   }
 
-  console.log('[BackForce] Принудительный запуск backgroundReplace:', image);
+  console.log('[Colorize 2] Принудительный запуск backgroundReplace:', image);
   lastBackgroundURL = '';
   backgroundReplace(image);
-}
-
-function waitForVibeBlock() {
-  const timer = setInterval(() => {
-    const vibe = document.querySelector('[class*="MainPage_vibe"]');
-    if (vibe) {
-      clearInterval(timer);
-      tryInjectBackground();
-    }
-  }, 200);
 }
 
 monitorPageChangeAndSetBackground();

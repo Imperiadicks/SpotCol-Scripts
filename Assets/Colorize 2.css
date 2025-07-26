@@ -1,3 +1,8 @@
+[class*="MainPage_vibe"] {
+  transition: height 1.5s ease;
+  overflow: hidden;
+}
+
 @keyframes backgroundMovement {
   0% {
     background-position: 20% 20%;
@@ -37,14 +42,13 @@
 .PlayButton_root__nYKdN:not(:disabled), .PlayButton_root__nYKdN:not(:disabled) {
   transition: all 0.2s ease-in-out;
 }
-.PlayerBarDesktopWithBackgroundProgressBar_player__ASKKs
-{
-  background-color: var(--ym-background-color-primary-enabled-content) !important
+.PageHeaderPlaylist_root__yJBii{
+   background: linear-gradient(var(--ym-controls-color-secondary-default-enabled, var(--ym-background-color-secondary-enabled-blur)) 0, transparent 100%)
 }
-.PlaylistPage_averageColorBackground__3wEkw, .ArtistPage_averageColorBackground__wXTSY
+ .PlaylistPage_averageColorBackground__3wEkw, .ArtistPage_averageColorBackground__wXTSY
 {
   background: linear-gradient(var(--ym-controls-color-secondary-default-enabled, var(--ym-background-color-secondary-enabled-blur)) 0, transparent 100%)
-}
+} 
 .PlayerBarDesktopWithBackgroundProgressBar_player__ASKKs,
 .Content_rootOld__g85_m,
 .Content_main__8_wIa, .PlayerBarDesktopWithBackgroundProgressBar_root__bpmwN.PlayerBarDesktopWithBackgroundProgressBar_important__HzXrK{
@@ -55,7 +59,7 @@
   border:1px solid var(--color-light-1) !important;
   box-shadow:0 0 0 1px var(--color-light-1) inset; /* чтобы выделялась и на прозрачном */
 }
-      .CommonLayout_root__WC_W1 {
+.CommonLayout_root__WC_W1 {
   background: radial-gradient(circle at 70% 70%,
     var(--ym-background-color-secondary-enabled-blur) 0%,
     var(--ym-background-color-primary-enabled-content) 70%,
