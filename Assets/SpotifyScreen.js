@@ -1,5 +1,9 @@
-const SpotColЛичная = new Theme('SpotColЛичная');
-console.log("[SpotifyScreen]", SpotColЛичная);
+const SpotColЛичная = window.Theme;
+if (!SpotColЛичная) {
+  console.error("[SpotifyScreen] Theme is not available.");
+  throw new Error("Theme not loaded");
+}
+
 // 🎨 Базовые стили Like‑кнопки
 SpotColЛичная.stylesManager.add('spotify-like-wrapper', `
   .LikeTrack {
