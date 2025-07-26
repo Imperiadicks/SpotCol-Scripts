@@ -345,6 +345,7 @@ if (!SpotColЛичная) {
 setTimeout(() => {
   try {
   const screen = document.querySelector('.Spotify_Screen');
+  console.log('[SpotifyScreen] Пробуем build вручную', screen);
   if (!screen || !screen.classList.contains('SpotCol_Inserted')) {
     console.log('[SpotifyScreen] Вставка вручную');
     SpotColЛичная.player.emit('openPlayer', { state: SpotColЛичная.player.state });
@@ -353,7 +354,6 @@ setTimeout(() => {
     console.warn('[SpotifyScreen] Ошибка ручной вставки:', e);
   }
 }, 3000);
-console.log('[SpotifyScreen] Пробуем build вручную', screen);
 if (SpotColЛичная.player && SpotColЛичная.player.on) {
   SpotColЛичная.player.on('openPlayer', ({ state }) => update(state));
   SpotColЛичная.player.on('trackChange', ({ state }) => update(state));
