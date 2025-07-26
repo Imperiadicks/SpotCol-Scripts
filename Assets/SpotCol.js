@@ -1,6 +1,6 @@
 (() => {
   const GH_BASE = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/';
-
+  console.log("Проверка раз")
   const scripts = [
     'Library.js',
     'colorize 2.js',
