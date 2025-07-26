@@ -199,7 +199,7 @@ class PlayerEvents extends EventEmitter {
   /* ---------- ожидание window.player ---------- */
   #wait(){
     const iv = setInterval(()=>{
-      if (window?.player?.state?.sonataState &&
+      if (window?.player?.state?.playerState &&
           window?.player?.state?.queueState?.currentEntity?.value?.entity?.data?.meta){
         clearInterval(iv);
         this.#hook();
@@ -209,7 +209,7 @@ class PlayerEvents extends EventEmitter {
 
   /* ---------- подписки на observables ---------- */
   #hook(){
-    const ps = player.state.sonataState;
+    const ps = player.state.playerState;
     const qs = player.state.queueState;
 
     this.state.track  = qs.currentEntity.value.entity.data.meta;
