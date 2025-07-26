@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 2")
+console.log("проверка SPOTIFYSCREEN 3")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -151,8 +151,8 @@ if (!SpotColЛичная) {
 /*_____________________________________________________________________________________________*/
 
 
-     theme.player.on('openPlayer',({state})=>update(state));
-     theme.player.on('trackChange',({state})=>update(state));
+     theme.sonataState.on('openPlayer',({state})=>update(state));
+     theme.sonataState.on('trackChange',({state})=>update(state));
    
      function el(tag,cls,parent=document.body,txt){const n=document.createElement(tag);n.classList.add(cls);if(txt)n.textContent=txt;parent.appendChild(n);return n;}
    })(SpotColЛичная);
