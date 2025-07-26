@@ -103,19 +103,11 @@ if (!SpotColЛичная) {
        $root=el('div','Spotify_Screen',document.body);
        $bg  =el('div','SM_Background',$root);
        $cover=el('div','SM_Cover',$root);
-
-/*_____________________________________________________________________________________________*/
-
-
        const row=el('div','SM_Title_Line',$root);
        $track=el('div','SM_Track_Name',row);
        $like =createClone();
        row.appendChild($like);
        $artist=el('div','SM_Artist',$root);
-   
-/*_____________________________________________________________________________________________*/
-
-
        const info =el('div','All_Info_Container',$root);
        const art  =el('div','Artist_Info_Container',info);
        el('div','Info_Title',art,'Сведения об исполнителе');
@@ -349,7 +341,7 @@ if (!SpotColЛичная) {
 /*_____________________________________________________________________________________________*/
 
 
-console.log('[SpotifyScreen] Пробуем build вручную', screen);
+
 setTimeout(() => {
   try {
   const screen = document.querySelector('.Spotify_Screen');
@@ -361,6 +353,7 @@ setTimeout(() => {
     console.warn('[SpotifyScreen] Ошибка ручной вставки:', e);
   }
 }, 3000);
+console.log('[SpotifyScreen] Пробуем build вручную', screen);
 if (SpotColЛичная.player && SpotColЛичная.player.on) {
   SpotColЛичная.player.on('openPlayer', ({ state }) => update(state));
   SpotColЛичная.player.on('trackChange', ({ state }) => update(state));
