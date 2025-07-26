@@ -519,6 +519,7 @@ class SpotifyScreen {
   /* ════════════════════════════════════════════════════════════════════════════════════
    *  Export
    * ══════════════════════════════════════════════════════════════════════════════════ */
+  window.Theme = Theme;
   window.WolfyLibrary = { EventEmitter, StylesManager, SettingsManager, UI, PlayerEvents, Theme, SpotifyScreen };
-  log('WolfyLibrary loaded ✓');
+  console.log('Library loaded ✓');
 })();
