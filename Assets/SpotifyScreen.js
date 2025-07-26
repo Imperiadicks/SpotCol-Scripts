@@ -361,8 +361,7 @@ setTimeout(() => {
     console.warn('[SpotifyScreen] Ошибка ручной вставки:', e);
   }
 }, 3000);
-
-  SpotColЛичная.start(() => {
+  SpotColЛичная.onStart(() => {
   console.log('[SpotifyScreen] Запуск через');
 });
-
+  SpotColЛичная.start(1000)
