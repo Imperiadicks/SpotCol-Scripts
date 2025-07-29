@@ -21,7 +21,7 @@
     'navbar.css',
     'SpotifyScreen.css',
     'user.css',
-    ''
+    'Rotating Cover Art.css'
   ];
 
   async function loadScript(name) {
