@@ -25,7 +25,6 @@ if (!SpotColЛичная) {
    (function(theme){
      let $root,$bg,$cover,$track,$artist,$like,$origLike,observer;
      let prevLiked=null;
-    theme.updateSpotifyScreen = update;
 
 
 /*_____________________________________________________________________________________________*/
@@ -148,7 +147,6 @@ if (!SpotColЛичная) {
      theme.sonataState.on('trackChange',({state})=>update(state));
    
      function el(tag,cls,parent=document.body,txt){const n=document.createElement(tag);n.classList.add(cls);if(txt)n.textContent=txt;parent.appendChild(n);return n;}
-   })(SpotColЛичная);
    
 /*_____________________________________________________________________________________________*/
 
@@ -332,27 +330,5 @@ if (!SpotColЛичная) {
   setInterval(refresh, 1200);
 
 /*_____________________________________________________________________________________________*/
-
-
-
-setTimeout(() => {
-  try {
-  const screen = document.querySelector('.Spotify_Screen');
-  console.log('[SpotifyScreen] Пробуем build вручную', screen);
-  if (!screen || !screen.classList.contains('SpotCol_Inserted')) {
-    console.log('[SpotifyScreen] Вставка вручную');
-    SpotColЛичная.player.emit('openPlayer', { state: SpotColЛичная.player.state });
-  }
-  } catch (e) {
-    console.warn('[SpotifyScreen] Ошибка ручной вставки:', e);
-  }
-}, 3000);
-if (SpotColЛичная.player && SpotColЛичная.player.on) {
-  SpotColЛичная.player.on('openPlayer', ({ state }) => SpotColЛичная.updateSpotifyScreen(state));
-  SpotColЛичная.player.on('trackChange', ({ state }) => SpotColЛичная.updateSpotifyScreen(state));
-
-} else {
-  console.warn('[SpotifyScreen] Нет доступа к SpotColЛичная.player');
-}
-
-  SpotColЛичная.start(1000)
+theme.updateSpotifyScreen = update;
+   })(SpotColЛичная, 1000);
