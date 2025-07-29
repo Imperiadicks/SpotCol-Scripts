@@ -10,7 +10,8 @@
   "script": "script.js",
   "tags": ["Spotify", "Colored", "theme"],
   "allowedUrls": [
-        "https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/",
+        "https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/js",
+        "https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/css",
         "https://ru.wikipedia.org/w/api.php?action=query&format=json&origin=*",
         "https://api.onlysq.ru/ai/v2",
         "https://raw.githubusercontent.com/Open-Blocker-FYM/Open-Blocker/refs/heads/main/blocker-css/",
