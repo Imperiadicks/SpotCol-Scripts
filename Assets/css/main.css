@@ -99,3 +99,13 @@
 {
 	width: 135%;
 }
+.Content_main__8_wIa {
+	position: fixed;
+	height: -webkit-fill-available;
+	margin-top: 30px;
+	margin-bottom: 86px;
+	left: 297px;
+	right: 11px;
+	border-radius: 10px;
+	border-width: 0;
+}
