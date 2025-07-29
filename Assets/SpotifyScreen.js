@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 5")
+console.log("проверка SPOTIFYSCREEN 6")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -25,7 +25,8 @@ if (!SpotColЛичная) {
    (function(theme){
      let $root,$bg,$cover,$track,$artist,$like,$origLike,observer;
      let prevLiked=null;
-   
+    theme.updateSpotifyScreen = update;
+
 
 /*_____________________________________________________________________________________________*/
 
@@ -347,8 +348,9 @@ setTimeout(() => {
   }
 }, 3000);
 if (SpotColЛичная.player && SpotColЛичная.player.on) {
-  SpotColЛичная.player.on('openPlayer', ({ state }) => update(state));
-  SpotColЛичная.player.on('trackChange', ({ state }) => update(state));
+  SpotColЛичная.player.on('openPlayer', ({ state }) => SpotColЛичная.updateSpotifyScreen(state));
+  SpotColЛичная.player.on('trackChange', ({ state }) => SpotColЛичная.updateSpotifyScreen(state));
+
 } else {
   console.warn('[SpotifyScreen] Нет доступа к SpotColЛичная.player');
 }
