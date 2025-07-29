@@ -1,5 +1,6 @@
 (() => {
-  const GH_BASE = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/';
+  const GH_BASE_js = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/js/';
+  const GH_BASE_css = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/css/';
   console.log("ПРОВЕРКА SPOTCOL.JS")
   const scripts = [
     'Library.js',
@@ -15,7 +16,7 @@
   ];
 
 async function loadScript(name) {
-  const url = GH_BASE + encodeURIComponent(name);
+  const url = GH_BASE_js + encodeURIComponent(name);
   console.log(`[SpotCol] 📦 Загружаю ${name} → ${url}`);
   try {
     const res = await fetch(url);
@@ -33,7 +34,7 @@ async function loadScript(name) {
 }
 
   async function loadCss(name) {
-    const url = GH_BASE + encodeURIComponent(name);
+    const url = GH_BASE_css + encodeURIComponent(name);
     console.log(`[SpotCol] 🎨 Загружаю CSS → ${url}`);
     try {
       const res = await fetch(url);
