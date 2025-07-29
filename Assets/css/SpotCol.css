@@ -10,31 +10,12 @@
         border-radius: 12px;
     }
 }
-/* Скрипт Rotating Cover Art
-/*-----------------------------------------------------------------------------------------*/
-[data-test-id="PLAYERBAR_DESKTOP"] * .FullscreenPlayerDesktopButton_root__qGgoC {
-    border-radius: 50%;
-}
-
-[data-test-id="PLAYERBAR_DESKTOP"] * [data-test-id="ENTITY_COVER_IMAGE"] {
-    border-radius: 50%;
-    animation: rotate 10s linear infinite;
-}
-
-@keyframes rotate {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
 
 /*-----------------------------------------------------------------------------------------*/
 
 /*titlebar*/
 /*--------------------------------------------*/
-.PSBpanel {
+/* .PSBpanel {
 	left: -100px;
 }
 .SearchPage_header__T2OUM {
@@ -80,7 +61,7 @@
 .TjoCDDIf5PrIGU4w8G6Z .TabCarousel_root__8DoRy .Skeleton_stickyTabs__s0X9I
 {
 	gap: -1000px;
-}
+} */
 @media screen and (min-width: 0px) {
 	.SearchPage_header__T2OUM
 	{
