@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 4")
+console.log("проверка SPOTIFYSCREEN 5")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -152,12 +152,6 @@ if (!SpotColЛичная) {
 /*_____________________________________________________________________________________________*/
 
 /*_____________________________________________________________________________________________*/
-/*
- * SpotColЛичная — GPT / Wiki helper (rev‑2025‑05‑11‑i2)
- * Полностью завершённый скрипт без ссылок; устойчив к изменениям DOM/настроек.
- */
-
-(() => {
   /* === SETTINGS === */
   const sm = SpotColЛичная.settingsManager;
   const modelMap = {
@@ -335,8 +329,6 @@ if (!SpotColЛичная) {
 
   refresh();
   setInterval(refresh, 1200);
-})();
-
 
 /*_____________________________________________________________________________________________*/
 
