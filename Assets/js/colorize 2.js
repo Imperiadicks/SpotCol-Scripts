@@ -32,7 +32,7 @@
   };
 
   /*──────────────────────── settings ────────────────────────*/
-  const HANDLE   = 'Colorize 2';
+  const HANDLE   = 'SpotColЛичная';
 
   const getSettings = async () => {
     try {
