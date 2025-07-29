@@ -15,7 +15,13 @@
 
   const styles = [
     'SpotCol.css',
-    'Colorize 2.css'
+    'Colorize 2.css',
+    'BetterPlayer.css',
+    'main.css',
+    'navbar.css',
+    'SpotifyScreen.css',
+    'user.css',
+    ''
   ];
 
   async function loadScript(name) {
