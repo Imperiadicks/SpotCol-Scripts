@@ -1,0 +1,157 @@
+/*Spotify Screen*/
+/*------------------------------------------------------------------------------------*/
+.Spotify_Screen {
+	position: fixed;
+	display: block !important;
+	height: calc(100% - 148px);
+	width: 300px;
+	right: 7px;
+	bottom: 86px;
+	z-index: 1;
+	overflow-y: scroll;
+	background: var(--ym-background-color-primary-enabled-content) !important;
+    border-radius: var(--ym-radius-size-l);
+	opacity: 1 !important;
+}
+.Spotify_Screen::-webkit-scrollbar {
+	display: none;
+}
+.SM_Decorate_Buttons {
+	position: absolute;
+	right: 20px;
+	top: 27px;
+	content: url("http://127.0.0.1:2007/assets/SM-Decorate-Buttons.png");
+}
+
+.SM_Cover {
+	width: 250px;
+	height: 250px;
+	border-radius: 10px;
+	margin: 25px auto;
+	margin-top: 18px;
+	z-index: var(--ym-z-index-player);
+}
+
+.SM_Decorate_AddToPlaylist_Button {
+	position: absolute;
+	right: 15px;
+	content: url("http://127.0.0.1:2007/assets/SM-Decorate-AddToPlaylist-Button.png");
+	margin-top: 5px;
+}
+/* строка-заголовок с названием и сердцем */
+.SM_Title_Line{
+    display:flex;
+    align-items:center;
+    gap:8px;              /* небольшое расстояние между текстом и иконкой */
+}
+
+.SM_Title_Line .SM_Track_Name{
+    flex:1 1 auto;        /* занимает всё доступное пространство */
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+/* сердце прижимаем к правому краю */
+.SM_Title_Line .LikeTrack{
+    flex:0 0 var(--size); /* ширина = размер иконки */
+    margin-left:auto;
+}
+.SM_Track_Name {
+    color: var(--ym-controls-color-primary-text-enabled_variant);
+    font-size: 20px;
+    font-weight: 500;
+    margin-left: 15px;
+    margin-top: -12px;
+    max-width: 210px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.SM_Artist {
+    color: var(--ym-controls-color-primary-text-enabled);
+    font-size: 15px;
+    font-weight: 400;
+    margin-left: 15px;
+    max-width: 150px;
+    margin-top: -5px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.All_Info_Container {
+	position: absolute;
+	top: 365px;
+	left: 14px;
+	background: 0;
+	width: 275px;
+}
+
+.Artist_Info_Container {
+	height: auto;
+	background: var(--ym-surface-color-primary-enabled-list) !important;
+	width: 275px;
+	padding: 10px;
+	border-radius: 8px;
+}
+
+.Info_Title {
+	color: var(--ym-controls-color-primary-text-enabled_variant);
+	font-size: 16px;
+	font-weight: 700;
+	text-align: left;
+	padding: 6px;
+}
+
+.Search_Info {
+	margin-top: 5px;
+	padding: 0px 6px 0px 6px;
+}
+
+.Achtung_Alert {
+	color: #ff0;
+	text-align: center;
+	font-style: italic;
+	margin-top: 16px;
+	margin-bottom: 10px;
+	font-size: 13px;
+	background: 0;
+	padding: 6px;
+	width: 253px;
+	border-radius: 5px;
+}
+
+/*Neuro*/
+.GPT_Info_Container {
+	margin-top: 16px;
+	height: auto;
+	background: var(--ym-surface-color-primary-enabled-list);
+	width: 275px;
+	padding: 10px;
+	border-radius: 8px;
+}
+
+.GPT_Info_Title {
+	color: var(--ym-controls-color-primary-text-enabled_variant);
+	font-size: 16px;
+	font-weight: 700;
+	text-align: left;
+	padding: 6px;
+}
+
+.GPT_Search_Info {
+	margin-top: 5px;
+	padding: 0px 6px 0px 6px;
+}
+.SearchPage_root__TtwTi
+{
+	padding-block-start: 0px;
+}
+.LikeTrack
+{
+	left: -5px;
+	top: 8px;
+}
+/*--------------------------------------------*/

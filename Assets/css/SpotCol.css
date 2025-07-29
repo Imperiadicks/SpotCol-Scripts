@@ -671,163 +671,6 @@ div[data-test-id="SYNC_LYRICS_CONTENT"]::before {
 {
 	width: 135%;
 }
-/*Spotify Screen*/
-/*------------------------------------------------------------------------------------*/
-.Spotify_Screen {
-	position: fixed;
-	display: block !important;
-	height: calc(100% - 148px);
-	width: 300px;
-	right: 7px;
-	bottom: 86px;
-	z-index: 1;
-	overflow-y: scroll;
-	background: var(--ym-background-color-primary-enabled-content) !important;
-    border-radius: var(--ym-radius-size-l);
-	opacity: 1 !important;
-}
-.Spotify_Screen::-webkit-scrollbar {
-	display: none;
-}
-.SM_Decorate_Buttons {
-	position: absolute;
-	right: 20px;
-	top: 27px;
-	content: url("http://127.0.0.1:2007/assets/SM-Decorate-Buttons.png");
-}
-
-.SM_Cover {
-	width: 250px;
-	height: 250px;
-	border-radius: 10px;
-	margin: 25px auto;
-	margin-top: 18px;
-	z-index: var(--ym-z-index-player);
-}
-
-.SM_Decorate_AddToPlaylist_Button {
-	position: absolute;
-	right: 15px;
-	content: url("http://127.0.0.1:2007/assets/SM-Decorate-AddToPlaylist-Button.png");
-	margin-top: 5px;
-}
-/* строка-заголовок с названием и сердцем */
-.SM_Title_Line{
-    display:flex;
-    align-items:center;
-    gap:8px;              /* небольшое расстояние между текстом и иконкой */
-}
-
-.SM_Title_Line .SM_Track_Name{
-    flex:1 1 auto;        /* занимает всё доступное пространство */
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-}
-
-/* сердце прижимаем к правому краю */
-.SM_Title_Line .LikeTrack{
-    flex:0 0 var(--size); /* ширина = размер иконки */
-    margin-left:auto;
-}
-.SM_Track_Name {
-    color: var(--ym-controls-color-primary-text-enabled_variant);
-    font-size: 20px;
-    font-weight: 500;
-    margin-left: 15px;
-    margin-top: -12px;
-    max-width: 210px;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-}
-
-.SM_Artist {
-    color: var(--ym-controls-color-primary-text-enabled);
-    font-size: 15px;
-    font-weight: 400;
-    margin-left: 15px;
-    max-width: 150px;
-    margin-top: -5px;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-}
-
-.All_Info_Container {
-	position: absolute;
-	top: 365px;
-	left: 14px;
-	background: 0;
-	width: 275px;
-}
-
-.Artist_Info_Container {
-	height: auto;
-	background: var(--ym-surface-color-primary-enabled-list) !important;
-	width: 275px;
-	padding: 10px;
-	border-radius: 8px;
-}
-
-.Info_Title {
-	color: var(--ym-controls-color-primary-text-enabled_variant);
-	font-size: 16px;
-	font-weight: 700;
-	text-align: left;
-	padding: 6px;
-}
-
-.Search_Info {
-	margin-top: 5px;
-	padding: 0px 6px 0px 6px;
-}
-
-.Achtung_Alert {
-	color: #ff0;
-	text-align: center;
-	font-style: italic;
-	margin-top: 16px;
-	margin-bottom: 10px;
-	font-size: 13px;
-	background: 0;
-	padding: 6px;
-	width: 253px;
-	border-radius: 5px;
-}
-
-/*Neuro*/
-.GPT_Info_Container {
-	margin-top: 16px;
-	height: auto;
-	background: var(--ym-surface-color-primary-enabled-list);
-	width: 275px;
-	padding: 10px;
-	border-radius: 8px;
-}
-
-.GPT_Info_Title {
-	color: var(--ym-controls-color-primary-text-enabled_variant);
-	font-size: 16px;
-	font-weight: 700;
-	text-align: left;
-	padding: 6px;
-}
-
-.GPT_Search_Info {
-	margin-top: 5px;
-	padding: 0px 6px 0px 6px;
-}
-.SearchPage_root__TtwTi
-{
-	padding-block-start: 0px;
-}
-.LikeTrack
-{
-	left: -5px;
-	top: 8px;
-}
-/*--------------------------------------------*/
 /*CSJS*/
 /*Изменение размера навбара*/
 /*--------------------------------------------*/
@@ -904,15 +747,6 @@ div.Pin_info_collapsed__bF9ac {
 	background-size: cover;
 	border-radius: 5px;
 }
-/* exp
-.DJ_Buttons {
-	width: 50px;
-	height: 50px;
-	background: #f00;
-	background-image: url("http://127.0.0.1:2007/assets/DJ-Buttons.png");
-	background-repeat: no-repeat;
-}
-*/
 .DJ_Title {
 	position: absolute;
 	margin-top: 12px;
@@ -1188,36 +1022,6 @@ body > div.DefaultLayout_root__7J0wo.DefaultLayout_root_applicationPreserveTitle
 	bottom: calc(100% - 610px);
 }
 /*--------------------------------------------*/
-
-/*Плеер*/
-/*--------------------------------------------*/
-.DefaultLayout_playerBar___9IaS {
-    grid-area: playerbar
-}
-
-.DefaultLayout_playerBar___9IaS {
-    grid-area: playerbar
-}
-
-.PlayerBarDesktop_root__d2Hwi {
-    --player-cover-width: 64px;
-    --player-cover-height: 64px;
-    display: grid;
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-   height: 88px;
-    grid-template-columns: repeat(3,33.3%);
-    align-items: center;
-    border: 0;
-    border-radius: 0;
-    padding-inline-start:var(--ym-spacer-size-xs);padding-inline-end: var(--ym-spacer-size-xs);
-    width: 100%;
-    height: var(--player-bar-height);
-    overflow: hidden;
-	background: var(--ym-background-color-primary-enabled-content);
-}
 /*--------------------------------------------*/
 /*TitleBar*/
 /*--------------------------------------------*/
@@ -1239,7 +1043,7 @@ body > div.DefaultLayout_root__7J0wo.DefaultLayout_root_applicationPreserveTitle
 	z-index: 1;
 }
 /*--------------------------------------------*/ 
-.TrackModal_root__QrFg6
+/* .TrackModal_root__QrFg6
 {
 	background: var(--ym-background-color-primary-enabled-basic);
 }
@@ -1272,14 +1076,10 @@ body > div.DefaultLayout_root__7J0wo.DefaultLayout_root_applicationPreserveTitle
 .InnerHeader_root_showColor__wMtVK{
 	background-color: var(--ym-background-color-primary-enabled-content)
 }
-.rWukOKAJh5Ga7JuIp62L{
+.rWukOKAJh5Ga7JuIp62L{SS
 	background: var(--ym-surface-color-primary-enabled-list)
 }
 ::after.rWukOKAJh5Ga7JuIp62L{
 	background: var(--ym-controls-color-primary-text-enabled)
 }
-.PlayerBarDesktopWithBackgroundProgressBar_root__bpmwN.PlayerBarDesktopWithBackgroundProgressBar_important__HzXrK
-{
-    top: 12px;
-	background-color: var(--ym-background-color-primary-enabled-content);
-}
+ */
