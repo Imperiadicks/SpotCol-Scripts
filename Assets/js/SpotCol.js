@@ -1,7 +1,10 @@
 (() => {
-  const GH_BASE_js = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/js/';
-  const GH_BASE_css = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/css/';
-  console.log("ПРОВЕРКА SPOTCOL.JS")
+  const GH_ROOT = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/';
+  const JS_BASE = GH_ROOT + 'js/';
+  const CSS_BASE = GH_ROOT + 'css/';
+
+  console.log('🔧 ПРОВЕРКА SPOTCOL.JS 1');
+
   const scripts = [
     'Library.js',
     'colorize 2.js',
@@ -15,27 +18,24 @@
     'Colorize 2.css'
   ];
 
-async function loadScript(name) {
-  const url = GH_BASE_js + encodeURIComponent(name);
-  console.log(`[SpotCol] 📦 Загружаю ${name} → ${url}`);
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const code = await res.text();
-
-    // Выполняем в глобальной области через .call(window)
-    const globalEval = Function(code);
-    globalEval.call(window);
-
-    console.log(`[SpotCol] ✅ ${name} загружен и выполнен`);
-  } catch (e) {
-    console.error(`[SpotCol] ❌ Не удалось загрузить ${name}:`, e);
+  async function loadScript(name) {
+    const url = JS_BASE + encodeURIComponent(name);
+    console.log(`[SpotCol] 📦 Загружаю JS: ${url}`);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const code = await res.text();
+      const run = Function(code);
+      run.call(window);
+      console.log(`[SpotCol] ✅ Выполнен: ${name}`);
+    } catch (e) {
+      console.error(`[SpotCol] ❌ Ошибка загрузки JS: ${name}`, e);
+    }
   }
-}
 
   async function loadCss(name) {
-    const url = GH_BASE_css + encodeURIComponent(name);
-    console.log(`[SpotCol] 🎨 Загружаю CSS → ${url}`);
+    const url = CSS_BASE + encodeURIComponent(name);
+    console.log(`[SpotCol] 🎨 Загружаю CSS: ${url}`);
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -43,15 +43,15 @@ async function loadScript(name) {
       const style = document.createElement('style');
       style.textContent = css;
       document.head.appendChild(style);
-      console.log(`[SpotCol] ✅ CSS ${name} подключён`);
+      console.log(`[SpotCol] ✅ Подключён: ${name}`);
     } catch (e) {
-      console.error(`[SpotCol] ❌ CSS ошибка: ${name}`, e);
+      console.error(`[SpotCol] ❌ Ошибка загрузки CSS: ${name}`, e);
     }
   }
 
   (async () => {
-    for (const style of styles) await loadCss(style);
-    for (const script of scripts) await loadScript(script);
-    console.log('[SpotCol] 🟢 Все модули загружены');
+    await Promise.all(styles.map(loadCss));       // Загружаем все CSS параллельно
+    for (const script of scripts) await loadScript(script); // Загружаем JS по порядку
+    console.log('[SpotCol] 🟢 Все модули загружены и активированы');
   })();
 })();
