@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.0.8")
+console.log("проверка SPOTIFYSCREEN 0.0.9")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -100,21 +100,20 @@ if (!SpotColЛичная) {
 
 const build = () => {
   if ($root) return;
-const layout = document.querySelector('[class*="CommonLayout_root"]');
-const sibling = layout?.nextElementSibling;
-$root = el('div', 'Spotify_Screen');
 
-if (layout && layout.parentElement) {
-  if (sibling) {
-    layout.parentElement.insertBefore($root, sibling);
-  } else {
-    layout.parentElement.appendChild($root);
+  const layout = document.querySelector('[class*="CommonLayout_root"]');
+  const sibling = layout?.nextElementSibling;
+
+  $root = el('div', 'Spotify_Screen');
+
+  if (layout && layout.parentElement) {
+    if (sibling) {
+      layout.parentElement.insertBefore($root, sibling);
+    } else {
+      layout.parentElement.appendChild($root);
+    }
   }
-}
 
-  container.appendChild($root);
-
-  // Остальная структура
   $bg    = el('div', 'SM_Background', $root);
   $cover = el('div', 'SM_Cover', $root);
 
