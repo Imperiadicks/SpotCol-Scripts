@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.1.0")
+console.log("проверка SPOTIFYSCREEN 0.1.1")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -354,14 +354,6 @@ const build = () => {
   refresh();
   setInterval(refresh, 1200);
 
-/*_____________________________________________________________________________________________*/
-theme.updateSpotifyScreen = update;
-})(SpotColЛичная, 1000);
-
-// === Инициализация через тему (в стиле Wolfy) ===
-window.Theme = window.Theme || {};
-const theme = window.Theme;
-
 theme.SpotifyScreen = {
   init(player) {
     if (!player) return;
@@ -380,4 +372,7 @@ theme.SpotifyScreen = {
 
   build,
 };
+/*_____________________________________________________________________________________________*/
+theme.updateSpotifyScreen = update;
+})(SpotColЛичная, 1000);
 
