@@ -4,7 +4,7 @@
 (() => {
   if (window.Library) return;     // защита от двойной загрузки
   const DEBUG = !!window.__DEBUG__;
-  console.log('[Library] v1.0.0');
+  console.log('[Library] v1.0.1');
   const log   = (...a) => DEBUG && console.log('[Library]', ...a);
 
   /* ════════════════════════════════════════════════════════════════════════════════════
@@ -475,24 +475,36 @@ class SpotifyScreen {
 }
 
   
-  class Theme {
-    id; stylesManager; settingsManager; assetsManager; player;
-    #ev=new EventEmitter(); #actions={}; #loop=null; context = Object.create(null);
+ class Theme {
+  id; stylesManager; settingsManager; assetsManager; player;
+  #ev = new EventEmitter(); #actions = {}; #loop = null; context = Object.create(null);
 
-    constructor(id) {
+  constructor(id) {
     if (!id) throw Error('Theme id required');
-    this.id              = id;
-    this.stylesManager   = new StylesManager();
+    this.id = id;
+    this.stylesManager = new StylesManager();
     this.settingsManager = new SettingsManager(this);
     this.sonataState = new SonataState();
     this.playerState = this.sonataState;
 
-    /*  ↓↓↓  Создаём менеджер ассетов лишь при наличии класса  ↓↓↓  */
     if (typeof AssetsManager !== 'undefined')
       this.assetsManager = new AssetsManager();
 
     this.player = new PlayerEvents(this);
+    this.#watchPageChanges(); // ← добавлено
     log('Theme', id, 'init');
+  }
+
+  #watchPageChanges() {
+    let lastURL = location.href;
+    setInterval(() => {
+      if (location.href !== lastURL) {
+        lastURL = location.href;
+        if (this.SpotifyScreen?.check instanceof Function) {
+          this.SpotifyScreen.check();
+        }
+      }
+    }, 1000);
   }
 
     /* --- события темы --- */
