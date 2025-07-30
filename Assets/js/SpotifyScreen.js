@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 7")
+console.log("проверка SPOTIFYSCREEN 0.0.7")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -98,25 +98,45 @@ if (!SpotColЛичная) {
 /*_____________________________________________________________________________________________*/
 
 
-     const build=()=>{
-       if($root) return;
-       $root=el('div','Spotify_Screen',document.body);
-       $bg  =el('div','SM_Background',$root);
-       $cover=el('div','SM_Cover',$root);
-       const row=el('div','SM_Title_Line',$root);
-       $track=el('div','SM_Track_Name',row);
-       $like =createClone();
-       row.appendChild($like);
-       $artist=el('div','SM_Artist',$root);
-       const info =el('div','All_Info_Container',$root);
-       const art  =el('div','Artist_Info_Container',info);
-       el('div','Info_Title',art,'Сведения об исполнителе');
-       el('div','Search_Info',art);
-       const gpt =el('div','GPT_Info_Container',info);
-       el('div','GPT_Info_Title',gpt,'Сведения о треке');
-       el('div','GPT_Search_Info',gpt);
-       el('div','Achtung_Alert',info,'В сведениях иногда бывают неправильные результаты. Проверяйте информацию подробнее, если изначально вам не всё равно!');
-     };
+const build = () => {
+  if ($root) return;
+
+  // Найдём .CommonLayout_root__WC_W1 и вставим перед ним
+  const layout = document.querySelector('[class*="CommonLayout_root"]');
+  const container = layout?.parentElement || document.body;
+
+  $root = el('div', 'Spotify_Screen');
+  container.appendChild($root);
+
+  // Остальная структура
+  $bg    = el('div', 'SM_Background', $root);
+  $cover = el('div', 'SM_Cover', $root);
+
+  const row = el('div', 'SM_Title_Line', $root);
+  $track = el('div', 'SM_Track_Name', row);
+  $like  = createClone();
+  row.appendChild($like);
+
+  $artist = el('div', 'SM_Artist', $root);
+
+  const info = el('div', 'All_Info_Container', $root);
+
+  const art = el('div', 'Artist_Info_Container', info);
+  el('div', 'Info_Title', art, 'Сведения об исполнителе');
+  el('div', 'Search_Info', art);
+
+  const gpt = el('div', 'GPT_Info_Container', info);
+  el('div', 'GPT_Info_Title', gpt, 'Сведения о треке');
+  el('div', 'GPT_Search_Info', gpt);
+
+  el(
+    'div',
+    'Achtung_Alert',
+    info,
+    'В сведениях иногда бывают неправильные результаты. Проверяйте информацию подробнее, если изначально вам не всё равно!'
+  );
+};
+
 
 /*_____________________________________________________________________________________________*/
 
