@@ -4,6 +4,7 @@
 (() => {
   if (window.Library) return;     // защита от двойной загрузки
   const DEBUG = !!window.__DEBUG__;
+  console.log('[Library] v1.0.0');
   const log   = (...a) => DEBUG && console.log('[Library]', ...a);
 
   /* ════════════════════════════════════════════════════════════════════════════════════

@@ -1,4 +1,4 @@
-console.log("ПРОВЕРКА ТРИ")
+console.log("[Main] v0.3.0")
 window.Theme = new Theme('SpotColЛичная');
 /*--------------------------------------------*/
 const observer = new MutationObserver(() => {

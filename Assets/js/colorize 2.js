@@ -1,4 +1,5 @@
 (() => {
+  console.log('[Colorize 2] v2');
   /*──────────────────────── helpers ────────────────────────*/
   const LOG = (...a) => console.log('[Colorize 2]', ...a);
 
