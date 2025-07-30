@@ -1,4 +1,4 @@
-console.log("[Main] v0.3.0")
+console.log("[Main] v0.3.1")
 window.Theme = new Theme('SpotColЛичная');
 /*--------------------------------------------*/
 const observer = new MutationObserver(() => {
@@ -256,3 +256,11 @@ function init() {
 }
 
 init();
+// Пересоздание SpotifyScreen при смене страницы
+setInterval(() => {
+    if (!window.Theme?._lastURL) window.Theme._lastURL = location.href;
+    if (location.href !== window.Theme._lastURL) {
+        window.Theme._lastURL = location.href;
+        window.Theme.SpotifyScreen?.check?.(); // принудительная проверка и пересоздание
+    }
+}, 1500);
