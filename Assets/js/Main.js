@@ -1,9 +1,5 @@
-console.log("[Main] v0.3.1")
+console.log("[Main] v0.3.0")
 window.Theme = new Theme('SpotColЛичная');
-if (window.Theme?.SpotifyScreen && typeof window.Theme.SpotifyScreen.init === 'function') {
-  window.Theme.SpotifyScreen.init(window.Theme.player);
-}
-
 /*--------------------------------------------*/
 const observer = new MutationObserver(() => {
     let pin = document.querySelector('.PinItem_root__WSoCn > a[aria-label="Плейлист Мне нравится"]');
