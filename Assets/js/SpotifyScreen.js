@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.1.1")
+console.log("проверка SPOTIFYSCREEN 0.1.2")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -166,10 +166,10 @@ const build = () => {
      };
 
 /*_____________________________________________________________________________________________*/
-/* 
+
     theme.player.on('trackChange', update)
     theme.player.on('openPlayer', update)
-    update(theme.player.state) */
+    update(theme.player.state)
 
      function el(tag,cls,parent=document.body,txt){const n=document.createElement(tag);n.classList.add(cls);if(txt)n.textContent=txt;parent.appendChild(n);return n;}
    
@@ -378,7 +378,6 @@ check() {
 
   build(); // layout есть, создаём экран
 },
-
 };
 /*_____________________________________________________________________________________________*/
 theme.updateSpotifyScreen = update;
