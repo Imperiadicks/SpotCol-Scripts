@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1');
+  console.log('SPOTCOL v1.0.0');
 
   const scripts = [
     'Library.js',
