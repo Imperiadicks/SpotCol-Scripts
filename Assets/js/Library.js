@@ -4,7 +4,7 @@
 (() => {
   if (window.Library) return;     // защита от двойной загрузки
   const DEBUG = !!window.__DEBUG__;
-  console.log('[Library] v1.0.0');
+  console.log('[Library] v1.0.1');
   const log   = (...a) => DEBUG && console.log('[Library]', ...a);
 
   /* ════════════════════════════════════════════════════════════════════════════════════
@@ -492,6 +492,11 @@ class SpotifyScreen {
       this.assetsManager = new AssetsManager();
 
     this.player = new PlayerEvents(this);
+    if (typeof SpotifyScreen !== 'undefined') {
+    this.SpotifyScreen = SpotifyScreen;
+    this.SpotifyScreen.init(this.player);
+    }
+
     log('Theme', id, 'init');
   }
 
