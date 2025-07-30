@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 6")
+console.log("проверка SPOTIFYSCREEN 7")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -145,7 +145,7 @@ if (!SpotColЛичная) {
     theme.player.on('trackChange', update)
     theme.player.on('openPlayer', update)
     update(theme.player.state)
-    
+
      function el(tag,cls,parent=document.body,txt){const n=document.createElement(tag);n.classList.add(cls);if(txt)n.textContent=txt;parent.appendChild(n);return n;}
    
 /*_____________________________________________________________________________________________*/
