@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.1');
+  console.log('SPOTCOL v1.1.0');
 
   const scripts = [
     'Library.js',
@@ -40,36 +40,43 @@
   }
 
   async function loadCss(name) {
-    const url = CSS_BASE + encodeURIComponent(name);
-    console.log(`[SpotCol] 🎨 Загружаю CSS: ${url}`);
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const css = await res.text();
+  const url = CSS_BASE + encodeURIComponent(name);
+  console.log(`[SpotCol] 🎨 Загружаю CSS: ${url}`);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const css = await res.text();
 
-      const style = document.createElement('style');
-      style.textContent = css;
-      document.head.appendChild(style);
-      console.log(`[SpotCol] ✅ Подключён: ${name}`);
+    // Оборачиваем CSS в уникальный контейнер с классом для изоляции
+    const id = `css-${name.replace(/[^a-z0-9]/gi, '-')}`;
+    const scoped = `:root.${id} { ${css.match(/--css-version:.*?;/)?.[0] || ''} }`;
 
-      // Пытаемся считать версию из :root { --css-version: '...' }
-      requestAnimationFrame(() => {
-        const version = getComputedStyle(document.documentElement).getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
-        if (version) {
-          console.log(`[SpotCol] 📘 ${name} версия: ${version}`);
-        } else {
-          console.log(`[SpotCol] 📘 ${name} версия: не указана`);
-        }
-      });
+    // Вставка реального CSS
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
 
-    } catch (e) {
-      console.error(`[SpotCol] ❌ Ошибка загрузки CSS: ${name}`, e);
-    }
+    // Вставка временного контейнера для чтения версии
+    const testEl = document.createElement('div');
+    testEl.className = id;
+    document.body.appendChild(testEl);
+
+    // Задержка для рендера
+    requestAnimationFrame(() => {
+      const version = getComputedStyle(testEl).getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
+      console.log(`[SpotCol] 📘 ${name} версия: ${version || 'не указана'}`);
+      testEl.remove();
+    });
+
+    console.log(`[SpotCol] ✅ Подключён: ${name}`);
+  } catch (e) {
+    console.error(`[SpotCol] ❌ Ошибка загрузки CSS: ${name}`, e);
   }
+}
 
   (async () => {
-    await Promise.all(styles.map(loadCss)); // CSS параллельно
-    for (const script of scripts) await loadScript(script); // JS по порядку
+    await Promise.all(styles.map(loadCss));
+    for (const script of scripts) await loadScript(script);
     console.log('[SpotCol] 🟢 Все модули загружены и активированы');
   })();
 })();
