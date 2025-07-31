@@ -1,5 +1,13 @@
-console.log("[Main] v0.3.1")
+console.log("[Main] v0.3.2")
 window.Theme = new Theme('SpotColЛичная');
+let lastURL = location.href;
+setInterval(() => {
+  if (location.href !== lastURL) {
+    lastURL = location.href;
+    window.Theme?.SpotifyScreen?.check?.(); // пересоздание при смене адреса
+  }
+}, 800);
+
 /*--------------------------------------------*/
 const observer = new MutationObserver(() => {
     let pin = document.querySelector('.PinItem_root__WSoCn > a[aria-label="Плейлист Мне нравится"]');

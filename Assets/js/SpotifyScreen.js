@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.1.4")
+console.log("проверка SPOTIFYSCREEN 0.1.5")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -350,30 +350,34 @@ const build = () => {
   setInterval(refresh, 1200);
 
 /*_____________________________________________________________________________________________*/
-
-  SpotColЛичная.SpotifyScreen = {
+SpotColЛичная.SpotifyScreen = {
   init(player) {
     if (!player) return;
 
     player.on('trackChange', () => this.check());
     player.on('pageChange',  () => this.check());
-    this.check(); // начальная отрисовка
+
+    // Observer следит за layout
+    const layout = document.querySelector('[class*="CommonLayout_root"]');
+    if (layout) {
+      const mo = new MutationObserver(() => this.check());
+      mo.observe(layout, { childList: true, subtree: true });
+    }
+
+    this.check(); // мгновенная отрисовка
   },
 
-check() {
-  const exists = document.querySelector('.Spotify_Screen');
-  if (exists) return;
+  check() {
+    const layout = document.querySelector('[class*="CommonLayout_root"]');
+    const exists = document.querySelector('.Spotify_Screen');
 
-  const layout = document.querySelector('[class*="CommonLayout_root"]');
-  if (!layout) {
-    // Повторить попытку через 500 мс, если layout ещё не прогрузился
-    setTimeout(() => this.check(), 500);
-    return;
-  }
+    if (!layout) return;
+    if (!exists || !document.body.contains(exists)) build(); // пересоздание
+  },
 
-  build(); // layout есть, создаём экран
-},
+  build, // метод build уже есть выше
 };
+
 /*_____________________________________________________________________________________________*/
 theme.updateSpotifyScreen = update;
    })(SpotColЛичная, 1000);
