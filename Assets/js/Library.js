@@ -1,9 +1,6 @@
 (() => {
   if (window.Library) return;
-  const DEBUG = !!window.__DEBUG__;
-  window.SpotColVersions = window.SpotColVersions || {};
-  window.SpotColVersions['Library.js'] = '1.0.1';
-
+  console.log("[Library] - v1.0.1")
   /* ════════════════════════════════════════════════════════════════════════════════════
    *  EventEmitter
    * ══════════════════════════════════════════════════════════════════════════════════ */

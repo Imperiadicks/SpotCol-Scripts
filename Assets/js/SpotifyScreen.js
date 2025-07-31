@@ -1,5 +1,4 @@
-window.SpotColVersions = window.SpotColVersions || {};
-window.SpotColVersions['SpotifyScreen.js'] = '0.1.6';
+console.log("[SpotifyScreen] - v0.1.6")
 const SpotColЛичная = window.Theme;
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");

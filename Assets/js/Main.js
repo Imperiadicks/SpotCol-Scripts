@@ -1,5 +1,4 @@
-window.SpotColVersions = window.SpotColVersions || {};
-window.SpotColVersions['Main.js'] = '0.3.4';
+console.log("[Main] - v0.3.2")
 
 window.Theme = new Theme('SpotColЛичная');
 

@@ -2,9 +2,8 @@
   const GH_ROOT = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/';
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
-  const jsVersions = {};
 
-  console.log('SPOTCOL v1.1.4');
+  console.log('SPOTCOL v1.0.12');
 
   const scripts = [
     'Library.js',
@@ -25,25 +24,20 @@
     'Rotating Cover Art.css'
   ];
 
-async function loadScript(name) {
-  const url = JS_BASE + encodeURIComponent(name);
-  console.log(`[SpotCol] 📦 Загружаю JS: ${url}`);
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const code = await res.text();
-    const run = Function(code);
-    run.call(window);
-
-    const versions = window.SpotColVersions || {};
-    const normalized = name.replace(/\s+/g, '');
-
-    const version = versions[name] || versions[normalized];
-    if (version) jsVersions[name] = version;
-  } catch (e) {
-    console.error(`[SpotCol] ❌ Ошибка загрузки JS: ${name}`, e);
+  async function loadScript(name) {
+    const url = JS_BASE + encodeURIComponent(name);
+    console.log(`[SpotCol] 📦 Загружаю JS: ${url}`);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const code = await res.text();
+      const run = Function(code);
+      run.call(window);
+      console.log(`[SpotCol] ✅ Выполнен: ${name}`);
+    } catch (e) {
+      console.error(`[SpotCol] ❌ Ошибка загрузки JS: ${name}`, e);
+    }
   }
-}
 
 async function loadCss(name) {
   const url = CSS_BASE + encodeURIComponent(name);
@@ -84,21 +78,9 @@ async function loadCss(name) {
   }
 }
 
-(async () => {
-  await Promise.all(styles.map(loadCss));
-
-  for (const script of scripts) {
-    await loadScript(script);
-  }
-
-  if (Object.keys(jsVersions).length) {
-    console.log('%c[SpotCol] 📘 JS версии:', 'color: #9b59b6; font-weight: bold');
-    for (const [name, version] of Object.entries(jsVersions)) {
-      console.log(`  • ${name}: ${version}`);
-    }
-  }
-
-  console.log('[SpotCol] 🟢 Все модули загружены и активированы');
-})();
-
+  (async () => {
+    await Promise.all(styles.map(loadCss)); // CSS параллельно
+    for (const script of scripts) await loadScript(script); // JS по очереди
+    console.log('[SpotCol] 🟢 Все модули загружены и активированы');
+  })();
 })();

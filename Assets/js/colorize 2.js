@@ -1,9 +1,6 @@
 (() => {
-  window.SpotColVersions = window.SpotColVersions || {};
-  window.SpotColVersions['colorize 2.js'] = '2.0.0';
+  console.log("[colorize 2] - v2.0.0")
   /*──────────────────────── helpers ────────────────────────*/
-  const LOG = (...a) => console.log('[Colorize 2]', ...a);
-
   const rgb2hsl = (r, g, b) => {
     r /= 255; g /= 255; b /= 255;
     const max = Math.max(r, g, b);
