@@ -1,3 +1,7 @@
+function log(text) {
+    console.log('[Customizable LOG]:', text);
+}
+
 window.SpotColVersions = window.SpotColVersions || {};
 window.SpotColVersions['Main.js'] = '0.3.3';
 
