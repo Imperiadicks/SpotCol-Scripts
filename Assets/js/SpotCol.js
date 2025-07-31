@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.1');
+  console.log('SPOTCOL v1.0.2');
 
   const scripts = [
     'Library.js',
@@ -52,16 +52,21 @@
       document.head.appendChild(style);
       console.log(`[SpotCol] ✅ Подключён: ${name}`);
 
-      // Пытаемся считать версию из :root { --css-version: '...' }
+      // Временный элемент для чтения специфичных переменных
+      const testEl = document.createElement('div');
+      testEl.style.all = 'initial';
+      testEl.className = `css-${name.replace(/[^a-z0-9]/gi, '')}`;
+      document.body.appendChild(testEl);
+
       requestAnimationFrame(() => {
-        const version = getComputedStyle(document.documentElement).getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
+        const version = getComputedStyle(testEl).getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
         if (version) {
           console.log(`[SpotCol] 📘 ${name} версия: ${version}`);
         } else {
-          console.log(`[SpotCol] 📘 ${name} версия: не указана`);
+          console.log(`[SpotCol] ⚠️ ${name} версия: не указана`);
         }
+        testEl.remove();
       });
-
     } catch (e) {
       console.error(`[SpotCol] ❌ Ошибка загрузки CSS: ${name}`, e);
     }
@@ -69,7 +74,7 @@
 
   (async () => {
     await Promise.all(styles.map(loadCss)); // CSS параллельно
-    for (const script of scripts) await loadScript(script); // JS по порядку
+    for (const script of scripts) await loadScript(script); // JS по очереди
     console.log('[SpotCol] 🟢 Все модули загружены и активированы');
   })();
 })();
