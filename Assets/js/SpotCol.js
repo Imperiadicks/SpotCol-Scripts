@@ -4,7 +4,7 @@
   const CSS_BASE = GH_ROOT + 'css/';
   const jsVersions = {};
 
-  console.log('SPOTCOL v1.1.4');
+  console.log('SPOTCOL v1.2.1');
 
   const scripts = [
     'Library.js',
@@ -35,14 +35,13 @@ async function loadScript(name) {
     const run = Function(code);
     run.call(window);
 
-    const versions = window.SpotColVersions || {};
     const normalized = name.replace(/\s+/g, '').toLowerCase();
 
     const version =
-      versions[name] ||
-      versions[name.toLowerCase()] ||
-      versions[normalized] ||
-      versions[normalized + '.js'];
+      window.SpotColVersions?.[name] ||
+      window.SpotColVersions?.[name.toLowerCase()] ||
+      window.SpotColVersions?.[normalized] ||
+      window.SpotColVersions?.[normalized + '.js'];
 
     if (version) jsVersions[name] = version;
   } catch (e) {
