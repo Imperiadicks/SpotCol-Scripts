@@ -1,6 +1,3 @@
-/* ======================================================================================
- * SpotCol Universal Library 1.0.0
- * ───────────────────────────────────────────────────────────────────────────────────────*/
 (() => {
   if (window.Library) return;     // защита от двойной загрузки
   const DEBUG = !!window.__DEBUG__;
@@ -12,22 +9,41 @@
    * ══════════════════════════════════════════════════════════════════════════════════ */
   class EventEmitter {
     #ev = Object.create(null);
-    on   (e, fn) { (this.#ev[e] ??= []).push(fn); return this; }
-    once (e, fn) { const g = (...a)=>{this.off(e,g);fn(...a);}; return this.on(e,g); }
-    off  (e, fn) { this.#ev[e] = (this.#ev[e] || []).filter(f=>f!==fn); return this; }
-    emit (e, d ) { (this.#ev[e] || []).forEach(f=>f(d)); return this; }
-    removeAll(e) { e ? delete this.#ev[e] : this.#ev = Object.create(null); }
+    on   (e, fn) { (
+      this.#ev[e] ??= []).push(fn); 
+      return this; 
+    }
+    once (e, fn) { 
+      const g = (...a)=>{
+        this.off(e,g);fn(...a);
+      }; 
+      return this.on(e,g); }
+    off  (e, fn) { 
+      this.#ev[e] = (
+        this.#ev[e] || []).filter(f=>f!==fn); 
+        return this; 
+      }
+    emit (e, d ) { (
+      this.#ev[e] || []).forEach(f=>f(d)); 
+      return this; 
+    }
+    removeAll(e) {
+       e ? delete this.#ev[e] : this.#ev = Object.create(null); 
+    }
   }
 
   /* ════════════════════════════════════════════════════════════════════════════════════
    *  StylesManager
    * ══════════════════════════════════════════════════════════════════════════════════ */
   class StylesManager {
-    #bag = {};                       // id -> css
+    #bag = {};
     #id  = 'style';
     #flush() {
       let tag = document.getElementById(this.#id);
-      if (!tag) { tag = document.createElement('style'); tag.id = this.#id; document.head.appendChild(tag); }
+      if (!tag) { tag = document.createElement('style'); 
+        tag.id = this.#id; 
+        document.head.appendChild(tag); 
+      }
       tag.textContent = Object.values(this.#bag).join('\n\n');
     }
     add(id, css)    { if (!id||!css) return; this.#bag[id] = css.toString(); this.#flush(); }
@@ -45,8 +61,10 @@
     #theme;
     #cur   = {};
     #prev  = {};
-    constructor(theme) { super(); this.#theme = theme; }
-
+    constructor(theme) { 
+      super(); 
+      this.#theme = theme; 
+    }
     /* util */
     #pick(obj, path) { return path.split('.').reduce((o,k)=>o?.[k], obj); }
 
@@ -54,7 +72,8 @@
     get(id)          { return this.#pick(this.#cur, id); }
     has(id)          { return this.#pick(this.#cur, id) !== undefined; }
     getAll()         { return structuredClone(this.#cur); }
-    hasChanged(id)   { return JSON.stringify(this.#pick(this.#cur,id)) !== JSON.stringify(this.#pick(this.#prev,id)); }
+    hasChanged(id)   { return JSON.stringify(
+      this.#pick(this.#cur,id)) !== JSON.stringify(this.#pick(this.#prev,id)); }
     onChange(id, cb) { this.on(`change:${id}`, cb); }
     defaults(obj)    { for (const [k,v] of Object.entries(obj)) if (!this.has(k)) this.#silentSet(k,v); this.emit('update', {settings:this}); }
 
