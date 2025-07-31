@@ -4,7 +4,7 @@
   const CSS_BASE = GH_ROOT + 'css/';
   const jsVersions = {};
 
-  console.log('SPOTCOL v1.2.1');
+  console.log('SPOTCOL v1.1.4');
 
   const scripts = [
     'Library.js',
@@ -35,14 +35,10 @@ async function loadScript(name) {
     const run = Function(code);
     run.call(window);
 
-    const normalized = name.replace(/\s+/g, '').toLowerCase();
+    const versions = window.SpotColVersions || {};
+    const normalized = name.replace(/\s+/g, '');
 
-    const version =
-      window.SpotColVersions?.[name] ||
-      window.SpotColVersions?.[name.toLowerCase()] ||
-      window.SpotColVersions?.[normalized] ||
-      window.SpotColVersions?.[normalized + '.js'];
-
+    const version = versions[name] || versions[normalized];
     if (version) jsVersions[name] = version;
   } catch (e) {
     console.error(`[SpotCol] ❌ Ошибка загрузки JS: ${name}`, e);
