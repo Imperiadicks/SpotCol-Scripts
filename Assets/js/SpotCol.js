@@ -38,41 +38,48 @@
     }
   }
 
- // Загружаем CSS и проверяем версию
-function loadCSS(name, url) {
-  return new Promise(resolve => {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = url;
-    link.onload = () => {
-      console.log(`%c[SpotCol] ✅ Подключён: ${name}`, 'color: #2ecc71');
-      // Проверка версии
-      const testEl = document.createElement('div');
-      testEl.className = `css-${name.replace(/[^a-z0-9]/gi, '')}`;
-      document.body.appendChild(testEl);
+  // Загружаем CSS и проверяем версию через временный div
+  function loadCSS(name) {
+    return new Promise(resolve => {
+      const url = CSS_BASE + encodeURIComponent(name);
+      console.log(`[SpotCol] 📦 Загружаю CSS: ${url}`);
 
-      requestAnimationFrame(() => {
-        const styles = getComputedStyle(testEl);
-        const version = styles.getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
-        if (version) {
-          console.log(`%c[SpotCol] 📘 ${name} версия: ${version}`, 'color: #3498db');
-        } else {
-          console.log(`%c[SpotCol] ⚠️ ${name}.css версия: не указана`, 'color: #e67e22');
-        }
-        testEl.remove();
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = url;
+
+      link.onload = () => {
+        console.log(`%c[SpotCol] ✅ Подключён: ${name}`, 'color: #2ecc71');
+
+        // Создаём временный элемент
+        const testEl = document.createElement('div');
+        testEl.className = `css-${name.replace(/[^a-z0-9]/gi, '')}`;
+        document.body.appendChild(testEl);
+
+        requestAnimationFrame(() => {
+          const styles = getComputedStyle(testEl);
+          const version = styles.getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
+          if (version) {
+            console.log(`%c[SpotCol] 📘 ${name} версия: ${version}`, 'color: #3498db');
+          } else {
+            console.log(`%c[SpotCol] ⚠️ ${name} версия: не указана`, 'color: #e67e22');
+          }
+          testEl.remove();
+          resolve();
+        });
+      };
+
+      link.onerror = () => {
+        console.log(`%c[SpotCol] ❌ Ошибка загрузки: ${name}`, 'color: #e74c3c');
         resolve();
-      });
-    };
-    link.onerror = () => {
-      console.log(`%c[SpotCol] ❌ Ошибка загрузки: ${name}`, 'color: #e74c3c');
-      resolve();
-    };
-    document.head.appendChild(link);
-  });
-}
+      };
+
+      document.head.appendChild(link);
+    });
+  }
 
   (async () => {
-    await Promise.all(styles.map(loadCss));
+    await Promise.all(styles.map(loadCSS));
     for (const script of scripts) await loadScript(script);
     console.log('[SpotCol] 🟢 Все модули загружены и активированы');
   })();
