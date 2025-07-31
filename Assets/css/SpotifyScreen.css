@@ -1,6 +1,6 @@
 /*Spotify Screen*/
 :root{
-  --SpotifyScreen-css-version: 'v1.0.1';
+  --SpotifyScreen-css-version: 'v1.0.2';
 }
 
 /*------------------------------------------------------------------------------------*/
@@ -13,7 +13,7 @@
 	bottom: 86px;
 	z-index: 1;
 	overflow-y: scroll;
-	background: var(--ym-background-color-primary-enabled-content) !important;
+	background: none;
     border-radius: var(--ym-radius-size-l);
 	opacity: 1 !important;
 } 
