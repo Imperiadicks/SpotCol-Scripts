@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('[SpotCol] v1.1.1');
+  console.log('[SpotCol] v1.1.2');
 
   const scripts = [
     'Library.js',
@@ -38,38 +38,38 @@
     }
   }
 
-  async function loadCss(name) {
-    const url = CSS_BASE + encodeURIComponent(name);
-    console.log(`[SpotCol] 🎨 Загружаю CSS: ${url}`);
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const css = await res.text();
+ // Загружаем CSS и проверяем версию
+function loadCSS(name, url) {
+  return new Promise(resolve => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
+    link.onload = () => {
+      console.log(`%c[SpotCol] ✅ Подключён: ${name}`, 'color: #2ecc71');
+      // Проверка версии
+      const testEl = document.createElement('div');
+      testEl.className = `css-${name.replace(/[^a-z0-9]/gi, '')}`;
+      document.body.appendChild(testEl);
 
-      // Вставка CSS
-      const style = document.createElement('style');
-      style.textContent = css;
-      document.head.appendChild(style);
-
-      // Создаём скрытый div с уникальным классом для этой темы
-      const testDiv = document.createElement('div');
-      const className = `css-check-${name.replace(/[^a-z0-9]/gi, '-')}`;
-      testDiv.className = className;
-      testDiv.style.display = 'none';
-      document.body.appendChild(testDiv);
-
-      // Ждём отрисовку
       requestAnimationFrame(() => {
-        const version = getComputedStyle(testDiv).getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
-        console.log(`[SpotCol] 📘 ${name} версия: ${version || 'не указана'}`);
-        testDiv.remove();
+        const styles = getComputedStyle(testEl);
+        const version = styles.getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
+        if (version) {
+          console.log(`%c[SpotCol] 📘 ${name} версия: ${version}`, 'color: #3498db');
+        } else {
+          console.log(`%c[SpotCol] ⚠️ ${name}.css версия: не указана`, 'color: #e67e22');
+        }
+        testEl.remove();
+        resolve();
       });
-
-      console.log(`[SpotCol] ✅ Подключён: ${name}`);
-    } catch (e) {
-      console.error(`[SpotCol] ❌ Ошибка загрузки CSS: ${name}`, e);
-    }
-  }
+    };
+    link.onerror = () => {
+      console.log(`%c[SpotCol] ❌ Ошибка загрузки: ${name}`, 'color: #e74c3c');
+      resolve();
+    };
+    document.head.appendChild(link);
+  });
+}
 
   (async () => {
     await Promise.all(styles.map(loadCss));
