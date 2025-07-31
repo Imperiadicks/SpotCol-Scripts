@@ -46,18 +46,30 @@
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const css = await res.text();
+
       const style = document.createElement('style');
       style.textContent = css;
       document.head.appendChild(style);
       console.log(`[SpotCol] ✅ Подключён: ${name}`);
+
+      // Пытаемся считать версию из :root { --css-version: '...' }
+      requestAnimationFrame(() => {
+        const version = getComputedStyle(document.documentElement).getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
+        if (version) {
+          console.log(`[SpotCol] 📘 ${name} версия: ${version}`);
+        } else {
+          console.log(`[SpotCol] 📘 ${name} версия: не указана`);
+        }
+      });
+
     } catch (e) {
       console.error(`[SpotCol] ❌ Ошибка загрузки CSS: ${name}`, e);
     }
   }
 
   (async () => {
-    await Promise.all(styles.map(loadCss));       // Загружаем все CSS параллельно
-    for (const script of scripts) await loadScript(script); // Загружаем JS по порядку
+    await Promise.all(styles.map(loadCss)); // CSS параллельно
+    for (const script of scripts) await loadScript(script); // JS по порядку
     console.log('[SpotCol] 🟢 Все модули загружены и активированы');
   })();
 })();

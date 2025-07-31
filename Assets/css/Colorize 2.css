@@ -1,3 +1,9 @@
+/*Colorize 2*/
+
+:root {
+  --css-version: 'v1.0.0';
+}
+
 [class*="MainPage_vibe"] {
   transition: height 1.5s ease;
   overflow: hidden;

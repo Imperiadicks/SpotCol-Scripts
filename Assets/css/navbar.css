@@ -1,4 +1,9 @@
 /*Navbar*/
+
+:root {
+  --css-version: 'v1.0.0';
+}
+
 /*--------------------------------------------*/
 .NavbarDesktop_root__scYzp {
 	position: fixed;

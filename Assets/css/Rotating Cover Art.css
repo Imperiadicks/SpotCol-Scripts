@@ -1,4 +1,8 @@
 
+:root {
+  --css-version: 'v1.0.0';
+}
+
 /*-----------------------------------------------------------------------------------------*/
 [data-test-id="PLAYERBAR_DESKTOP"] * .FullscreenPlayerDesktopButton_root__qGgoC {
     border-radius: 50%;
