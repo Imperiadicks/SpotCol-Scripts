@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.10');
+  console.log('SPOTCOL v1.0.11');
 
   const scripts = [
     'Library.js',
@@ -54,12 +54,21 @@ async function loadCss(name) {
 
     await new Promise(resolve => requestAnimationFrame(resolve));
 
-    const key = '--' + name
+    // Ключ 1 — kebab-case + lower
+    const kebab = '--' + name
       .replace(/\.css$/i, '')
       .replace(/[^a-zA-Z0-9]/g, '-')
       .toLowerCase() + '-css-version';
 
-    const version = getComputedStyle(document.documentElement).getPropertyValue(key)?.trim().replace(/^['"]|['"]$/g, '');
+    // Ключ 2 — как есть (PascalCase + пробелы заменены)
+    const fallback = '--' + name
+      .replace(/\.css$/i, '')
+      .replace(/[^a-zA-Z0-9]/g, '-') + '-css-version';
+
+    let version = getComputedStyle(document.documentElement).getPropertyValue(kebab)?.trim();
+    if (!version) version = getComputedStyle(document.documentElement).getPropertyValue(fallback)?.trim();
+
+    version = version?.replace(/^['"]|['"]$/g, '');
 
     if (version) {
       console.log(`%c[SpotCol] 📘 ${name} версия: ${version}`, 'color: #3498db');
