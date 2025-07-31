@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.5');
+  console.log('SPOTCOL v1.0.6');
 
   const scripts = [
     'Library.js',
@@ -42,38 +42,32 @@
 async function loadCss(name) {
   const url = CSS_BASE + encodeURIComponent(name);
   console.log(`[SpotCol] 🎨 Загружаю CSS: ${url}`);
-
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const css = await res.text();
 
     const style = document.createElement('style');
-    style.setAttribute('data-css-name', name);
     style.textContent = css;
     document.head.appendChild(style);
-
     console.log(`[SpotCol] ✅ Подключён: ${name}`);
 
-    // Вставляем временный элемент для изоляции области видимости
-    const testEl = document.createElement('div');
-    testEl.style.all = 'initial';
-    testEl.className = `css-${name.replace(/[^a-z0-9]/gi, '')}`;
-    document.body.appendChild(testEl);
+    // Ждём, пока CSS применится
+    await new Promise(resolve => requestAnimationFrame(resolve));
 
-    requestAnimationFrame(() => {
-      const cssKey = `--${name.replace(/[^a-z0-9]/gi, '').toLowerCase().replace(/css$/, '')}-css-version`;
-      const version = getComputedStyle(document.documentElement).getPropertyValue(cssKey)?.trim().replace(/^['"]|['"]$/g, '');
+    // Генерируем ключ вида --spotcol-css-version
+    const key = '--' + name
+      .replace(/\.css$/i, '')       // убираем расширение
+      .replace(/[^a-z0-9]/gi, '')   // убираем лишние символы
+      .toLowerCase() + '-css-version';
 
-      if (version) {
-        console.log(`%c[SpotCol] 📘 ${name} версия: ${version}`, 'color: #3498db');
-      } else {
-        console.log(`%c[SpotCol] ⚠️ ${name} версия: не указана`, 'color: #e67e22');
-      }
+    const version = getComputedStyle(document.documentElement).getPropertyValue(key)?.trim().replace(/^['"]|['"]$/g, '');
 
-      testEl.remove();
-    });
-
+    if (version) {
+      console.log(`%c[SpotCol] 📘 ${name} версия: ${version}`, 'color: #3498db');
+    } else {
+      console.log(`%c[SpotCol] ⚠️ ${name} версия: не указана`, 'color: #e67e22');
+    }
   } catch (e) {
     console.error(`[SpotCol] ❌ Ошибка загрузки CSS: ${name}`, e);
   }
