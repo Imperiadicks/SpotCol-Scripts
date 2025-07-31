@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.11');
+  console.log('SPOTCOL v1.0.12');
 
   const scripts = [
     'Library.js',
@@ -53,14 +53,13 @@ async function loadCss(name) {
     console.log(`[SpotCol] ✅ Подключён: ${name}`);
 
     await new Promise(resolve => requestAnimationFrame(resolve));
+    await new Promise(resolve => setTimeout(resolve, 0));
 
-    // Ключ 1 — kebab-case + lower
     const kebab = '--' + name
       .replace(/\.css$/i, '')
       .replace(/[^a-zA-Z0-9]/g, '-')
       .toLowerCase() + '-css-version';
 
-    // Ключ 2 — как есть (PascalCase + пробелы заменены)
     const fallback = '--' + name
       .replace(/\.css$/i, '')
       .replace(/[^a-zA-Z0-9]/g, '-') + '-css-version';
