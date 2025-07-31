@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.1.3")
+console.log("проверка SPOTIFYSCREEN 0.1.4")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -96,10 +96,13 @@ if (!SpotColЛичная) {
      };
 
 /*_____________________________________________________________________________________________*/
-
-
 const build = () => {
-  if ($root) return;
+  // Если $root есть и он в документе — ничего не делаем
+  if ($root && document.body.contains($root)) return;
+
+  // Если был, но удалён — сбрасываем все связанные переменные
+  $root = null;
+  $bg = $cover = $track = $like = $artist = null;
 
   const layout = document.querySelector('[class*="CommonLayout_root"]');
   const sibling = layout?.nextElementSibling;
@@ -142,35 +145,29 @@ const build = () => {
   );
 };
 
+  const update=state=>{
+    build();
+    if(!$origLike||!document.contains($origLike)){
+      const fresh=createClone();
+      $like.replaceWith(fresh);$like=fresh;
+    }
+    const t=state.track||{};
+    const img=t.coverUri?`https://${t.coverUri.replace('%%','1000x1000')}`:'http://127.0.0.1:2007/Assets/no-cover-image.png';
+    [$bg,$cover].forEach(n=>n.style.background=`url(${img}) center/cover no-repeat`);
+    $track.textContent=t.title||'';
+    $artist.textContent=(t.artists||[]).map(a=>a.name).join(', ');
+    syncState();
+    $root.style.display='block';
+  };
 
 /*_____________________________________________________________________________________________*/
 
-
-     const update=state=>{
-       build();
-       if(!$origLike||!document.contains($origLike)){
-         const fresh=createClone();
-         $like.replaceWith(fresh);$like=fresh;
-       }
-
-/*_____________________________________________________________________________________________*/
-
-
-       const t=state.track||{};
-       const img=t.coverUri?`https://${t.coverUri.replace('%%','1000x1000')}`:'http://127.0.0.1:2007/Assets/no-cover-image.png';
-       [$bg,$cover].forEach(n=>n.style.background=`url(${img}) center/cover no-repeat`);
-       $track.textContent=t.title||'';
-       $artist.textContent=(t.artists||[]).map(a=>a.name).join(', ');
-       syncState();
-       $root.style.display='block';
-     };
-
-/*_____________________________________________________________________________________________*/
-
-    update(theme.player.state)
-
-     function el(tag,cls,parent=document.body,txt){const n=document.createElement(tag);n.classList.add(cls);if(txt)n.textContent=txt;parent.appendChild(n);return n;}
-   
+     function el(tag,cls,parent=document.body,txt){
+      const n=document.createElement(tag);
+      n.classList.add(cls);if(txt)n.textContent=txt;
+      parent.appendChild(n);
+      return n;
+    }
 /*_____________________________________________________________________________________________*/
 
 /*_____________________________________________________________________________________________*/
