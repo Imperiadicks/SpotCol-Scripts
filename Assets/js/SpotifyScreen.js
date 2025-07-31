@@ -1,5 +1,5 @@
-console.log("[SpotifyScreen] - v0.1.6")
 const SpotColЛичная = window.Theme;
+console.log("проверка SPOTIFYSCREEN 0.1.6")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -18,6 +18,7 @@ if (!SpotColЛичная) {
       .LikeTrack.animate{animation:likePulse .35s ease-out;}
 
       `
+     
    );
    
 /*_____________________________________________________________________________________________*/
@@ -27,6 +28,7 @@ if (!SpotColЛичная) {
 
 
 /*_____________________________________________________________________________________________*/
+
 
      const isLiked=node=>{
        if(!node) return false;
