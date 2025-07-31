@@ -1,9 +1,7 @@
-/*Navbar*/
-
-:root {
-  --css-version: 'v1.0.0';
+:root[data-style="Navbar"] {
+  --css-version: 'v1.0.1';
 }
-
+/*Navbar*/
 /*--------------------------------------------*/
 .NavbarDesktop_root__scYzp {
 	position: fixed;

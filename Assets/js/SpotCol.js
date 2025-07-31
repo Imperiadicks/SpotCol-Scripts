@@ -3,12 +3,11 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.1.0');
+  console.log('[SpotCol] v1.1.1');
 
   const scripts = [
     'Library.js',
     'colorize 2.js',
-    // 'BetterPlayer.js',
     'Main.js',
     'SpotifyScreen.js'
   ];
@@ -40,36 +39,37 @@
   }
 
   async function loadCss(name) {
-  const url = CSS_BASE + encodeURIComponent(name);
-  console.log(`[SpotCol] 🎨 Загружаю CSS: ${url}`);
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const css = await res.text();
+    const url = CSS_BASE + encodeURIComponent(name);
+    console.log(`[SpotCol] 🎨 Загружаю CSS: ${url}`);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const css = await res.text();
 
-    // Вставка основного CSS
-    const style = document.createElement('style');
-    style.textContent = css;
-    document.head.appendChild(style);
+      // Вставка CSS
+      const style = document.createElement('style');
+      style.textContent = css;
+      document.head.appendChild(style);
 
-    // Временный div для считывания --css-version из этого конкретного файла
-    const id = `css-${name.replace(/[^a-z0-9]/gi, '-')}`;
-    const testEl = document.createElement('div');
-    testEl.className = id;
-    document.body.appendChild(testEl);
+      // Создаём скрытый div с уникальным классом для этой темы
+      const testDiv = document.createElement('div');
+      const className = `css-check-${name.replace(/[^a-z0-9]/gi, '-')}`;
+      testDiv.className = className;
+      testDiv.style.display = 'none';
+      document.body.appendChild(testDiv);
 
-    // Пауза для применения стилей
-    requestAnimationFrame(() => {
-      const version = getComputedStyle(testEl).getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
-      console.log(`[SpotCol] 📘 ${name} версия: ${version || 'не указана'}`);
-      testEl.remove();
-    });
+      // Ждём отрисовку
+      requestAnimationFrame(() => {
+        const version = getComputedStyle(testDiv).getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
+        console.log(`[SpotCol] 📘 ${name} версия: ${version || 'не указана'}`);
+        testDiv.remove();
+      });
 
-    console.log(`[SpotCol] ✅ Подключён: ${name}`);
-  } catch (e) {
-    console.error(`[SpotCol] ❌ Ошибка загрузки CSS: ${name}`, e);
+      console.log(`[SpotCol] ✅ Подключён: ${name}`);
+    } catch (e) {
+      console.error(`[SpotCol] ❌ Ошибка загрузки CSS: ${name}`, e);
+    }
   }
-}
 
   (async () => {
     await Promise.all(styles.map(loadCss));

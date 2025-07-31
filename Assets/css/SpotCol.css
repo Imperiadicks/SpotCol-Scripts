@@ -1,7 +1,8 @@
 
-:root {
-  --css-version: 'v1.0.0';
+:root[data-style="SpotCol"] {
+  --css-version: 'v1.0.1';
 }
+
 
 /*--------------------------------------------*/
 .FullscreenPlayerDesktopContent_syncLyrics__6dTfH, .PlayQueue_root__ponhw
