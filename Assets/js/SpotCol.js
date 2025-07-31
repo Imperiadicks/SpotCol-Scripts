@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.2');
+  console.log('SPOTCOL v1.0.3');
 
   const scripts = [
     'Library.js',
@@ -59,7 +59,9 @@
       document.body.appendChild(testEl);
 
       requestAnimationFrame(() => {
-        const version = getComputedStyle(testEl).getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
+        const cssKey = `--${name.replace(/[^a-z0-9]/gi, '').toLowerCase()}-css-version`;
+        const version = getComputedStyle(document.documentElement).getPropertyValue(cssKey)
+
         if (version) {
           console.log(`[SpotCol] 📘 ${name} версия: ${version}`);
         } else {

@@ -1,6 +1,6 @@
 /*BetterPlayer*/
 
-:root[data-style="BetterPlayer"] {
+:root{
   --css-version: 'v1.0.0';
 }
 

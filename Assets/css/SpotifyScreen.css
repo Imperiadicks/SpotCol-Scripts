@@ -1,5 +1,5 @@
 /*Spotify Screen*/
-:root[data-style="SpotifyScreen"] {
+:root{
   --css-version: 'v1.0.1';
 }
 
