@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('[SpotCol] v1.1.4');
+  console.log('[SpotCol] v1.1.5');
 
   const scripts = [
     'Library.js',
