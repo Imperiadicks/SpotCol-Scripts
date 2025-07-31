@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.4');
+  console.log('SPOTCOL v1.0.5');
 
   const scripts = [
     'Library.js',
@@ -62,7 +62,7 @@ async function loadCss(name) {
     document.body.appendChild(testEl);
 
     requestAnimationFrame(() => {
-      const cssKey = `--${name.replace(/[^a-z0-9]/gi, '').toLowerCase()}-css-version`;
+      const cssKey = `--${name.replace(/[^a-z0-9]/gi, '').toLowerCase().replace(/css$/, '')}-css-version`;
       const version = getComputedStyle(document.documentElement).getPropertyValue(cssKey)?.trim().replace(/^['"]|['"]$/g, '');
 
       if (version) {
