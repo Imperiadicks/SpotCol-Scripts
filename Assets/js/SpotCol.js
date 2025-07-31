@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.1.1');
+  console.log('SPOTCOL v1.1.2');
 
   const scripts = [
     'Library.js',
@@ -84,8 +84,14 @@ async function loadCss(name) {
 }
 
   (async () => {
-    await Promise.all(styles.map(loadCss)); // CSS параллельно
-    for (const script of scripts) await loadScript(script); // JS по очереди
+    await Promise.all(styles.map(loadCss));
+    if (Object.keys(jsVersions).length) {
+  console.log('%c[SpotCol] 📘 JS версии:', 'color: #9b59b6; font-weight: bold');
+  for (const [name, version] of Object.entries(jsVersions)) {
+    console.log(`  • ${name}: ${version}`);
+  }
+}
+
     console.log('[SpotCol] 🟢 Все модули загружены и активированы');
   })();
 })();
