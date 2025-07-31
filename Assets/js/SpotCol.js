@@ -47,21 +47,18 @@
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const css = await res.text();
 
-    // Оборачиваем CSS в уникальный контейнер с классом для изоляции
-    const id = `css-${name.replace(/[^a-z0-9]/gi, '-')}`;
-    const scoped = `:root.${id} { ${css.match(/--css-version:.*?;/)?.[0] || ''} }`;
-
-    // Вставка реального CSS
+    // Вставка основного CSS
     const style = document.createElement('style');
     style.textContent = css;
     document.head.appendChild(style);
 
-    // Вставка временного контейнера для чтения версии
+    // Временный div для считывания --css-version из этого конкретного файла
+    const id = `css-${name.replace(/[^a-z0-9]/gi, '-')}`;
     const testEl = document.createElement('div');
     testEl.className = id;
     document.body.appendChild(testEl);
 
-    // Задержка для рендера
+    // Пауза для применения стилей
     requestAnimationFrame(() => {
       const version = getComputedStyle(testEl).getPropertyValue('--css-version')?.trim().replace(/^['"]|['"]$/g, '');
       console.log(`[SpotCol] 📘 ${name} версия: ${version || 'не указана'}`);
