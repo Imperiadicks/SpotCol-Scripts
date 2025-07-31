@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.1.2');
+  console.log('SPOTCOL v1.1.3');
 
   const scripts = [
     'Library.js',
@@ -25,6 +25,7 @@
   ];
 
 async function loadScript(name) {
+  const jsVersions = {};
   const url = JS_BASE + encodeURIComponent(name);
   console.log(`[SpotCol] 📦 Загружаю JS: ${url}`);
   try {
@@ -83,15 +84,21 @@ async function loadCss(name) {
   }
 }
 
-  (async () => {
-    await Promise.all(styles.map(loadCss));
-    if (Object.keys(jsVersions).length) {
-  console.log('%c[SpotCol] 📘 JS версии:', 'color: #9b59b6; font-weight: bold');
-  for (const [name, version] of Object.entries(jsVersions)) {
-    console.log(`  • ${name}: ${version}`);
-  }
-}
+(async () => {
+  await Promise.all(styles.map(loadCss));
 
-    console.log('[SpotCol] 🟢 Все модули загружены и активированы');
-  })();
+  for (const script of scripts) {
+    await loadScript(script);
+  }
+
+  if (Object.keys(jsVersions).length) {
+    console.log('%c[SpotCol] 📘 JS версии:', 'color: #9b59b6; font-weight: bold');
+    for (const [name, version] of Object.entries(jsVersions)) {
+      console.log(`  • ${name}: ${version}`);
+    }
+  }
+
+  console.log('[SpotCol] 🟢 Все модули загружены и активированы');
+})();
+
 })();
