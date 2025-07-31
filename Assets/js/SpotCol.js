@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('[SpotCol] v1.1.3');
+  console.log('[SpotCol] v1.1.4');
 
   const scripts = [
     'Library.js',
@@ -40,16 +40,14 @@
 
 function loadCSS(name) {
   return new Promise(resolve => {
-    const url = CSS_BASE + encodeURIComponent(name); // ВАЖНО!
+    const url = CSS_BASE + name.replace(/ /g, '%20'); // ручная замена
     console.log(`[SpotCol] 📦 Загружаю CSS: ${url}`);
 
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = url;
-
     link.onload = () => {
       console.log(`%c[SpotCol] ✅ Подключён: ${name}`, 'color: #2ecc71');
-
       const testEl = document.createElement('div');
       testEl.className = `css-${name.replace(/[^a-z0-9]/gi, '')}`;
       document.body.appendChild(testEl);
@@ -66,12 +64,10 @@ function loadCSS(name) {
         resolve();
       });
     };
-
     link.onerror = () => {
       console.log(`%c[SpotCol] ❌ Ошибка загрузки: ${name}`, 'color: #e74c3c');
       resolve();
     };
-
     document.head.appendChild(link);
   });
 }
