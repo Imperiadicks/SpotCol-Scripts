@@ -1,5 +1,6 @@
 (() => {
-  console.log('[Colorize 2] v2');
+  window.SpotColVersions = window.SpotColVersions || {};
+  window.SpotColVersions['Colorize 2.js'] = '2.0.0';
   /*──────────────────────── helpers ────────────────────────*/
   const LOG = (...a) => console.log('[Colorize 2]', ...a);
 

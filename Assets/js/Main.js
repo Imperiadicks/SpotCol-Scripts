@@ -1,4 +1,6 @@
-console.log("[Main] v0.3.2")
+window.SpotColVersions = window.SpotColVersions || {};
+window.SpotColVersions['Main.js'] = '0.3.2';
+
 window.Theme = new Theme('SpotColЛичная');
 
 let lastURL = location.href;

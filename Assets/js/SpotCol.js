@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.12');
+  console.log('SPOTCOL v1.1.0');
 
   const scripts = [
     'Library.js',
@@ -24,20 +24,26 @@
     'Rotating Cover Art.css'
   ];
 
-  async function loadScript(name) {
-    const url = JS_BASE + encodeURIComponent(name);
-    console.log(`[SpotCol] 📦 Загружаю JS: ${url}`);
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const code = await res.text();
-      const run = Function(code);
-      run.call(window);
-      console.log(`[SpotCol] ✅ Выполнен: ${name}`);
-    } catch (e) {
-      console.error(`[SpotCol] ❌ Ошибка загрузки JS: ${name}`, e);
+async function loadScript(name) {
+  const url = JS_BASE + encodeURIComponent(name);
+  console.log(`[SpotCol] 📦 Загружаю JS: ${url}`);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const code = await res.text();
+    const run = Function(code);
+    run.call(window);
+
+    const versions = window.SpotColVersions || {};
+    const version = versions[name];
+
+    if (version) {
+      console.log(`%c[SpotCol] 🧠 ${name} версия: ${version}`, 'color: #9b59b6');
     }
+  } catch (e) {
+    console.error(`[SpotCol] ❌ Ошибка загрузки JS: ${name}`, e);
   }
+}
 
 async function loadCss(name) {
   const url = CSS_BASE + encodeURIComponent(name);
@@ -50,7 +56,6 @@ async function loadCss(name) {
     const style = document.createElement('style');
     style.textContent = css;
     document.head.appendChild(style);
-    console.log(`[SpotCol] ✅ Подключён: ${name}`);
 
     await new Promise(resolve => requestAnimationFrame(resolve));
     await new Promise(resolve => setTimeout(resolve, 0));

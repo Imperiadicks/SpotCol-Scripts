@@ -1,10 +1,8 @@
-/* ======================================================================================
- * SpotCol Universal Library 1.0.0
- * ───────────────────────────────────────────────────────────────────────────────────────*/
 (() => {
-  if (window.Library) return;     // защита от двойной загрузки
+  if (window.Library) return;
   const DEBUG = !!window.__DEBUG__;
-  console.log('[Library] v1.0.1');
+  window.SpotColVersions = window.SpotColVersions || {};
+  window.SpotColVersions['Library.js'] = '1.0.1';
   const log   = (...a) => DEBUG && console.log('[Library]', ...a);
 
   /* ════════════════════════════════════════════════════════════════════════════════════
