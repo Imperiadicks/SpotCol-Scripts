@@ -36,9 +36,14 @@ async function loadScript(name) {
     run.call(window);
 
     const versions = window.SpotColVersions || {};
-    const normalized = name.replace(/\s+/g, '');
+    const normalized = name.replace(/\s+/g, '').toLowerCase();
 
-    const version = versions[name] || versions[normalized];
+    const version =
+      versions[name] ||
+      versions[name.toLowerCase()] ||
+      versions[normalized] ||
+      versions[normalized + '.js'];
+
     if (version) jsVersions[name] = version;
   } catch (e) {
     console.error(`[SpotCol] ❌ Ошибка загрузки JS: ${name}`, e);
