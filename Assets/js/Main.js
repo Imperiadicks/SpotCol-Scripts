@@ -1,9 +1,5 @@
-function log(text) {
-    console.log('[Customizable LOG]:', text);
-}
-
 window.SpotColVersions = window.SpotColVersions || {};
-window.SpotColVersions['Main.js'] = '0.3.4';
+window.SpotColVersions['Main.js'] = '0.3.5';
 
 window.Theme = new Theme('SpotColЛичная');
 
@@ -70,10 +66,6 @@ let settings = {};
 
 let updateInterval;
 let settingsDelay = 1000;
-
-function log(text) {
-    console.log('[Customizable LOG]: ', text)
-}
 
 async function getSettings() {
     try {
