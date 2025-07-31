@@ -52,13 +52,11 @@ async function loadCss(name) {
     document.head.appendChild(style);
     console.log(`[SpotCol] ✅ Подключён: ${name}`);
 
-    // Ждём, пока CSS применится
     await new Promise(resolve => requestAnimationFrame(resolve));
 
-    // Генерируем ключ вида --spotcol-css-version
     const key = '--' + name
-      .replace(/\.css$/i, '')       // убираем расширение
-      .replace(/[^a-z0-9]/gi, '')   // убираем лишние символы
+      .replace(/\.css$/i, '')
+      .replace(/[^a-z0-9]/gi, '')
       .toLowerCase() + '-css-version';
 
     const version = getComputedStyle(document.documentElement).getPropertyValue(key)?.trim().replace(/^['"]|['"]$/g, '');
