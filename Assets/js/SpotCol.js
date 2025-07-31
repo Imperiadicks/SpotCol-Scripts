@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.3');
+  console.log('SPOTCOL v1.0.4');
 
   const scripts = [
     'Library.js',
@@ -39,40 +39,45 @@
     }
   }
 
-  async function loadCss(name) {
-    const url = CSS_BASE + encodeURIComponent(name);
-    console.log(`[SpotCol] 🎨 Загружаю CSS: ${url}`);
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const css = await res.text();
+async function loadCss(name) {
+  const url = CSS_BASE + encodeURIComponent(name);
+  console.log(`[SpotCol] 🎨 Загружаю CSS: ${url}`);
 
-      const style = document.createElement('style');
-      style.textContent = css;
-      document.head.appendChild(style);
-      console.log(`[SpotCol] ✅ Подключён: ${name}`);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const css = await res.text();
 
-      // Временный элемент для чтения специфичных переменных
-      const testEl = document.createElement('div');
-      testEl.style.all = 'initial';
-      testEl.className = `css-${name.replace(/[^a-z0-9]/gi, '')}`;
-      document.body.appendChild(testEl);
+    const style = document.createElement('style');
+    style.setAttribute('data-css-name', name);
+    style.textContent = css;
+    document.head.appendChild(style);
 
-      requestAnimationFrame(() => {
-        const cssKey = `--${name.replace(/[^a-z0-9]/gi, '').toLowerCase()}-css-version`;
-        const version = getComputedStyle(document.documentElement).getPropertyValue(cssKey)
+    console.log(`[SpotCol] ✅ Подключён: ${name}`);
 
-        if (version) {
-          console.log(`[SpotCol] 📘 ${name} версия: ${version}`);
-        } else {
-          console.log(`[SpotCol] ⚠️ ${name} версия: не указана`);
-        }
-        testEl.remove();
-      });
-    } catch (e) {
-      console.error(`[SpotCol] ❌ Ошибка загрузки CSS: ${name}`, e);
-    }
+    // Вставляем временный элемент для изоляции области видимости
+    const testEl = document.createElement('div');
+    testEl.style.all = 'initial';
+    testEl.className = `css-${name.replace(/[^a-z0-9]/gi, '')}`;
+    document.body.appendChild(testEl);
+
+    requestAnimationFrame(() => {
+      const cssKey = `--${name.replace(/[^a-z0-9]/gi, '').toLowerCase()}-css-version`;
+      const version = getComputedStyle(document.documentElement).getPropertyValue(cssKey)?.trim().replace(/^['"]|['"]$/g, '');
+
+      if (version) {
+        console.log(`%c[SpotCol] 📘 ${name} версия: ${version}`, 'color: #3498db');
+      } else {
+        console.log(`%c[SpotCol] ⚠️ ${name} версия: не указана`, 'color: #e67e22');
+      }
+
+      testEl.remove();
+    });
+
+  } catch (e) {
+    console.error(`[SpotCol] ❌ Ошибка загрузки CSS: ${name}`, e);
   }
+}
 
   (async () => {
     await Promise.all(styles.map(loadCss)); // CSS параллельно
