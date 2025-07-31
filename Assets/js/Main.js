@@ -274,4 +274,4 @@ setInterval(() => {
         window.Theme._lastURL = location.href;
         window.Theme.SpotifyScreen?.check?.(); // принудительная проверка и пересоздание
     }
-}, 1500);
+}, 0);
