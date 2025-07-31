@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.6');
+  console.log('SPOTCOL v1.0.7');
 
   const scripts = [
     'Library.js',
@@ -54,12 +54,14 @@ async function loadCss(name) {
 
     await new Promise(resolve => requestAnimationFrame(resolve));
 
-    const key = '--' + name
-      .replace(/\.css$/i, '')
-      .replace(/[^a-z0-9]/gi, '')
-      .toLowerCase() + '-css-version';
+  const key = '--' + name
+    .replace(/\.css$/i, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-') + '-css-version';
 
-    const version = getComputedStyle(document.documentElement).getPropertyValue(key)?.trim().replace(/^['"]|['"]$/g, '');
+  const version = getComputedStyle(document.documentElement).getPropertyValue(key)?.trim().replace(/^['"]|['"]$/g, '');
+
 
     if (version) {
       console.log(`%c[SpotCol] 📘 ${name} версия: ${version}`, 'color: #3498db');
