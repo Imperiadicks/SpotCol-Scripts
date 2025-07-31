@@ -1,12 +1,10 @@
-console.log("[Main] - v0.4.0")
-
+console.log("[Main] v0.3.2")
 window.Theme = new Theme('SpotColЛичная');
-
 let lastURL = location.href;
 setInterval(() => {
   if (location.href !== lastURL) {
     lastURL = location.href;
-    window.Theme?.SpotifyScreen?.check?.();
+    window.Theme?.SpotifyScreen?.check?.(); // пересоздание при смене адреса
   }
 }, 0);
 
@@ -22,6 +20,22 @@ const observer = new MutationObserver(() => {
 });
 
 observer.observe(document.body, { childList: true, subtree: true });
+/*--------------------------------------------*/
+// Отключение тупого даблклика
+/*--------------------------------------------*/
+function disableDoubleClick() {
+    const elements = document.querySelectorAll('.PlayerBar_root__cXUnU');
+
+    elements.forEach(element => {
+        element.addEventListener('dblclick', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }, true);
+    });
+}
+
+setInterval(disableDoubleClick, 1000);
+/*--------------------------------------------*/
 
 // Google Noto Sans Font
 /*--------------------------------------------*/
@@ -49,6 +63,10 @@ let settings = {};
 
 let updateInterval;
 let settingsDelay = 1000;
+
+function log(text) {
+    console.log('[Customizable LOG]: ', text)
+}
 
 async function getSettings() {
     try {
@@ -246,3 +264,11 @@ function init() {
 }
 
 init();
+// Пересоздание SpotifyScreen при смене страницы
+setInterval(() => {
+    if (!window.Theme?._lastURL) window.Theme._lastURL = location.href;
+    if (location.href !== window.Theme._lastURL) {
+        window.Theme._lastURL = location.href;
+        window.Theme.SpotifyScreen?.check?.(); // принудительная проверка и пересоздание
+    }
+}, 1500);
