@@ -1,6 +1,6 @@
 /*Spotify Screen*/
 :root{
-  --SpotifyScreen-css-version: 'v1.0.3';
+  --SpotifyScreen-css-version: 'v1.0.4';
 }
 
 /*------------------------------------------------------------------------------------*/
@@ -14,8 +14,7 @@
 	z-index: 1;
 	overflow-y: scroll;
 	background: none;
-    border: 2px;
-	border-color: var(--ym-background-color-primary-enabled-content) !important;
+    border: 2px solid var(--color-light-1) !important;
 	opacity: 1 !important;
 } 
 .Spotify_Screen::-webkit-scrollbar {
