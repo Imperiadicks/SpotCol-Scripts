@@ -1,6 +1,6 @@
 /*Spotify Screen*/
 :root{
-  --SpotifyScreen-css-version: 'v1.0.5';
+  --SpotifyScreen-css-version: 'v1.0.6';
 }
 
 /*------------------------------------------------------------------------------------*/
@@ -39,7 +39,7 @@
 .SM_Decorate_AddToPlaylist_Button {
 	position: absolute;
 	right: 15px;
-	content: url("http://127.0.0.1:2007/assets/SM-Decorate-AddToPlaylist-Button.png");
+	content: url("http://localhost:2007/assets/SM-Decorate-AddToPlaylist-Button.png");
 	margin-top: 5px;
 }
 /* строка-заголовок с названием и сердцем */
