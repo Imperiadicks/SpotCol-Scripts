@@ -1,5 +1,5 @@
 window.SpotColVersions = window.SpotColVersions || {};
-window.SpotColVersions['Main.js'] = '0.3.2';
+window.SpotColVersions['Main.js'] = '0.3.3';
 
 window.Theme = new Theme('SpotColЛичная');
 
@@ -7,9 +7,9 @@ let lastURL = location.href;
 setInterval(() => {
   if (location.href !== lastURL) {
     lastURL = location.href;
-    window.Theme?.SpotifyScreen?.check?.(); // пересоздание при смене адреса
+    window.Theme?.SpotifyScreen?.check?.();
   }
-}, 800);
+}, 0);
 
 /*--------------------------------------------*/
 const observer = new MutationObserver(() => {
@@ -267,11 +267,3 @@ function init() {
 }
 
 init();
-// Пересоздание SpotifyScreen при смене страницы
-setInterval(() => {
-    if (!window.Theme?._lastURL) window.Theme._lastURL = location.href;
-    if (location.href !== window.Theme._lastURL) {
-        window.Theme._lastURL = location.href;
-        window.Theme.SpotifyScreen?.check?.(); // принудительная проверка и пересоздание
-    }
-}, 0);
