@@ -35,11 +35,10 @@ async function loadScript(name) {
     run.call(window);
 
     const versions = window.SpotColVersions || {};
-    const version = versions[name];
+    const normalized = name.replace(/\s+/g, '');
 
-    if (version) {
-      console.log(`%c[SpotCol] 🧠 ${name} версия: ${version}`, 'color: #9b59b6');
-    }
+    const version = versions[name] || versions[normalized];
+    if (version) jsVersions[name] = version;
   } catch (e) {
     console.error(`[SpotCol] ❌ Ошибка загрузки JS: ${name}`, e);
   }
