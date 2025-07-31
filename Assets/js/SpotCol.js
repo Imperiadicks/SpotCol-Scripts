@@ -79,8 +79,8 @@ async function loadCss(name) {
 }
 
   (async () => {
-    await Promise.all(styles.map(loadCss)); // CSS параллельно
-    for (const script of scripts) await loadScript(script); // JS по очереди
+    await Promise.all(styles.map(loadCss));
+    for (const script of scripts) await loadScript(script);
     console.log('[SpotCol] 🟢 Все модули загружены и активированы');
   })();
 })();
