@@ -3,7 +3,6 @@
   const DEBUG = !!window.__DEBUG__;
   window.SpotColVersions = window.SpotColVersions || {};
   window.SpotColVersions['Library.js'] = '1.0.1';
-  const log   = (...a) => DEBUG && console.log('[Library]', ...a);
 
   /* ════════════════════════════════════════════════════════════════════════════════════
    *  EventEmitter
