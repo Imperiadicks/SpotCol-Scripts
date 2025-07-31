@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.1.5")
+console.log("проверка SPOTIFYSCREEN 0.1.6")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -375,7 +375,7 @@ SpotColЛичная.SpotifyScreen = {
 
   build, // метод build уже есть выше
 };
-
+build();
 /*_____________________________________________________________________________________________*/
 theme.updateSpotifyScreen = update;
    })(SpotColЛичная, 1000);
