@@ -2,8 +2,9 @@
   const GH_ROOT = 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/';
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
+  const jsVersions = {};
 
-  console.log('SPOTCOL v1.1.3');
+  console.log('SPOTCOL v1.1.4');
 
   const scripts = [
     'Library.js',
@@ -25,7 +26,6 @@
   ];
 
 async function loadScript(name) {
-  const jsVersions = {};
   const url = JS_BASE + encodeURIComponent(name);
   console.log(`[SpotCol] 📦 Загружаю JS: ${url}`);
   try {
