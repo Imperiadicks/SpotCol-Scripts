@@ -1,4 +1,4 @@
-console.log("[Main] - v0.3.2")
+console.log("[Main] - v0.4.0")
 
 window.Theme = new Theme('SpotColЛичная');
 
@@ -22,22 +22,6 @@ const observer = new MutationObserver(() => {
 });
 
 observer.observe(document.body, { childList: true, subtree: true });
-/*--------------------------------------------*/
-// Отключение тупого даблклика
-/*--------------------------------------------*/
-function disableDoubleClick() {
-    const elements = document.querySelectorAll('.PlayerBar_root__cXUnU');
-
-    elements.forEach(element => {
-        element.addEventListener('dblclick', function(event) {
-            event.preventDefault();
-            event.stopPropagation();
-        }, true);
-    });
-}
-
-setInterval(disableDoubleClick, 1000);
-/*--------------------------------------------*/
 
 // Google Noto Sans Font
 /*--------------------------------------------*/
