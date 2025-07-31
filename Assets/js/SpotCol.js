@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.8');
+  console.log('SPOTCOL v1.0.9');
 
   const scripts = [
     'Library.js',
@@ -57,9 +57,7 @@ async function loadCss(name) {
     // 📌 Формируем ключ переменной версии
     const key = '--' + name
       .replace(/\.css$/i, '')
-      .replace(/[^a-zA-Z0-9]/g, '-')      // заменяем пробелы и символы на -
-      .replace(/([a-z])([A-Z])/g, '$1-$2') // добавляем - между CamelCase
-      .toLowerCase() + '-css-version';
+      .replace(/[^a-zA-Z0-9]/g, '-') + '-css-version';
 
     const version = getComputedStyle(document.documentElement).getPropertyValue(key)?.trim().replace(/^['"]|['"]$/g, '');
 
