@@ -1,5 +1,6 @@
 console.log("[Main] v0.3.2")
 window.Theme = new Theme('SpotColЛичная');
+
 let lastURL = location.href;
 setInterval(() => {
   if (location.href !== lastURL) {

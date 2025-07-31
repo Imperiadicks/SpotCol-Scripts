@@ -1,6 +1,6 @@
-/*Spotify Screen*/
+/*Spotify Screen v1.0.1*/
 /*------------------------------------------------------------------------------------*/
-.Spotify_Screen {
+/* .Spotify_Screen {
 	position: fixed;
 	display: block !important;
 	height: calc(100% - 148px);
@@ -12,7 +12,7 @@
 	background: var(--ym-background-color-primary-enabled-content) !important;
     border-radius: var(--ym-radius-size-l);
 	opacity: 1 !important;
-}
+} */
 .Spotify_Screen::-webkit-scrollbar {
 	display: none;
 }
