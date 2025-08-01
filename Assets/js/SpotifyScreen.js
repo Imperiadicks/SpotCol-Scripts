@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.2.1")
+console.log("проверка SPOTIFYSCREEN 0.2.2")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -143,25 +143,11 @@ const build = () => {
   );
 };
 
-const update = state => {
-  build();
+function setCoverImage(coverUri) {
+  const url = coverUri
+    ? `https://${coverUri.replace('%%', '1000x1000')}`
+    : 'http://localhost:2007/assets/no-cover-image.png';
 
-  if (!$origLike || !document.contains($origLike)) {
-    const fresh = createClone();
-    $like.replaceWith(fresh);
-    $like = fresh;
-  }
-
-  setCoverImage(state); // 💡 вызываем отдельно
-
-  const t = state.track || {};
-  $track.textContent = t.title || '';
-  $artist.textContent = (t.artists || []).map(a => a.name).join(', ');
-  syncState();
-  $root.style.display = 'block';
-};
-
-function setCoverImage(url) {
   const styleId = 'custom-cover-style';
   let styleTag = document.getElementById(styleId);
 
@@ -180,6 +166,26 @@ function setCoverImage(url) {
     }
   `;
 }
+
+const update = (state) => {
+  build();
+
+  if (!$origLike || !document.contains($origLike)) {
+    const fresh = createClone();
+    $like.replaceWith(fresh);
+    $like = fresh;
+  }
+
+  const t = state.track || {};
+  setCoverImage(t.coverUri); // 💯 теперь правильно
+
+  $track.textContent = t.title || '';
+  $artist.textContent = (t.artists || []).map(a => a.name).join(', ');
+
+  syncState();
+  $root.style.display = 'block';
+};
+
 
 
 
