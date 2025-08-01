@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.2.2")
+console.log("проверка SPOTIFYSCREEN 0.2.3")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -148,23 +148,25 @@ function setCoverImage(coverUri) {
     ? `https://${coverUri.replace('%%', '1000x1000')}`
     : 'http://localhost:2007/assets/no-cover-image.png';
 
-  const styleId = 'custom-cover-style';
-  let styleTag = document.getElementById(styleId);
+  const container = document.querySelector('.SM_Cover');
+  if (!container) return;
 
-  if (!styleTag) {
-    styleTag = document.createElement('style');
-    styleTag.id = styleId;
-    document.head.appendChild(styleTag);
-  }
+  const old = container.querySelectorAll('.bg-layer');
+  old.forEach(el => el.remove());
 
-  styleTag.textContent = `
-    div.SM_Cover {
-      background-image: url("${url}") !important;
-      background-repeat: no-repeat !important;
-      background-position: center !important;
-      background-size: cover !important;
-    }
+  const layer = document.createElement('div');
+  layer.className = 'bg-layer';
+  layer.style.cssText = `
+    position: absolute;
+    inset: 0;
+    background: url("${url}") center/cover no-repeat;
+    z-index: -1;
+    opacity: 1;
+    transition: opacity 0.6s ease;
   `;
+
+  container.style.position = 'relative';
+  container.appendChild(layer);
 }
 
 const update = (state) => {
@@ -185,9 +187,6 @@ const update = (state) => {
   syncState();
   $root.style.display = 'block';
 };
-
-
-
 
 /*_____________________________________________________________________________________________*/
 
