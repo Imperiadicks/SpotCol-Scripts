@@ -1,6 +1,6 @@
 /*Spotify Screen*/
 :root{
-  --SpotifyScreen-css-version: 'v1.0.6';
+  --SpotifyScreen-css-version: 'v1.0.7';
 }
 
 /*------------------------------------------------------------------------------------*/
@@ -9,12 +9,13 @@
 	display: block !important;
 	height: calc(100% - 148px);
 	width: 300px;
-	right: 7px;
-	bottom: 86px;
+	right: 11px;
+	bottom: 88px;
 	z-index: 1;
 	overflow-y: scroll;
 	background: none;
     border: 2px solid var(--color-light-1) !important;
+	border-radius: var(--ym-radius-size-l);
 	opacity: 1 !important;
 } 
 .Spotify_Screen::-webkit-scrollbar {
@@ -46,11 +47,11 @@
 .SM_Title_Line{
     display:flex;
     align-items:center;
-    gap:8px;              /* небольшое расстояние между текстом и иконкой */
+    gap:8px;
 }
 
 .SM_Title_Line .SM_Track_Name{
-    flex:1 1 auto;        /* занимает всё доступное пространство */
+    flex:1 1 auto;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
@@ -58,7 +59,7 @@
 
 /* сердце прижимаем к правому краю */
 .SM_Title_Line .LikeTrack{
-    flex:0 0 var(--size); /* ширина = размер иконки */
+    flex:0 0 var(--size);
     margin-left:auto;
 }
 .SM_Track_Name {

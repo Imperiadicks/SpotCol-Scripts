@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.2.6")
+console.log("проверка SPOTIFYSCREEN 0.2.7")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -102,7 +102,7 @@ const build = () => {
   $root = null;
   $bg = $cover = $track = $like = $artist = null;
 
-  const layout = document.querySelector('[class*="CommonLayout_root"]');
+  const layout = document.querySelector('[class*="CommonLayout_content__zy_Ja"]');
   const sibling = layout?.nextElementSibling;
 
   $root = el('div', 'Spotify_Screen');
