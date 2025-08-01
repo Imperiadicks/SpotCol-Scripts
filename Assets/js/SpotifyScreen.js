@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.2.0")
+console.log("проверка SPOTIFYSCREEN 0.2.1")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -161,16 +161,26 @@ const update = state => {
   $root.style.display = 'block';
 };
 
-function setCoverImage(state) {
-  const track = state.track || {};
-  const url = track.coverUri
-    ? `https://${track.coverUri.replace('%%', '1000x1000')}`
-    : 'http://localhost:2007/Assets/no-cover-image.png';
+function setCoverImage(url) {
+  const styleId = 'custom-cover-style';
+  let styleTag = document.getElementById(styleId);
 
-  [$bg, $cover].forEach(el => {
-    if (el) el.style.background = `url("${url}") center/cover no-repeat`;
-  });
+  if (!styleTag) {
+    styleTag = document.createElement('style');
+    styleTag.id = styleId;
+    document.head.appendChild(styleTag);
+  }
+
+  styleTag.textContent = `
+    div.SM_Cover {
+      background-image: url("${url}") !important;
+      background-repeat: no-repeat !important;
+      background-position: center !important;
+      background-size: cover !important;
+    }
+  `;
 }
+
 
 
 /*_____________________________________________________________________________________________*/
