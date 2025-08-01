@@ -168,7 +168,7 @@ function setCoverImage(coverUri) {
   container.style.position = 'relative';
   container.appendChild(layer);
 }
-setCoverImage(coverUri)
+
 const update = (state) => {
   build();
 
@@ -385,6 +385,11 @@ SpotColЛичная.SpotifyScreen = {
 
     player.on('trackChange', () => this.check());
     player.on('pageChange',  () => this.check());
+
+    // добавлено:
+    player.on('state', state => {
+      update(state); // 💥 обновление обложки, имени и артиста
+    });
 
     // Observer следит за layout
     const layout = document.querySelector('[class*="CommonLayout_root"]');
