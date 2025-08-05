@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.3.2")
+console.log("проверка SPOTIFYSCREEN 0.3.2.1")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -183,7 +183,6 @@ build();
 
 const update = (state) => {
   console.log('[SpotifyScreen] 🔄 update() — обновление состояния');
-  build();
 
   if (!$origLike || !document.contains($origLike)) {
     console.log('[SpotifyScreen] ♻️ Пересоздаём clone лайка');
@@ -194,7 +193,7 @@ const update = (state) => {
 
   const t = state.track || {};
   setCoverImage(t.coverUri);
-
+  build();
   $track.textContent = t.title || '';
   $artist.textContent = (t.artists || []).map(a => a.name).join(', ');
 
