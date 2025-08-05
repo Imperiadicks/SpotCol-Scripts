@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.5.0")
+console.log("проверка SPOTIFYSCREEN 0.5.1")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -141,20 +141,22 @@ const build = () => {
     info,
     'В сведениях иногда бывают неправильные результаты. Проверяйте информацию подробнее, если изначально вам не всё равно!'
   );
-  updateCoverBackground()
+  updateCoverBackground(url)
 };
 
-function updateCoverBackground(url) {
-  if (!$cover || !url) return;
+function updateCoverBackground() {
+  if (!$cover) return;
 
-  // Защита от повторного использования
-  if ($cover.dataset.lastBg === url) return;
+  const url =
+    window.Library?.getHiResCover?.() ||
+    window.Library?.coverURL?.() ||
+    null;
+
+  if (!url || $cover.dataset.lastBg === url) return;
   $cover.dataset.lastBg = url;
 
-  // СТАРЫЙ <img>, если есть
   const oldImg = $cover.querySelector('img');
 
-  // СОЗДАЁМ НОВЫЙ <img>
   const newImg = document.createElement('img');
   newImg.src = url;
   newImg.alt = '';
@@ -171,7 +173,7 @@ function updateCoverBackground(url) {
     z-index: 0;
   `;
 
-  // Устанавливаем фон тоже (на случай если нет <img>)
+  // Устанавливаем background как fallback
   $cover.style.backgroundImage = `url("${url}")`;
   $cover.style.backgroundSize = 'cover';
   $cover.style.backgroundPosition = 'center';
@@ -181,7 +183,6 @@ function updateCoverBackground(url) {
 
   $cover.appendChild(newImg);
 
-  // Плавное появление нового
   requestAnimationFrame(() => {
     newImg.style.opacity = '1';
     if (oldImg) {
