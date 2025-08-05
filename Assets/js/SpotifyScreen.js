@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.3.1")
+console.log("проверка SPOTIFYSCREEN 0.3.2")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -147,15 +147,22 @@ const build = () => {
   );
 };
 
-function setCoverImage(coverUri) {
+function setCoverImage(coverUri, attempt = 0) {
+  const container = document.querySelector('.SM_Cover');
+  if (!container) {
+    if (attempt < 10) {
+      return setTimeout(() => setCoverImage(coverUri, attempt + 1), 100);
+    } else {
+      console.warn('[SpotifyScreen] ❌ .SM_Cover не найден после 10 попыток');
+      return;
+    }
+  }
+
   const url = coverUri
     ? `https://${coverUri.replace('%%', '1000x1000')}`
     : 'http://localhost:2007/assets/no-cover-image.png';
 
   console.log(`[SpotifyScreen] 🖼️ setCoverImage(): ${url}`);
-
-  const container = document.querySelector('.SM_Cover');
-  if (!container) return;
 
   let img = container.querySelector('img');
   if (!img) {
@@ -205,8 +212,8 @@ const update = (state) => {
     }
 /*_____________________________________________________________________________________________*/
 
-/*_____________________________________________________________________________________________*/
-  /* === SETTINGS === */
+/*___________________________________SETTINGS__________________________________________________________*/
+
   const sm = SpotColЛичная.settingsManager;
   const modelMap = {
     1: 'searchgpt',
