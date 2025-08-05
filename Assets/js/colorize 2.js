@@ -55,20 +55,7 @@
   };
 
   /*──────────────────────── cover helpers ───────────────────*/
-  const coverURL = () => {
-    const imgMini = document.querySelector(
-      'div[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img'
-    );
-    if (imgMini?.src) return imgMini.src;
-
-    const imgFull = document.querySelector(
-      '[data-test-id="FULLSCREEN_PLAYER_MODAL"] img[data-test-id="ENTITY_COVER_IMAGE"]'
-    );
-    if (imgFull?.src) return imgFull.src;
-
-    const any = document.querySelector('img[data-test-id="ENTITY_COVER_IMAGE"]');
-    return any?.src || null;
-  };
+  const coverURL = () => window.Library?.coverURL?.() || null;
 
   const CANVAS = document.createElement('canvas');
   CANVAS.width = CANVAS.height = 64;
@@ -329,13 +316,7 @@ let lastAvatarZoom = null;
 let lastBackgroundURL = '';
 let lastPageURL = location.href;
 
-async function getHiResCover() {
-  const img = document.querySelector('[class*="PlayerBarDesktopWithBackgroundProgressBar_cover"] img');
-  if (img && img.src.includes('/100x100')) {
-    return img.src.replace('/100x100', '/1000x1000');
-  }
-  return null;
-}
+const getHiResCover = () => window.Library?.getHiResCover?.() || null;
 
 function backgroundReplace(imageURL) {
   const target = document.querySelector('[class*="MainPage_vibe"]');

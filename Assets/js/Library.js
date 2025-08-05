@@ -1,8 +1,24 @@
 (() => {
   if (window.Library) return;     // защита от двойной загрузки
   const DEBUG = !!window.__DEBUG__;
-  console.log('[Library] v1.0.1');
+  console.log('[Library] v1.1.0');
   const log   = (...a) => DEBUG && console.log('[Library]', ...a);
+
+  const coverURL = () => {
+    const imgMini = document.querySelector('div[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img');
+    if (imgMini?.src) return imgMini.src;
+
+    const imgFull = document.querySelector('[data-test-id="FULLSCREEN_PLAYER_MODAL"] img[data-test-id="ENTITY_COVER_IMAGE"]');
+    if (imgFull?.src) return imgFull.src;
+
+    const any = document.querySelector('img[data-test-id="ENTITY_COVER_IMAGE"]');
+    return any?.src || null;
+  };
+
+  const getHiResCover = () => {
+    const img = document.querySelector('[class*="PlayerBarDesktopWithBackgroundProgressBar_cover"] img');
+    return img?.src?.includes('/100x100') ? img.src.replace('/100x100', '/1000x1000') : null;
+  };
 
   /* ════════════════════════════════════════════════════════════════════════════════════
    *  EventEmitter
@@ -317,12 +333,12 @@ class PlayerEvents extends EventEmitter {
     if (this.state?.track?.title) return this.state.track;
 
     try {
-      const img = document.querySelector('[class*="PlayerBarDesktop_cover"] img');
+      const src = coverURL();
       const titleEl = document.querySelector('[class*="TrackInfo_title"]');
       const artistEls = [...document.querySelectorAll('[class*="TrackInfo_artists"] a')];
 
       return {
-        coverUri: img?.src?.split('https://')[1]?.replace('100x100', '%%') || '',
+        coverUri: src?.split('https://')[1]?.replace('100x100', '%%') || '',
         title: titleEl?.textContent || '',
         artists: artistEls.map(a => ({ name: a.textContent }))
       };
@@ -569,6 +585,6 @@ class SpotifyScreen {
    *  Export
    * ══════════════════════════════════════════════════════════════════════════════════ */
   window.Theme = Theme;
-  window.Library = { EventEmitter, StylesManager, SettingsManager, UI, PlayerEvents, Theme, SpotifyScreen };
+  window.Library = { EventEmitter, StylesManager, SettingsManager, UI, PlayerEvents, Theme, SpotifyScreen, coverURL, getHiResCover };
   console.log('Library loaded ✓');
 })();
