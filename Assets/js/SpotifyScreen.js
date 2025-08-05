@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.3.3")
+console.log("проверка SPOTIFYSCREEN 0.3.4")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -181,6 +181,7 @@ function setCoverImage(coverUri, attempt = 0) {
 
 build();
 createClone();
+setCoverImage();
 
 const update = (state) => {
   console.log('[SpotifyScreen] 🔄 update() — обновление состояния');
