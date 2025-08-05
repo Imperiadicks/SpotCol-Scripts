@@ -151,22 +151,19 @@ function setCoverImage(coverUri) {
   const container = document.querySelector('.SM_Cover');
   if (!container) return;
 
-  const old = container.querySelectorAll('.bg-layer');
-  old.forEach(el => el.remove());
-
-  const layer = document.createElement('div');
-  layer.className = 'bg-layer';
-  layer.style.cssText = `
-    position: absolute;
-    inset: 0;
-    background: url("${url}") center/cover no-repeat;
-    z-index: -1;
-    opacity: 1;
-    transition: opacity 0.6s ease;
-  `;
-
-  container.style.position = 'relative';
-  container.appendChild(layer);
+  let img = container.querySelector('img');
+  if (!img) {
+    img = document.createElement('img');
+    img.alt = '';
+    img.style.cssText = `
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    `;
+    container.appendChild(img);
+  }
+  img.src = url;
 }
 
 const update = (state) => {

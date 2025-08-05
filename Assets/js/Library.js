@@ -483,7 +483,21 @@ class SpotifyScreen {
       ? `https://${t.coverUri.replace('%%', '1000x1000')}`
       : 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/no-cover.png';
 
-    [this.#bg, this.#cover].forEach(n => n.style.background = `url(${img}) center/cover no-repeat`);
+    this.#bg.style.background = `url(${img}) center/cover no-repeat`;
+
+    let tag = this.#cover.querySelector('img');
+    if (!tag) {
+      tag = document.createElement('img');
+      tag.alt = '';
+      tag.style.cssText = `
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      `;
+      this.#cover.appendChild(tag);
+    }
+    tag.src = img;
     this.#track.textContent  = t.title || '';
     this.#artist.textContent = (t.artists || []).map(a => a.name).join(', ');
     this.#syncState();

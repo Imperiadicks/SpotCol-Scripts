@@ -29,12 +29,21 @@
 }
 
 .SM_Cover {
-	width: 250px;
-	height: 250px;
-	border-radius: 10px;
-	margin: 25px auto;
-	margin-top: 18px;
-	z-index: var(--ym-z-index-player);
+        width: 250px;
+        height: 250px;
+        border-radius: 10px;
+        margin: 25px auto;
+        margin-top: 18px;
+        z-index: var(--ym-z-index-player);
+        overflow: hidden;
+        position: relative;
+}
+
+.SM_Cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
 }
 
 .SM_Decorate_AddToPlaylist_Button {
