@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.3.0")
+console.log("проверка SPOTIFYSCREEN 0.3.1")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -38,24 +38,24 @@ if (!SpotColЛичная) {
 
 /*_____________________________________________________________________________________________*/
 
+    const syncState = () => {
+      if (!$origLike || !$like) return;
+      console.log('[SpotifyScreen] 🔁 syncState() — синхронизация лайка');
 
-     const syncState=()=>{
-       if(!$origLike||!$like) return;
-       const svgO=$origLike.querySelector('svg');
-       const svgC=$like.querySelector('svg');
-       if(svgO){
-         svgC?svgC.replaceWith(svgO.cloneNode(true)):$like.appendChild(svgO.cloneNode(true));
-       }
+      const svgO = $origLike.querySelector('svg');
+      const svgC = $like.querySelector('svg');
+      if (svgO) {
+        svgC ? svgC.replaceWith(svgO.cloneNode(true)) : $like.appendChild(svgO.cloneNode(true));
+      }
 
-/*_____________________________________________________________________________________________*/
-       const liked=isLiked($origLike);
-       $like.classList.toggle('Like_active',liked);
-       if(liked!==prevLiked){
-         $like.classList.add('animate');
-         setTimeout(()=>{$like&&$like.classList.remove('animate');},350);
-         prevLiked=liked;
-       }
-     };
+      const liked = isLiked($origLike);
+      $like.classList.toggle('Like_active', liked);
+      if (liked !== prevLiked) {
+        $like.classList.add('animate');
+        setTimeout(() => { $like && $like.classList.remove('animate'); }, 350);
+        prevLiked = liked;
+      }
+    };
 
 /*_____________________________________________________________________________________________*/
 
@@ -81,23 +81,27 @@ if (!SpotColЛичная) {
 
 /*_____________________________________________________________________________________________*/
 
-
-     const createClone=()=>{
-       $origLike=findOriginalLike();
-       prevLiked=null;
-       if(!$origLike) return el('div','LikeTrack');
-       const clone=$origLike.cloneNode(true);
-       clone.classList.add('LikeTrack');
-       clone.removeAttribute('data-test-id');
-       clone.addEventListener('click',()=>{$origLike.click();});
-       attachObserver();
-       syncState();
-       return clone;
-     };
+    const createClone = () => {
+      console.log('[SpotifyScreen] 🧬 createClone() — создаём клон лайка');
+      $origLike = findOriginalLike();
+      prevLiked = null;
+      if (!$origLike) return el('div', 'LikeTrack');
+      const clone = $origLike.cloneNode(true);
+      clone.classList.add('LikeTrack');
+      clone.removeAttribute('data-test-id');
+      clone.addEventListener('click', () => {
+        console.log('[SpotifyScreen] 💚 Лайк нажали');
+        $origLike.click();
+      });
+      attachObserver();
+      syncState();
+      return clone;
+    };
 
 /*_____________________________________________________________________________________________*/
 const build = () => {
   if ($root && document.body.contains($root)) return;
+  console.log('[SpotifyScreen] ▶ build() — создаём интерфейс SpotifyScreen');
 
   $root = null;
   $bg = $cover = $track = $like = $artist = null;
@@ -148,6 +152,8 @@ function setCoverImage(coverUri) {
     ? `https://${coverUri.replace('%%', '1000x1000')}`
     : 'http://localhost:2007/assets/no-cover-image.png';
 
+  console.log(`[SpotifyScreen] 🖼️ setCoverImage(): ${url}`);
+
   const container = document.querySelector('.SM_Cover');
   if (!container) return;
 
@@ -166,10 +172,14 @@ function setCoverImage(coverUri) {
   img.src = url;
 }
 
+build();
+
 const update = (state) => {
+  console.log('[SpotifyScreen] 🔄 update() — обновление состояния');
   build();
 
   if (!$origLike || !document.contains($origLike)) {
+    console.log('[SpotifyScreen] ♻️ Пересоздаём clone лайка');
     const fresh = createClone();
     $like.replaceWith(fresh);
     $like = fresh;
@@ -184,7 +194,6 @@ const update = (state) => {
   syncState();
   $root.style.display = 'block';
 };
-
 
 /*_____________________________________________________________________________________________*/
 
