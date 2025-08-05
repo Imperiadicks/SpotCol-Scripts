@@ -146,7 +146,7 @@ const build = () => {
 
 function updateCoverBackground() {
   if (!$cover) return;
-
+  console.log("[updateCoverBackground] сработал")
   const url =
     window.Library?.getHiResCover?.() ||
     window.Library?.coverURL?.() ||
