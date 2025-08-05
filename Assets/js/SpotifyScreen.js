@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.4.0")
+console.log("проверка SPOTIFYSCREEN 0.5.0")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -146,13 +146,51 @@ const build = () => {
 
 function updateCoverBackground(url) {
   if (!$cover || !url) return;
+
+  // Защита от повторного использования
+  if ($cover.dataset.lastBg === url) return;
+  $cover.dataset.lastBg = url;
+
+  // СТАРЫЙ <img>, если есть
+  const oldImg = $cover.querySelector('img');
+
+  // СОЗДАЁМ НОВЫЙ <img>
+  const newImg = document.createElement('img');
+  newImg.src = url;
+  newImg.alt = '';
+  newImg.style.cssText = `
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    z-index: 0;
+  `;
+
+  // Устанавливаем фон тоже (на случай если нет <img>)
   $cover.style.backgroundImage = `url("${url}")`;
-  $cover.style.opacity = '0';
+  $cover.style.backgroundSize = 'cover';
+  $cover.style.backgroundPosition = 'center';
+  $cover.style.backgroundRepeat = 'no-repeat';
+  $cover.style.position = 'relative';
+  $cover.style.overflow = 'hidden';
+
+  $cover.appendChild(newImg);
+
+  // Плавное появление нового
   requestAnimationFrame(() => {
-    $cover.style.opacity = '1';
+    newImg.style.opacity = '1';
+    if (oldImg) {
+      oldImg.style.opacity = '0';
+      oldImg.style.transition = 'opacity 0.5s ease';
+      setTimeout(() => oldImg.remove(), 500);
+    }
   });
 }
-
 
 const update = (state) => {
   console.log('[SpotifyScreen] 🔄 update() — обновление состояния');
