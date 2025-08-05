@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.3.5")
+console.log("проверка SPOTIFYSCREEN 0.4.0")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -141,40 +141,18 @@ const build = () => {
     info,
     'В сведениях иногда бывают неправильные результаты. Проверяйте информацию подробнее, если изначально вам не всё равно!'
   );
-  setCoverImage()
+  updateCoverBackground()
 };
 
-function setCoverImage(coverUri, attempt = 0) {
-  const container = document.querySelector('.SM_Cover');
-  if (!container) {
-    if (attempt < 10) {
-      return setTimeout(() => setCoverImage(coverUri, attempt + 1), 100);
-    } else {
-      console.warn('[SpotifyScreen] ❌ .SM_Cover не найден после 10 попыток');
-      return;
-    }
-  }
-
-  const url = coverUri
-    ? `https://${coverUri.replace('%%', '1000x1000')}`
-    : 'http://localhost:2007/assets/no-cover-image.png';
-
-  console.log(`[SpotifyScreen] 🖼️ setCoverImage(): ${url}`);
-
-  let img = container.querySelector('img');
-  if (!img) {
-    img = document.createElement('img');
-    img.alt = '';
-    img.style.cssText = `
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    `;
-    container.appendChild(img);
-  }
-  img.src = url;
+function updateCoverBackground(url) {
+  if (!$cover || !url) return;
+  $cover.style.backgroundImage = `url("${url}")`;
+  $cover.style.opacity = '0';
+  requestAnimationFrame(() => {
+    $cover.style.opacity = '1';
+  });
 }
+
 
 const update = (state) => {
   console.log('[SpotifyScreen] 🔄 update() — обновление состояния');
