@@ -141,7 +141,7 @@ const build = () => {
     info,
     'В сведениях иногда бывают неправильные результаты. Проверяйте информацию подробнее, если изначально вам не всё равно!'
   );
-  updateCoverBackground(url)
+  updateCoverBackground()
 };
 
 function updateCoverBackground() {
