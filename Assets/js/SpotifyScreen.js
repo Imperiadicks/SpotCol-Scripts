@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.5.3")
+console.log("проверка SPOTIFYSCREEN 0.5.4")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -405,6 +405,10 @@ SpotColЛичная.SpotifyScreen = {
       update(state);
     });
 
+    if (window.Library?.trackWatcher) {
+      window.Library.trackWatcher(update);
+    }
+
     const layout = document.querySelector('[class*="CommonLayout_root"]');
     if (layout) {
       const mo = new MutationObserver(() => this.check());
@@ -419,7 +423,7 @@ SpotColЛичная.SpotifyScreen = {
     const exists = document.querySelector('.Spotify_Screen');
 
     if (!layout) return;
-    if (!exists || !document.body.contains(exists)) build(); // пересоздание
+    if (!exists || !document.body.contains(exists)) build(), updateCoverBackground(); // пересоздание
   },
 };
 /*_____________________________________________________________________________________________*/
