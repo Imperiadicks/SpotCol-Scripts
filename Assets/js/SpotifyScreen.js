@@ -134,13 +134,19 @@ const build = () => {
   );
 };
 
-function updateCoverBackground() {
+function updateCoverBackground(track) {
   if (!$cover) return;
   console.log("[updateCoverBackground] сработал")
-  const url =
-    window.Library?.getHiResCover?.() ||
-    window.Library?.coverURL?.() ||
-    null;
+
+  let url = null;
+  if (track?.coverUri) {
+    url = `https://${track.coverUri.replace('%%', '1000x1000')}`;
+  } else {
+    url =
+      window.Library?.getHiResCover?.() ||
+      window.Library?.coverURL?.() ||
+      null;
+  }
 
   if (!url || $cover.dataset.lastBg === url) return;
   $cover.dataset.lastBg = url;
@@ -183,8 +189,10 @@ function updateCoverBackground() {
   });
 }
 
-const update = (state) => {
+const update = (data) => {
   console.log('[SpotifyScreen] 🔄 update() — обновление состояния');
+
+  const track = data?.track || data;
 
   if (!$origLike || !document.contains($origLike)) {
     console.log('[SpotifyScreen] ♻️ Пересоздаём clone лайка');
@@ -194,11 +202,11 @@ const update = (state) => {
   }
 
   build();
-  updateCoverBackground();
+  updateCoverBackground(track);
 
-  if (state) {
-    $track.textContent = state.title || '';
-    $artist.textContent = (state.artists || []).map(a => a.name).join(', ');
+  if (track) {
+    $track.textContent = track.title || '';
+    $artist.textContent = (track.artists || []).map(a => a.name).join(', ');
   }
 
   syncState();
@@ -397,13 +405,12 @@ const update = (state) => {
 SpotColЛичная.SpotifyScreen = {
   init(player) {
     if (!player) return;
-
-    player.on('trackChange', () => this.check());
-    player.on('pageChange',  () => this.check());
-
-    player.on('state', state => {
-      update(state);
+    player.on('trackChange', ({ state }) => {
+      this.check();
+      update(state.track);
     });
+    player.on('openPlayer', ({ state }) => update(state.track));
+    player.on('pageChange',  () => this.check());
 
     if (window.Library?.trackWatcher) {
       window.Library.trackWatcher(update);
@@ -415,7 +422,7 @@ SpotColЛичная.SpotifyScreen = {
       mo.observe(layout, { childList: true, subtree: true });
     }
 
-    this.check(); 
+    this.check();
   },
 
   check() {
