@@ -1,7 +1,7 @@
 (() => {
   if (window.Library) return;     // защита от двойной загрузки
   const DEBUG = !!window.__DEBUG__;
-  console.log('[Library] v1.1.0');
+  console.log('[Library] v1.1.1');
   const log   = (...a) => DEBUG && console.log('[Library]', ...a);
 
   const coverURL = () => {
@@ -502,6 +502,26 @@ class SpotifyScreen {
     this.#artist.textContent = (t.artists || []).map(a => a.name).join(', ');
     this.#syncState();
     this.#root.style.display = 'block';
+  }
+
+    trackWatcher(callback) {
+    let lastTrackId = null;
+
+    setInterval(() => {
+      const player = window.YaAudio;
+      if (!player || typeof player.getCurrentTrack !== 'function') return;
+
+      const track = player.getCurrentTrack();
+      if (!track || !track.id || track.id === lastTrackId) return;
+
+      lastTrackId = track.id;
+
+      try {
+        callback(track);
+      } catch (e) {
+        console.error('[Library] trackWatcher error:', e);
+      }
+    }, 1000);
   }
 }
 
