@@ -102,19 +102,10 @@ const build = () => {
   $root = null;
   $bg = $cover = $track = $like = $artist = null;
 
-  const layout = document.querySelector('[class*="CommonLayout_content__zy_Ja"]');
-  const sibling = layout?.nextElementSibling;
+  // 🔒 Вставляем в <body>, чтобы не удалялось при переходах
+  $root = el('div', 'Spotify_Screen', document.body);
 
-  $root = el('div', 'Spotify_Screen');
-
-  if (layout && layout.parentElement) {
-    if (sibling) {
-      layout.parentElement.insertBefore($root, sibling);
-    } else {
-      layout.parentElement.appendChild($root);
-    }
-  }
-
+  // ✅ Внутренние элементы
   $bg    = el('div', 'SM_Background', $root);
   $cover = el('div', 'SM_Cover', $root);
 
@@ -192,6 +183,28 @@ function updateCoverBackground() {
   });
 }
 
+const update = (state) => {
+  console.log('[SpotifyScreen] 🔄 update() — обновление состояния');
+
+  if (!$origLike || !document.contains($origLike)) {
+    console.log('[SpotifyScreen] ♻️ Пересоздаём clone лайка');
+    const fresh = createClone();
+    $like.replaceWith(fresh);
+    $like = fresh;
+  }
+
+  build();
+  updateCoverBackground();
+
+  if (state) {
+    $track.textContent = state.title || '';
+    $artist.textContent = (state.artists || []).map(a => a.name).join(', ');
+  }
+
+  syncState();
+  $root.style.display = 'block';
+};
+
 /*_____________________________________________________________________________________________*/
 
      function el(tag,cls,parent=document.body,txt){
@@ -200,7 +213,6 @@ function updateCoverBackground() {
       parent.appendChild(n);
       return n;
     }
-/*_____________________________________________________________________________________________*/
 
 /*___________________________________SETTINGS__________________________________________________________*/
 
@@ -389,19 +401,17 @@ SpotColЛичная.SpotifyScreen = {
     player.on('trackChange', () => this.check());
     player.on('pageChange',  () => this.check());
 
-    // добавлено:
     player.on('state', state => {
-      update(state); // 💥 обновление обложки, имени и артиста
+      update(state);
     });
 
-    // Observer следит за layout
     const layout = document.querySelector('[class*="CommonLayout_root"]');
     if (layout) {
       const mo = new MutationObserver(() => this.check());
       mo.observe(layout, { childList: true, subtree: true });
     }
 
-    this.check(); // мгновенная отрисовка
+    this.check(); 
   },
 
   check() {

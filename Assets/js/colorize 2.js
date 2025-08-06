@@ -1,5 +1,6 @@
 (() => {
   console.log('[Colorize 2] v2.0.0');
+
   /*──────────────────────── helpers ────────────────────────*/
   const LOG = (...a) => console.log('[Colorize 2]', ...a);
 
@@ -162,7 +163,7 @@ const colorsFromCover = (src) => {
     return vars;
   };
 
-  /*──────────────────────── YM_MAP + кастом-CSS ───────────*/
+  /*───────────────────────────────── YM_MAP ─────────────────────────────────────*/
   const YM_MAP = `
     --ym-background-color-primary-enabled-basic: var(--color-dark-8);
     --ym-surface-color-primary-enabled-list:     var(--color-light-1-4);
@@ -268,7 +269,7 @@ const colorsFromCover = (src) => {
       background: var(--ym-background-color-primary-enabled-content) !important
       }
 `;
-
+  /*───────────────────────────────── Custom CSS on YM_MAP ─────────────────────────────────────*/
   const applyVars = vars => {
     let st = document.getElementById('colorize-style');
     if (!st) {
@@ -282,7 +283,7 @@ const colorsFromCover = (src) => {
     st.textContent = css;
   };
 
-  /*───────── overlay with var(--grad-main) ─────────*/
+  /*───────────────────────────────── overlay ─────────────────────────────────────*/
   function ensureGradientOverlay(){
     if (document.getElementById('sc-grad-overlay')) return;
 
@@ -308,7 +309,7 @@ if (cover) {
   cover.style.transition = 'all 0.3s ease';
 }
 
-  /*──────────────────────── effects ───────────────────────*/
+/*───────────────────────────────── effects ─────────────────────────────────────*/
 let SETTINGS = {};
 let lastSETTINGS_JSON = '';
 let lastSrc = '', lastHex = '', lastFullVibe = null; let lastBackgroundImage = null;
@@ -317,6 +318,8 @@ let lastBackgroundURL = '';
 let lastPageURL = location.href;
 
 const getHiResCover = () => window.Library?.getHiResCover?.() || null;
+
+/*────────────────────────────── backgroundReplace ────────────────────────────────────────*/
 
 function backgroundReplace(imageURL) {
   const target = document.querySelector('[class*="MainPage_vibe"]');
@@ -402,6 +405,7 @@ function removeBackgroundImage() {
   console.log("[removeBackgroundImage] Фоновое изображение удалено.");
 }
 
+/*────────────────────────────── handleAvatarMouseMove ────────────────────────────────────────*/
 function handleAvatarMouseMove(event) {
   const rect = this.getBoundingClientRect();
   const x = ((event.clientX - rect.left) / rect.width - 0.5) * 9;
@@ -415,6 +419,7 @@ function handleAvatarMouseLeave() {
   this.style.transform = 'scale(1)';
 }
 
+/*────────────────────────────── setupAvatarZoomEffect ────────────────────────────────────────*/
 function setupAvatarZoomEffect() {
   const avatar = document.querySelector('[class*="PageHeaderCover_coverImage"]');
   if (!avatar || avatar.classList.contains('avatar-zoom-initialized')) return;
@@ -434,6 +439,7 @@ function removeAvatarZoomEffect() {
   }
 }
 
+/*────────────────────────────── FullVibe ────────────────────────────────────────*/
 function FullVibe() {
   const vibe = document.querySelector('[class*="MainPage_vibe"]');
   if (vibe) {
@@ -511,6 +517,7 @@ const init = async () => {
   await recolor(true);
 };
 
+/*──────────────────────── viewer page ───────────────────────*/
 document.readyState === 'loading'
   ? document.addEventListener('DOMContentLoaded', init)
   : init();
