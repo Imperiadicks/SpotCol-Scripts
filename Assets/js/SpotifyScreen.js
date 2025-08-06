@@ -419,7 +419,7 @@ SpotColЛичная.SpotifyScreen = {
     const exists = document.querySelector('.Spotify_Screen');
 
     if (!layout) return;
-    if (!exists || !document.body.contains(exists)) build(), updateCoverBackground(); // пересоздание
+    if (!exists || !document.body.contains(exists)) build(); // пересоздание
   },
 };
 /*_____________________________________________________________________________________________*/
