@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN v0.5.10")
+console.log("проверка SPOTIFYSCREEN v0.5.11")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -133,15 +133,22 @@ const build = () => {
     'В сведениях иногда бывают неправильные результаты. Проверяйте информацию подробнее, если изначально вам не всё равно!'
   );
 
-  if (!window.__spotifyUIBound) {
-  window.Library?.initUI?.(); // инициализирует UI-утилиты, если ещё не
-  window.__spotifyUnbind = window.Library?.ui?.bindTrackUI?.({
-    cover:  '.SM_Cover',
-    title:  '.SM_Track_Name',
-    artist: '.SM_Artist'
-  }, { duration: 600 });
+if (!window.__spotifyUIBound) {
+  window.Library?.initUI?.();
+  window.__spotifyUnbind = window.Library?.ui?.bindTrackUI?.(
+    { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' },
+    { duration: 600 }
+  );
   window.__spotifyUIBound = true;
 }
+
+// форсим начальную установку, если трек уже есть
+const cur = Theme?.player?.state?.track || Theme?.player?.getCurrentTrack?.();
+if (cur) {
+  const u = Library.util.coverURLFromTrack(cur);
+  if (u) Library.ui.crossfade('.SM_Cover', u, { duration: 600 });
+}
+
 };
 
 const update = (data) => {
