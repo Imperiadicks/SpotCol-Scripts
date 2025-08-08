@@ -1,6 +1,6 @@
 /*Spotify Screen*/
 :root{
-  --SpotifyScreen-css-version: 'v1.0.8';
+  --SpotifyScreen-css-version: 'v1.0.9';
 }
 
 /*------------------------------------------------------------------------------------*/
@@ -34,7 +34,8 @@
         border-radius: 10px;
         margin: 25px auto;
         margin-top: 18px;
-        z-index: var(--ym-z-index-player);
+        z-index: 2;
+		aspect-ratio: 1 / 1;
         overflow: hidden;
         position: relative;
 }
@@ -44,6 +45,10 @@
         height: 100%;
         object-fit: cover;
         display: block;
+}
+
+.SM_Background{ 
+	z-index: 0; 
 }
 
 .SM_Decorate_AddToPlaylist_Button {
