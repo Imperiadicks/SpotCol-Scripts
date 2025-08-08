@@ -1,7 +1,7 @@
 (() => {
   if (window.Library) return;     // защита от двойной загрузки
   const DEBUG = !!window.__DEBUG__;
-  console.log('[Library] v1.2.5');
+  console.log('[Library] v1.2.6');
   const log   = (...a) => DEBUG && console.log('[Library]', ...a);
 
   const coverURL = () => {
@@ -246,131 +246,126 @@ U.coverURLFromTrack = function coverURLFromTrack(t) {
          (typeof L.coverURL      === 'function' && L.coverURL())      ||
          null;
 };
+UI.crossfade = function crossfade(elOrSel, url, { duration = 600 } = {}) {
+  if (!url) return;
+  const el = typeof elOrSel === 'string' ? document.querySelector(elOrSel) : elOrSel;
+  if (!el) return;
 
+  // если URL тот же, но текущей картинки нет — всё равно ставим
+  if (el.dataset?.bg === url) {
+    const hasCurrent = el.querySelector('img._ui_cf.current');
+    if (hasCurrent) return;
+  }
 
-  // Плавная замена фонового изображения БЕЗ накопления (макс. 2 img) + защита от гонок
-  UI.crossfade = function crossfade(elOrSel, url, { duration = 600 } = {}) {
-    if (!url) return;
-    const el = typeof elOrSel === 'string' ? document.querySelector(elOrSel) : elOrSel;
-    if (!el) return;
+  const reqId = ((el.dataset?.reqId ? parseInt(el.dataset.reqId, 10) : 0) + 1) || 1;
+  el.dataset.reqId = String(reqId);
 
-    // тот же урл? ничего не делаем
-    if (el.dataset && el.dataset.bg === url) return;
+  if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+  el.style.overflow = 'hidden';
 
-    // bump request id, чтобы старые onload игнорировались
-    const nextId = ((el.dataset.reqId ? parseInt(el.dataset.reqId, 10) : 0) + 1) || 1;
-    el.dataset.reqId = String(nextId);
+  const pre = new Image();
+  pre.decoding = 'async';
+  pre.src = url;
 
-    if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
-    el.style.overflow = 'hidden';
+  pre.onload = () => {
+    if (el.dataset.reqId !== String(reqId)) return; // устаревший onload
 
-    const pre = new Image();
-    pre.crossOrigin = 'anonymous';
-    pre.decoding = 'async';
-    pre.src = url;
+    const prev = el.querySelector('img._ui_cf.current');
 
-    pre.onload = () => {
-      // Если пришёл уже новый запрос — этот устарел, выходим
-      if (el.dataset.reqId !== String(nextId)) return;
+    const next = document.createElement('img');
+    next.className = '_ui_cf current';
+    next.alt = '';
+    next.src = url;
+    next.style.cssText = `
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      object-fit:cover;
+      opacity:0; transition:opacity ${duration}ms ease;
+      pointer-events:none; will-change:opacity;
+    `;
 
-      const prev = el.querySelector('img._ui_cf.current');
+    el.appendChild(next);
 
-      const next = document.createElement('img');
-      next.className = '_ui_cf current';
-      next.alt = '';
-      next.style.cssText = `
-        position:absolute; inset:0;
-        width:100%; height:100%;
-        object-fit:cover;
-        opacity:0; transition:opacity ${duration}ms ease;
-        pointer-events:none; will-change:opacity;
-      `;
-      next.src = url;
-      el.appendChild(next);
-
-      // Анимируем
-      requestAnimationFrame(() => {
-        next.style.opacity = '1';
-        if (prev) {
-          prev.classList.remove('current');
-          prev.classList.add('old');
-          prev.style.transition = `opacity ${Math.max(300, duration - 150)}ms ease`;
-          prev.style.opacity = '0';
-
-          const removePrev = () => prev.remove();
-          prev.addEventListener('transitionend', removePrev, { once: true });
-          // страховка на случай, если transitionend не сработает
-          setTimeout(() => prev.isConnected && prev.remove(), Math.max(350, duration + 100));
-        }
-      });
-
-      // Жёсткий лимит: держим максимум 2 изображения
-      const imgs = el.querySelectorAll('img._ui_cf');
-      for (let i = 0; i < imgs.length - 2; i++) {
-        if (imgs[i] !== next && imgs[i] !== prev) imgs[i].remove();
+    requestAnimationFrame(() => {
+      next.style.opacity = '1';
+      if (prev) {
+        prev.classList.remove('current');
+        prev.classList.add('old');
+        prev.style.transition = `opacity ${Math.max(300, duration - 150)}ms ease`;
+        prev.style.opacity = '0';
+        prev.addEventListener('transitionend', () => prev.remove(), { once: true });
+        setTimeout(() => prev.isConnected && prev.remove(), Math.max(350, duration + 120));
       }
+    });
 
-      if (el.dataset) el.dataset.bg = url;
-    };
+    // лимит в контейнере: не более 2 картинок
+    const imgs = el.querySelectorAll('img._ui_cf');
+    for (let i = 0; i < imgs.length - 2; i++) {
+      if (imgs[i] !== next && imgs[i] !== prev) imgs[i].remove();
+    }
 
-    pre.onerror = () => {
-      // опционально можно логнуть/сбросить reqId, но не обязательно
-    };
+    if (el.dataset) el.dataset.bg = url;
+
+    if (window.Library?.debugUI) {
+      const cnt = el.querySelectorAll('img._ui_cf').length;
+      console.log('[crossfade] url=', url, 'imgs=', cnt, 'bg=', el.dataset.bg);
+    }
   };
 
-  // Текстовый апдейтер
+  pre.onerror = () => {
+    if (window.Library?.debugUI) console.warn('[crossfade] onerror', url);
+  };
+};
+
+// Текстовый апдейтер
   UI.setText = function setText(elOrSel, text) {
     const el = typeof elOrSel === 'string' ? document.querySelector(elOrSel) : elOrSel;
     if (!el) return;
     el.textContent = text ?? '';
   };
-
-  // Единая шина событий смены трека
-  // Единая шина событий смены трека
+// Единая шина событий смены трека (с фолбэк-вотчером)
 L.onTrack = function onTrack(handler, { immediate = true } = {}) {
   H.add(handler);
 
   if (!L._busInit) {
     L._busInit = true;
 
-    const emit = (t) => {
+    const emit = (t, tag='') => {
       if (!t) return;
+      if (window.Library?.debugUI) console.log('[onTrack:emit]', tag, t?.title || t?.name, t);
       for (const fn of H) { try { fn(t); } catch (_) {} }
     };
 
-    // Подписка на Theme.player (основной плеер темы)
     const tp = window.Theme?.player;
     if (tp?.on) {
-      tp.on('trackChange', ({ state }) => emit(state?.track || state));
-      tp.on('openPlayer',  ({ state }) => emit(state?.track || state));
+      tp.on('trackChange', ({ state }) => emit(state?.track, 'event:trackChange'));
+      tp.on('openPlayer',  ({ state }) => emit(state?.track, 'event:openPlayer'));
     }
 
-    // Подписка на window.Player (если прокинут алиас)
     if (window.Player?.on) {
-      window.Player.on('trackChange', ({ state }) => emit(state?.track || state));
-      window.Player.on('openPlayer',  ({ state }) => emit(state?.track || state));
+      window.Player.on('trackChange', ({ state }) => emit(state?.track, 'alias:trackChange'));
+      window.Player.on('openPlayer',  ({ state }) => emit(state?.track, 'alias:openPlayer'));
     }
 
-    // Доп. вотчер, если реализован
     if (typeof L.trackWatcher === 'function') {
-      try { L.trackWatcher((t) => emit(t)); } catch (_) {}
+      try { L.trackWatcher((t) => emit(t, 'custom:watcher')); } catch (_) {}
     }
 
-    // Стартовый трек сразу
-    const cur =
-      tp?.getCurrentTrack?.() ||
-      tp?.state?.track ||
-      L.getCurrentTrack?.();
+    let lastId = null;
+    setInterval(() => {
+      const s = tp?.state?.track || tp?.getCurrentTrack?.() || L.getCurrentTrack?.();
+      const id = s?.id || s?.trackId || s?.uuid || (s ? `${s.title}|${s?.album?.id || s?.albums?.[0]?.id || ''}` : null);
+      if (!id) return;
+      if (id !== lastId) { lastId = id; emit(s, 'poll'); }
+    }, 800);
 
-    if (cur) setTimeout(() => emit(cur), 0);
+    const cur = tp?.getCurrentTrack?.() || tp?.state?.track || L.getCurrentTrack?.();
+    if (cur) setTimeout(() => emit(cur, 'initial'), 0);
   }
 
   if (immediate) {
     const tp = window.Theme?.player;
-    const cur =
-      tp?.getCurrentTrack?.() ||
-      tp?.state?.track ||
-      L.getCurrentTrack?.();
+    const cur = tp?.getCurrentTrack?.() || tp?.state?.track || L.getCurrentTrack?.();
     if (cur) handler(cur);
   }
 
@@ -810,4 +805,97 @@ window.Library = Object.assign(existing, {
   EventEmitter, StylesManager, SettingsManager, UI, PlayerEvents, Theme, SpotifyScreen, coverURL, getHiResCover
 });
   console.log('Library loaded ✓');
+  /* ════════════════════════════════════════════════════════════════════════════════════
+   *  Debug
+   * ══════════════════════════════════════════════════════════════════════════════════ */
+    Library.debugUI = true;
+    // === Lightweight UI Debug Panel ===
+Library.debug = (() => {
+  const BOX_ID = 'SM_DebugBox';
+
+  function ensure() {
+    let box = document.getElementById(BOX_ID);
+    if (box) return box;
+
+    box = document.createElement('div');
+    box.id = BOX_ID;
+    box.innerHTML = `
+      <div class="hdr">
+        <strong>UI Debug</strong>
+        <div class="btns">
+          <button data-act="clear" title="Очистить">✕</button>
+          <button data-act="hide"  title="Скрыть">⤫</button>
+        </div>
+      </div>
+      <div class="body"></div>
+    `;
+    Object.assign(box.style, {
+      position: 'fixed', right: '12px', bottom: '12px', zIndex: 999999,
+      width: '380px', maxWidth: '90vw', height: '220px', maxHeight: '50vh',
+      borderRadius: '12px', overflow: 'hidden',
+      background: 'rgba(20,20,25,.9)', color: '#ddd',
+      font: '12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
+      boxShadow: '0 8px 28px rgba(0,0,0,.45)', backdropFilter: 'blur(6px)'
+    });
+    const hdr = box.querySelector('.hdr');
+    Object.assign(hdr.style, {
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      background: 'rgba(255,255,255,.06)', padding: '6px 8px'
+    });
+    const btns = box.querySelector('.btns');
+    Object.assign(btns.style, { display: 'flex', gap: '6px' });
+    for (const b of btns.querySelectorAll('button')) {
+      Object.assign(b.style, {
+        background: 'rgba(255,255,255,.08)', color: '#eee',
+        border: 'none', borderRadius: '6px', padding: '2px 6px', cursor: 'pointer'
+      });
+    }
+    const body = box.querySelector('.body');
+    Object.assign(body.style, {
+      padding: '6px 8px', height: 'calc(100% - 34px)',
+      overflow: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word'
+    });
+
+    box.addEventListener('click', (e) => {
+      const act = e.target?.dataset?.act;
+      if (act === 'clear') body.textContent = '';
+      if (act === 'hide')  box.style.display = 'none';
+    });
+
+    document.body.appendChild(box);
+    return box;
+  }
+
+  function fmt(arg) {
+    if (arg == null) return String(arg);
+    if (typeof arg === 'string') return arg;
+    try { return JSON.stringify(arg); } catch { return String(arg); }
+  }
+
+  function log(...args) {
+    if (!Library.debugUI) return;
+    const box = ensure();
+    const body = box.querySelector('.body');
+    const line = document.createElement('div');
+    line.textContent = `[${new Date().toLocaleTimeString()}] ` + args.map(fmt).join(' ');
+    body.appendChild(line);
+    body.scrollTop = body.scrollHeight;
+    // дублируем в консоль
+    try { console.log('[UI]', ...args); } catch {}
+  }
+
+  function clear() {
+    const box = document.getElementById(BOX_ID);
+    if (box) box.querySelector('.body').textContent = '';
+  }
+
+  function toggle() {
+    Library.debugUI = !Library.debugUI;
+    const box = ensure();
+    box.style.display = Library.debugUI ? '' : 'none';
+  }
+
+  return { log, clear, toggle, ensure };
+})();
+
 })();

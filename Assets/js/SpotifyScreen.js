@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN v0.6.4")
+console.log("проверка SPOTIFYSCREEN v0.6.5")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -95,41 +95,106 @@ if (!SpotColЛичная) {
     };
 
 /*_____________________________________________________________________________________________*/
-// SpotifyScreen.js — build()
 function build() {
   let root = document.querySelector('.Spotify_Screen');
-  if (root && document.body.contains(root)) {
-    $root   = root;
-    $cover  = root.querySelector('.SM_Cover');
-    $track  = root.querySelector('.SM_Track_Name');
-    $artist = root.querySelector('.SM_Artist');
-    return;
-  }
 
-  const anchor =
-    document.querySelector('[class*="commonlayout_content"], [class*="CommonLayout_content"]') ||
-    document.querySelector('[class*="Content_root"]') ||
-    document.querySelector('[data-test-id="PLAYERBAR_DESKTOP"]')?.parentElement ||
-    document.querySelector('[data-test-id="NAVBAR"]')?.parentElement ||
-    document.querySelector('[class*="DefaultLayout_root"]') ||
-    document.querySelector('[class*="CommonLayout_root"]') ||
-    document.body;
+  const ensureSections = (r) => {
+    let title = r.querySelector('.SM_Title_Line');
+    if (!title) {
+      title = document.createElement('div');
+      title.className = 'SM_Title_Line';
+      title.innerHTML = `<div class="SM_Track_Name"></div><div class="LikeTrack"></div>`;
+      const cover = r.querySelector('.SM_Cover') || r.firstElementChild;
+      (cover ? cover : r).insertAdjacentElement('afterend', title);
+    } else {
+      if (!title.querySelector('.SM_Track_Name')) {
+        const tn = document.createElement('div'); tn.className = 'SM_Track_Name';
+        title.prepend(tn);
+      }
+      if (!title.querySelector('.LikeTrack')) {
+        const ph = document.createElement('div'); ph.className = 'LikeTrack';
+        title.appendChild(ph);
+      }
+    }
 
-  root = document.createElement('div');
-  root.className = 'Spotify_Screen';
-  root.innerHTML = `
-    <div class="SM_Background"></div>
-    <div class="SM_Cover"></div>
-    <div class="SM_Title_Line"></div>
-    <div class="SM_Track_Name"></div>
-    <div class="SM_Artist"></div>
-    <div class="All_Info_Container"></div>
-  `;
+    if (!r.querySelector('.SM_Artist')) {
+      const a = document.createElement('div'); a.className = 'SM_Artist';
+      title.insertAdjacentElement('afterend', a);
+    }
 
-  if (anchor && anchor.parentElement) {
-    anchor.insertAdjacentElement('afterend', root);
+    let all = r.querySelector('.All_Info_Container');
+    if (!all) {
+      all = document.createElement('div'); all.className = 'All_Info_Container';
+      r.appendChild(all);
+    }
+    if (!all.querySelector('.Artist_Info_Container')) {
+      const artistBox = document.createElement('div');
+      artistBox.className = 'Artist_Info_Container';
+      artistBox.innerHTML = `
+        <div class="Info_Title">Сведения об исполнителе</div>
+        <div class="Search_Info"></div>
+        <div class="Achtung_Alert" style="display:none">
+          В сведениях иногда бывают неправильные результаты.
+          Проверьте информацию подробнее, если изначально вам не всё равно!
+        </div>
+      `;
+      all.appendChild(artistBox);
+    }
+    if (!all.querySelector('.GPT_Info_Container')) {
+      const trackBox = document.createElement('div');
+      trackBox.className = 'GPT_Info_Container';
+      trackBox.style.display = 'none';
+      trackBox.innerHTML = `
+        <div class="GPT_Info_Title">Сведения о треке</div>
+        <div class="GPT_Search_Info"></div>
+      `;
+      all.appendChild(trackBox);
+    }
+  };
+
+  if (!(root && document.body.contains(root))) {
+    const anchor =
+      document.querySelector('[class*="commonlayout_content"], [class*="CommonLayout_content"]') ||
+      document.querySelector('[class*="Content_root"]') ||
+      document.querySelector('[data-test-id="PLAYERBAR_DESKTOP"]')?.parentElement ||
+      document.querySelector('[data-test-id="NAVBAR"]')?.parentElement ||
+      document.querySelector('[class*="DefaultLayout_root"]') ||
+      document.querySelector('[class*="CommonLayout_root"]') ||
+      document.body;
+
+    root = document.createElement('div');
+    root.className = 'Spotify_Screen';
+    root.innerHTML = `
+      <div class="SM_Background"></div>
+      <div class="SM_Cover"></div>
+      <div class="SM_Title_Line">
+        <div class="SM_Track_Name"></div>
+        <div class="LikeTrack"></div>
+      </div>
+      <div class="SM_Artist"></div>
+      <div class="All_Info_Container">
+        <div class="Artist_Info_Container">
+          <div class="Info_Title">Сведения об исполнителе</div>
+          <div class="Search_Info"></div>
+          <div class="Achtung_Alert" style="display:none">
+            В сведениях иногда бывают неправильные результаты.
+            Проверьте информацию подробнее, если изначально вам не всё равно!
+          </div>
+        </div>
+        <div class="GPT_Info_Container" style="display:none">
+          <div class="GPT_Info_Title">Сведения о треке</div>
+          <div class="GPT_Search_Info"></div>
+        </div>
+      </div>
+    `;
+
+    if (anchor && anchor.parentElement) {
+      anchor.insertAdjacentElement('afterend', root);
+    } else {
+      (anchor || document.body).appendChild(root);
+    }
   } else {
-    (anchor || document.body).appendChild(root);
+    ensureSections(root);
   }
 
   $root   = root;
@@ -146,9 +211,10 @@ function build() {
   });
 
   const $title = root.querySelector('.SM_Title_Line');
-  if ($title && typeof createClone === 'function') {
+  const likeSlot = $title?.querySelector('.LikeTrack');
+  if ($title && likeSlot) {
     $like = createClone();
-    $title.appendChild($like);
+    likeSlot.replaceWith($like);
     if (typeof attachObserver === 'function') attachObserver();
     if (typeof syncState === 'function') syncState();
   }
