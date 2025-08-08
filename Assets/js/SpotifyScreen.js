@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN v0.5.11")
+console.log("проверка SPOTIFYSCREEN v0.6.0")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -150,6 +150,30 @@ if (cur) {
 }
 
 };
+
+// --- одна общая функция: привязывает bindTrackUI, если DOM уже есть ---
+function ensureUIBound() {
+  if (window.__spotifyUIBound) return;
+
+  const cover  = document.querySelector('.SM_Cover');
+  const title  = document.querySelector('.SM_Track_Name');
+  const artist = document.querySelector('.SM_Artist');
+  if (!cover || !title) return; // ещё не создано — выйдем, попробуем позже
+
+  window.Library?.initUI?.();
+  window.__spotifyUnbind = window.Library?.ui?.bindTrackUI?.(
+    { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' },
+    { duration: 600 }
+  );
+  window.__spotifyUIBound = true;
+
+  // форс-первичная обложка (на случай, если событие ещё не пришло)
+  const cur = window.Theme?.player?.state?.track || window.Theme?.player?.getCurrentTrack?.();
+  if (cur) {
+    const u = window.Library?.util?.coverURLFromTrack?.(cur);
+    if (u) window.Library?.ui?.crossfade?.('.SM_Cover', u, { duration: 600 });
+  }
+}
 
 const update = (data) => {
   console.log('[SpotifyScreen] 🔄 update() — обновление состояния');
@@ -363,27 +387,19 @@ SpotColЛичная.SpotifyScreen = {
   init(player) {
     if (!player) return;
 
+    // важно, чтобы Library.onTrack ловил события
     window.Player = window.Player || player;
 
     player.on('trackChange', ({ state }) => {
       this.check();
       update(state.track);
-      // updateCoverBackground(state.track); // ← теперь делается через Library.ui.bindTrackUI
     });
 
     player.on('openPlayer', ({ state }) => {
       update(state.track);
-      // updateCoverBackground(state.track); // ← перенесено в Library
     });
 
     player.on('pageChange', () => this.check());
-
-    if (window.Library?.trackWatcher) {
-      window.Library.trackWatcher(track => {
-        update(track);
-        // updateCoverBackground(track); // ← перенесено в Library
-      });
-    }
 
     const layout = document.querySelector('[class*="CommonLayout_root"]');
     if (layout) {
@@ -392,6 +408,7 @@ SpotColЛичная.SpotifyScreen = {
     }
 
     this.check();
+    ensureUIBound(); // ← привязка независимо от build()
   },
 
   check() {
@@ -400,9 +417,9 @@ SpotColЛичная.SpotifyScreen = {
 
     if (!layout) return;
     if (!exists || !document.body.contains(exists)) {
-      build(); // пересоздание
-      // updateCoverBackground(); // ← больше не нужно, ковер ведёт Library
+      build(); // пересоздание, если нужно
     }
+    ensureUIBound(); // ← на случай, если build уже был и DOM готов
   },
 };
 /*_____________________________________________________________________________________________*/
