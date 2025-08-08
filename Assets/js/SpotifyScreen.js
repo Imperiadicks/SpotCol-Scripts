@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN v0.6.1")
+console.log("проверка SPOTIFYSCREEN v0.6.2")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -389,27 +389,38 @@ SpotColЛичная.SpotifyScreen = {
   init(player) {
     if (!player) return;
 
+    // чтобы Library.onTrack видел события
     window.Player = window.Player || player;
 
     player.on('trackChange', ({ state }) => {
+      ensureUIBound();
       this.check();
       update(state.track);
     });
 
     player.on('openPlayer', ({ state }) => {
+      ensureUIBound();
       update(state.track);
     });
 
-    player.on('pageChange', () => this.check());
+    player.on('pageChange', () => {
+      this.check();
+      ensureUIBound();
+    });
 
     const layout = document.querySelector('[class*="CommonLayout_root"]');
     if (layout) {
-      const mo = new MutationObserver(() => this.check());
+      const mo = new MutationObserver(() => {
+        this.check();
+        ensureUIBound();
+      });
       mo.observe(layout, { childList: true, subtree: true });
     }
 
     this.check();
-    ensureUIBound(); 
+    ensureUIBound();               // ← сразу
+    setTimeout(ensureUIBound, 0);  // ← и на следующий тик (на всякий)
+    requestAnimationFrame(ensureUIBound); // ← когда DOM дорисуется
   },
 
   check() {
@@ -418,11 +429,12 @@ SpotColЛичная.SpotifyScreen = {
 
     if (!layout) return;
     if (!exists || !document.body.contains(exists)) {
-      build();
+      build(); // пересоздание
     }
-    ensureUIBound();
+    ensureUIBound(); // ← вызываем всегда
   },
 };
+
 /*_____________________________________________________________________________________________*/
 theme.updateSpotifyScreen = update;
    })(SpotColЛичная, 1000);
