@@ -1,7 +1,7 @@
 (() => {
   if (window.Library) return;     // защита от двойной загрузки
   const DEBUG = !!window.__DEBUG__;
-  console.log('[Library] v1.2.3');
+  console.log('[Library] v1.2.4');
   const log   = (...a) => DEBUG && console.log('[Library]', ...a);
 
   const coverURL = () => {
@@ -220,29 +220,33 @@ Library.initUI = function initUI() {
   const U  = (L.util = L.util || {});
   const H  = (L._trackHandlers = L._trackHandlers || new Set());
 
-  // Единый способ получить URL обложки
-  U.coverURLFromTrack = function coverURLFromTrack(track) {
-    if (!track) return null;
-
-    if (track.coverUri) {
-      const raw = track.coverUri.replace('%%', '1000x1000');
-      return /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
-    }
-
-    if (track.coverUrl && /^https?:\/\//.test(track.coverUrl)) {
-      return track.coverUrl;
-    }
-
-    if (typeof L.getHiResCover === 'function') {
-      const u = L.getHiResCover(track);
-      if (u) return u;
-    }
-    if (typeof L.coverURL === 'function') {
-      const u = L.coverURL(track);
-      if (u) return u;
-    }
-    return null;
+U.coverURLFromTrack = function coverURLFromTrack(t) {
+  const norm = (u) => {
+    if (!u) return null;
+    if (typeof u !== 'string') return null;
+    // ЯМ-форматы
+    if (u.includes('%%')) u = u.replace('%%', '1000x1000');
+    if (u.includes('/100x100')) u = u.replace('/100x100', '/1000x1000');
+    // протокол
+    return /^https?:\/\//.test(u) ? u : `https://${u}`;
   };
+
+  const url =
+    norm(t?.coverUri) ||
+    norm(t?.album?.coverUri) ||
+    norm(t?.albums?.[0]?.coverUri) ||
+    norm(t?.ogImage) ||
+    norm(t?.cover?.uri) ||
+    norm(t?.coverUrl);
+
+  if (url) return url;
+
+  // фолбэк: что видно в плеере прямо сейчас
+  return (typeof L.getHiResCover === 'function' && L.getHiResCover()) ||
+         (typeof L.coverURL      === 'function' && L.coverURL())      ||
+         null;
+};
+
 
   // Плавная замена фонового изображения БЕЗ накопления (макс. 2 img) + защита от гонок
   UI.crossfade = function crossfade(elOrSel, url, { duration = 600 } = {}) {
@@ -322,36 +326,56 @@ Library.initUI = function initUI() {
   };
 
   // Единая шина событий смены трека
-  L.onTrack = function onTrack(handler, { immediate = true } = {}) {
-    H.add(handler);
+  // Единая шина событий смены трека
+L.onTrack = function onTrack(handler, { immediate = true } = {}) {
+  H.add(handler);
 
-    if (!L._busInit) {
-      L._busInit = true;
-      const emit = (t) => { for (const fn of H) { try { fn(t); } catch {} } };
+  if (!L._busInit) {
+    L._busInit = true;
 
-      const tp = window.Theme?.player;
-      if (tp?.on) {
-        tp.on('trackChange', ({ state }) => emit(state?.track));
-        tp.on('openPlayer',  ({ state }) => emit(state?.track));
-      }
+    const emit = (t) => {
+      if (!t) return;
+      for (const fn of H) { try { fn(t); } catch (_) {} }
+    };
 
-      if (window.Player?.on) {
-        window.Player.on('trackChange', ({ state }) => emit(state?.track));
-        window.Player.on('openPlayer',  ({ state }) => emit(state?.track));
-      }
-      if (typeof L.trackWatcher === 'function') {
-        try { L.trackWatcher(t => emit(t)); } catch {}
-      }
-      const cur = window.Theme?.player?.getCurrentTrack?.() || L.getCurrentTrack?.();
-      if (cur) setTimeout(() => emit(cur), 0);
+    // Подписка на Theme.player (основной плеер темы)
+    const tp = window.Theme?.player;
+    if (tp?.on) {
+      tp.on('trackChange', ({ state }) => emit(state?.track || state));
+      tp.on('openPlayer',  ({ state }) => emit(state?.track || state));
     }
 
-    if (immediate) {
-      const cur = window.Theme?.player?.getCurrentTrack?.() || L.getCurrentTrack?.();
-      if (cur) handler(cur);
+    // Подписка на window.Player (если прокинут алиас)
+    if (window.Player?.on) {
+      window.Player.on('trackChange', ({ state }) => emit(state?.track || state));
+      window.Player.on('openPlayer',  ({ state }) => emit(state?.track || state));
     }
-    return () => H.delete(handler);
-  };
+
+    // Доп. вотчер, если реализован
+    if (typeof L.trackWatcher === 'function') {
+      try { L.trackWatcher((t) => emit(t)); } catch (_) {}
+    }
+
+    // Стартовый трек сразу
+    const cur =
+      tp?.getCurrentTrack?.() ||
+      tp?.state?.track ||
+      L.getCurrentTrack?.();
+
+    if (cur) setTimeout(() => emit(cur), 0);
+  }
+
+  if (immediate) {
+    const tp = window.Theme?.player;
+    const cur =
+      tp?.getCurrentTrack?.() ||
+      tp?.state?.track ||
+      L.getCurrentTrack?.();
+    if (cur) handler(cur);
+  }
+
+  return () => H.delete(handler);
+};
 
   // Привязка UI к текущему треку одной строкой
   // map = { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' }
