@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN v0.6.0")
+console.log("проверка SPOTIFYSCREEN v0.6.1")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -154,6 +154,8 @@ if (cur) {
 // --- одна общая функция: привязывает bindTrackUI, если DOM уже есть ---
 function ensureUIBound() {
   if (window.__spotifyUIBound) return;
+
+  console.log('[ensureUIBound] вставка изображение');
 
   const cover  = document.querySelector('.SM_Cover');
   const title  = document.querySelector('.SM_Track_Name');
@@ -387,7 +389,6 @@ SpotColЛичная.SpotifyScreen = {
   init(player) {
     if (!player) return;
 
-    // важно, чтобы Library.onTrack ловил события
     window.Player = window.Player || player;
 
     player.on('trackChange', ({ state }) => {
@@ -408,7 +409,7 @@ SpotColЛичная.SpotifyScreen = {
     }
 
     this.check();
-    ensureUIBound(); // ← привязка независимо от build()
+    ensureUIBound(); 
   },
 
   check() {
@@ -417,9 +418,9 @@ SpotColЛичная.SpotifyScreen = {
 
     if (!layout) return;
     if (!exists || !document.body.contains(exists)) {
-      build(); // пересоздание, если нужно
+      build();
     }
-    ensureUIBound(); // ← на случай, если build уже был и DOM готов
+    ensureUIBound();
   },
 };
 /*_____________________________________________________________________________________________*/
