@@ -1,7 +1,7 @@
 (() => {
   if (window.Library) return;     // защита от двойной загрузки
   const DEBUG = !!window.__DEBUG__;
-  console.log('[Library] v1.2.4');
+  console.log('[Library] v1.2.5');
   const log   = (...a) => DEBUG && console.log('[Library]', ...a);
 
   const coverURL = () => {
@@ -377,8 +377,6 @@ L.onTrack = function onTrack(handler, { immediate = true } = {}) {
   return () => H.delete(handler);
 };
 
-  // Привязка UI к текущему треку одной строкой
-  // map = { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' }
   UI.bindTrackUI = function bindTrackUI(map, opts = {}) {
     const update = (track) => {
       if (map.cover)  UI.crossfade(map.cover, U.coverURLFromTrack(track), opts);
@@ -388,6 +386,14 @@ L.onTrack = function onTrack(handler, { immediate = true } = {}) {
     const off = L.onTrack(update, { immediate: true });
     return () => off && off();
   };
+
+UI.updateTrackUI = function updateTrackUI(map, track, opts = {}) {
+  if (!track) return;
+  if (map.cover)  UI.crossfade(map.cover, U.coverURLFromTrack(track), opts);
+  if (map.title)  UI.setText(map.title,  track.title || track.name || '');
+  if (map.artist) UI.setText(map.artist, (track.artists || []).map(a => a.name || a).join(', '));
+};
+
 };
 
 /* ========================================================================== *

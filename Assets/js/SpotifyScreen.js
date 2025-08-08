@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN v0.6.3")
+console.log("проверка SPOTIFYSCREEN v0.6.4")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -95,72 +95,75 @@ if (!SpotColЛичная) {
     };
 
 /*_____________________________________________________________________________________________*/
-const build = () => {
-  if ($root && document.body.contains($root)) return;
-  console.log('[SpotifyScreen] ▶ build() — создаём интерфейс SpotifyScreen');
+// SpotifyScreen.js — build()
+function build() {
+  let root = document.querySelector('.Spotify_Screen');
+  if (root && document.body.contains(root)) {
+    $root   = root;
+    $cover  = root.querySelector('.SM_Cover');
+    $track  = root.querySelector('.SM_Track_Name');
+    $artist = root.querySelector('.SM_Artist');
+    return;
+  }
 
-  $root = null;
-  $bg = $cover = $track = $like = $artist = null;
+  const anchor =
+    document.querySelector('[class*="commonlayout_content"], [class*="CommonLayout_content"]') ||
+    document.querySelector('[class*="Content_root"]') ||
+    document.querySelector('[data-test-id="PLAYERBAR_DESKTOP"]')?.parentElement ||
+    document.querySelector('[data-test-id="NAVBAR"]')?.parentElement ||
+    document.querySelector('[class*="DefaultLayout_root"]') ||
+    document.querySelector('[class*="CommonLayout_root"]') ||
+    document.body;
 
-  // 🔒 Вставляем в <body>, чтобы не удалялось при переходах
-  $root = el('div', 'Spotify_Screen', document.body);
+  root = document.createElement('div');
+  root.className = 'Spotify_Screen';
+  root.innerHTML = `
+    <div class="SM_Background"></div>
+    <div class="SM_Cover"></div>
+    <div class="SM_Title_Line"></div>
+    <div class="SM_Track_Name"></div>
+    <div class="SM_Artist"></div>
+    <div class="All_Info_Container"></div>
+  `;
 
-  // ✅ Внутренние элементы
-  $bg    = el('div', 'SM_Background', $root);
-  $cover = el('div', 'SM_Cover', $root);
+  if (anchor && anchor.parentElement) {
+    anchor.insertAdjacentElement('afterend', root);
+  } else {
+    (anchor || document.body).appendChild(root);
+  }
 
-  const row = el('div', 'SM_Title_Line', $root);
-  $track = el('div', 'SM_Track_Name', row);
-  $like  = createClone();
-  row.appendChild($like);
+  $root   = root;
+  $cover  = root.querySelector('.SM_Cover');
+  $track  = root.querySelector('.SM_Track_Name');
+  $artist = root.querySelector('.SM_Artist');
 
-  $artist = el('div', 'SM_Artist', $root);
+  Object.assign($cover.style, {
+    position: 'relative',
+    overflow: 'hidden',
+    width: '100%',
+    aspectRatio: '1 / 1',
+    zIndex: 2
+  });
 
-  const info = el('div', 'All_Info_Container', $root);
-
-  const art = el('div', 'Artist_Info_Container', info);
-  el('div', 'Info_Title', art, 'Сведения об исполнителе');
-  el('div', 'Search_Info', art);
-
-  const gpt = el('div', 'GPT_Info_Container', info);
-  el('div', 'GPT_Info_Title', gpt, 'Сведения о треке');
-  el('div', 'GPT_Search_Info', gpt);
-
-  el(
-    'div',
-    'Achtung_Alert',
-    info,
-    'В сведениях иногда бывают неправильные результаты. Проверяйте информацию подробнее, если изначально вам не всё равно!'
-  );
-
-if (!window.__spotifyUIBound) {
-  window.Library?.initUI?.();
-  window.__spotifyUnbind = window.Library?.ui?.bindTrackUI?.(
-    { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' },
-    { duration: 600 }
-  );
-  window.__spotifyUIBound = true;
+  const $title = root.querySelector('.SM_Title_Line');
+  if ($title && typeof createClone === 'function') {
+    $like = createClone();
+    $title.appendChild($like);
+    if (typeof attachObserver === 'function') attachObserver();
+    if (typeof syncState === 'function') syncState();
+  }
 }
 
-// форсим начальную установку, если трек уже есть
-const cur = Theme?.player?.state?.track || Theme?.player?.getCurrentTrack?.();
-if (cur) {
-  const u = Library.util.coverURLFromTrack(cur);
-  if (u) Library.ui.crossfade('.SM_Cover', u, { duration: 600 });
+function ensureBuilt() {
+  if (!document.querySelector('.Spotify_Screen')) build();
 }
 
-};
-
-// --- одна общая функция: привязывает bindTrackUI, если DOM уже есть ---
 function ensureUIBound() {
-  if (window.__spotifyUIBound) return;
+  if (window.__spotifyUIBound && document.querySelector('.Spotify_Screen')) return;
+  if (!document.querySelector('.Spotify_Screen')) { window.__spotifyUIBound = false; return; }
 
-  console.log('[ensureUIBound] вставка изображение');
-
-  const cover  = document.querySelector('.SM_Cover');
-  const title  = document.querySelector('.SM_Track_Name');
-  const artist = document.querySelector('.SM_Artist');
-  if (!cover || !title) return; // ещё не создано — выйдем, попробуем позже
+  const ok = document.querySelector('.SM_Cover') && document.querySelector('.SM_Track_Name');
+  if (!ok) return;
 
   window.Library?.initUI?.();
   window.__spotifyUnbind = window.Library?.ui?.bindTrackUI?.(
@@ -169,31 +172,12 @@ function ensureUIBound() {
   );
   window.__spotifyUIBound = true;
 
-  // форс-первичная обложка (на случай, если событие ещё не пришло)
   const cur = window.Theme?.player?.state?.track || window.Theme?.player?.getCurrentTrack?.();
   if (cur) {
     const u = window.Library?.util?.coverURLFromTrack?.(cur);
     if (u) window.Library?.ui?.crossfade?.('.SM_Cover', u, { duration: 600 });
   }
 }
-
-const update = (data) => {
-  console.log('[SpotifyScreen] 🔄 update() — обновление состояния');
-
-  const track = data?.track || data;
-
-  if (!$origLike || !document.contains($origLike)) {
-    console.log('[SpotifyScreen] ♻️ Пересоздаём clone лайка');
-    const fresh = createClone();
-    $like.replaceWith(fresh);
-    $like = fresh;
-  }
-
-  build();
-
-  syncState();
-  $root.style.display = 'block';
-};
 
 
 /*_____________________________________________________________________________________________*/
@@ -387,58 +371,47 @@ const update = (data) => {
 /*_____________________________________________________________________________________________*/
 SpotColЛичная.SpotifyScreen = {
   init(player) {
-  if (!player) return;
+    if (!player) return;
 
-  // пусть библиотека тоже видит события
-  window.Player = window.Player || player;
+    window.Player = window.Player || player;
 
-  const applyTrack = (stateOrTrack) => {
-    ensureUIBound(); // на случай, если DOM только что появился
+    const applyTrack = (stateOrTrack) => {
+      ensureBuilt();
+      ensureUIBound();
 
-    const track = stateOrTrack?.track || stateOrTrack;
-    window.Library?.initUI?.();
-    window.Library?.ui?.updateTrackUI?.(
-      { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' },
-      track,
-      { duration: 600 }
-    );
+      const track = stateOrTrack?.track || stateOrTrack;
+      if (!track) return;
 
-    // остальная логика экрана — по желанию
-    this.check();
-    try { update?.(track); } catch {}
-  };
+      window.Library?.initUI?.();
+      window.Library?.ui?.updateTrackUI?.(
+        { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' },
+        track,
+        { duration: 600 }
+      );
+    };
 
-  player.on('trackChange', ({ state }) => {
-    console.log('[SpotifyScreen] trackChange');
-    applyTrack(state);
-  });
+    player.on('trackChange', ({ state }) => applyTrack(state));
+    player.on('openPlayer',  ({ state }) => applyTrack(state));
+    player.on('pageChange',  () => { ensureBuilt(); ensureUIBound(); });
 
-  player.on('openPlayer', ({ state }) => {
-    console.log('[SpotifyScreen] openPlayer');
-    applyTrack(state);
-  });
+    const layout = document.querySelector('[class*="CommonLayout_root"]');
+    if (layout) {
+      const mo = new MutationObserver(() => { ensureBuilt(); ensureUIBound(); });
+      mo.observe(layout, { childList: true, subtree: true });
+    }
 
-  player.on('pageChange', () => {
-    console.log('[SpotifyScreen] pageChange');
-    this.check();
+    ensureBuilt();
     ensureUIBound();
-  });
 
-  const layout = document.querySelector('[class*="CommonLayout_root"]');
-  if (layout) {
-    const mo = new MutationObserver(() => { this.check(); ensureUIBound(); });
-    mo.observe(layout, { childList: true, subtree: true });
+    const cur = window.Theme?.player?.state?.track || window.Theme?.player?.getCurrentTrack?.();
+    if (cur) applyTrack(cur);
+  },
+
+  check() {
+    ensureBuilt();
+    ensureUIBound();
   }
-
-  this.check();
-  ensureUIBound();
-
-  // форс первый апдейт, если трек уже есть
-  const cur = window.Theme?.player?.state?.track || window.Theme?.player?.getCurrentTrack?.();
-  if (cur) applyTrack(cur);
-},
 };
-
 /*_____________________________________________________________________________________________*/
 theme.updateSpotifyScreen = update;
    })(SpotColЛичная, 1000);
