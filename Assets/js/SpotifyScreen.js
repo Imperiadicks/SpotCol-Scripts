@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN v0.6.2")
+console.log("проверка SPOTIFYSCREEN v0.6.3")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -387,52 +387,56 @@ const update = (data) => {
 /*_____________________________________________________________________________________________*/
 SpotColЛичная.SpotifyScreen = {
   init(player) {
-    if (!player) return;
+  if (!player) return;
 
-    // чтобы Library.onTrack видел события
-    window.Player = window.Player || player;
+  // пусть библиотека тоже видит события
+  window.Player = window.Player || player;
 
-    player.on('trackChange', ({ state }) => {
-      ensureUIBound();
-      this.check();
-      update(state.track);
-    });
+  const applyTrack = (stateOrTrack) => {
+    ensureUIBound(); // на случай, если DOM только что появился
 
-    player.on('openPlayer', ({ state }) => {
-      ensureUIBound();
-      update(state.track);
-    });
+    const track = stateOrTrack?.track || stateOrTrack;
+    window.Library?.initUI?.();
+    window.Library?.ui?.updateTrackUI?.(
+      { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' },
+      track,
+      { duration: 600 }
+    );
 
-    player.on('pageChange', () => {
-      this.check();
-      ensureUIBound();
-    });
-
-    const layout = document.querySelector('[class*="CommonLayout_root"]');
-    if (layout) {
-      const mo = new MutationObserver(() => {
-        this.check();
-        ensureUIBound();
-      });
-      mo.observe(layout, { childList: true, subtree: true });
-    }
-
+    // остальная логика экрана — по желанию
     this.check();
-    ensureUIBound();               // ← сразу
-    setTimeout(ensureUIBound, 0);  // ← и на следующий тик (на всякий)
-    requestAnimationFrame(ensureUIBound); // ← когда DOM дорисуется
-  },
+    try { update?.(track); } catch {}
+  };
 
-  check() {
-    const layout = document.querySelector('[class*="CommonLayout_root"]');
-    const exists = document.querySelector('.Spotify_Screen');
+  player.on('trackChange', ({ state }) => {
+    console.log('[SpotifyScreen] trackChange');
+    applyTrack(state);
+  });
 
-    if (!layout) return;
-    if (!exists || !document.body.contains(exists)) {
-      build(); // пересоздание
-    }
-    ensureUIBound(); // ← вызываем всегда
-  },
+  player.on('openPlayer', ({ state }) => {
+    console.log('[SpotifyScreen] openPlayer');
+    applyTrack(state);
+  });
+
+  player.on('pageChange', () => {
+    console.log('[SpotifyScreen] pageChange');
+    this.check();
+    ensureUIBound();
+  });
+
+  const layout = document.querySelector('[class*="CommonLayout_root"]');
+  if (layout) {
+    const mo = new MutationObserver(() => { this.check(); ensureUIBound(); });
+    mo.observe(layout, { childList: true, subtree: true });
+  }
+
+  this.check();
+  ensureUIBound();
+
+  // форс первый апдейт, если трек уже есть
+  const cur = window.Theme?.player?.state?.track || window.Theme?.player?.getCurrentTrack?.();
+  if (cur) applyTrack(cur);
+},
 };
 
 /*_____________________________________________________________________________________________*/
