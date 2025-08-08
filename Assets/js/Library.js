@@ -1,7 +1,7 @@
 (() => {
   if (window.Library) return;     // защита от двойной загрузки
   const DEBUG = !!window.__DEBUG__;
-  console.log('[Library] v1.2.2');
+  console.log('[Library] v1.2.3');
   const log   = (...a) => DEBUG && console.log('[Library]', ...a);
 
   const coverURL = () => {
@@ -209,7 +209,7 @@
       update(initial); return {update,finish};
     }
   };
-  
+
 // UI — универсальные хелперы для модулей (кроссфейд обложки, текст, шина треков)
 window.Library = window.Library || {};
 Library.initUI = function initUI() {
@@ -329,6 +329,12 @@ Library.initUI = function initUI() {
       L._busInit = true;
       const emit = (t) => { for (const fn of H) { try { fn(t); } catch {} } };
 
+      const tp = window.Theme?.player;
+      if (tp?.on) {
+        tp.on('trackChange', ({ state }) => emit(state?.track));
+        tp.on('openPlayer',  ({ state }) => emit(state?.track));
+      }
+
       if (window.Player?.on) {
         window.Player.on('trackChange', ({ state }) => emit(state?.track));
         window.Player.on('openPlayer',  ({ state }) => emit(state?.track));
@@ -336,12 +342,12 @@ Library.initUI = function initUI() {
       if (typeof L.trackWatcher === 'function') {
         try { L.trackWatcher(t => emit(t)); } catch {}
       }
-      const cur = L.getCurrentTrack?.();
+      const cur = window.Theme?.player?.getCurrentTrack?.() || L.getCurrentTrack?.();
       if (cur) setTimeout(() => emit(cur), 0);
     }
 
     if (immediate) {
-      const cur = L.getCurrentTrack?.();
+      const cur = window.Theme?.player?.getCurrentTrack?.() || L.getCurrentTrack?.();
       if (cur) handler(cur);
     }
     return () => H.delete(handler);
