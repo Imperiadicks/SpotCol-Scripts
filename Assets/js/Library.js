@@ -1,7 +1,7 @@
 (() => {
   if (window.Library) return;     // защита от двойной загрузки
   const DEBUG = !!window.__DEBUG__;
-  console.log('[Library] v1.1.1');
+  console.log('[Library] v1.2.2');
   const log   = (...a) => DEBUG && console.log('[Library]', ...a);
 
   const coverURL = () => {
@@ -209,6 +209,156 @@
       update(initial); return {update,finish};
     }
   };
+  
+// UI — универсальные хелперы для модулей (кроссфейд обложки, текст, шина треков)
+window.Library = window.Library || {};
+Library.initUI = function initUI() {
+  const L  = (window.Library = window.Library || {});
+  if (L.ui?.bindTrackUI && L.onTrack) return; // уже инициализировано
+
+  const UI = (L.ui = L.ui || {});
+  const U  = (L.util = L.util || {});
+  const H  = (L._trackHandlers = L._trackHandlers || new Set());
+
+  // Единый способ получить URL обложки
+  U.coverURLFromTrack = function coverURLFromTrack(track) {
+    if (!track) return null;
+
+    if (track.coverUri) {
+      const raw = track.coverUri.replace('%%', '1000x1000');
+      return /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
+    }
+
+    if (track.coverUrl && /^https?:\/\//.test(track.coverUrl)) {
+      return track.coverUrl;
+    }
+
+    if (typeof L.getHiResCover === 'function') {
+      const u = L.getHiResCover(track);
+      if (u) return u;
+    }
+    if (typeof L.coverURL === 'function') {
+      const u = L.coverURL(track);
+      if (u) return u;
+    }
+    return null;
+  };
+
+  // Плавная замена фонового изображения БЕЗ накопления (макс. 2 img) + защита от гонок
+  UI.crossfade = function crossfade(elOrSel, url, { duration = 600 } = {}) {
+    if (!url) return;
+    const el = typeof elOrSel === 'string' ? document.querySelector(elOrSel) : elOrSel;
+    if (!el) return;
+
+    // тот же урл? ничего не делаем
+    if (el.dataset && el.dataset.bg === url) return;
+
+    // bump request id, чтобы старые onload игнорировались
+    const nextId = ((el.dataset.reqId ? parseInt(el.dataset.reqId, 10) : 0) + 1) || 1;
+    el.dataset.reqId = String(nextId);
+
+    if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+    el.style.overflow = 'hidden';
+
+    const pre = new Image();
+    pre.crossOrigin = 'anonymous';
+    pre.decoding = 'async';
+    pre.src = url;
+
+    pre.onload = () => {
+      // Если пришёл уже новый запрос — этот устарел, выходим
+      if (el.dataset.reqId !== String(nextId)) return;
+
+      const prev = el.querySelector('img._ui_cf.current');
+
+      const next = document.createElement('img');
+      next.className = '_ui_cf current';
+      next.alt = '';
+      next.style.cssText = `
+        position:absolute; inset:0;
+        width:100%; height:100%;
+        object-fit:cover;
+        opacity:0; transition:opacity ${duration}ms ease;
+        pointer-events:none; will-change:opacity;
+      `;
+      next.src = url;
+      el.appendChild(next);
+
+      // Анимируем
+      requestAnimationFrame(() => {
+        next.style.opacity = '1';
+        if (prev) {
+          prev.classList.remove('current');
+          prev.classList.add('old');
+          prev.style.transition = `opacity ${Math.max(300, duration - 150)}ms ease`;
+          prev.style.opacity = '0';
+
+          const removePrev = () => prev.remove();
+          prev.addEventListener('transitionend', removePrev, { once: true });
+          // страховка на случай, если transitionend не сработает
+          setTimeout(() => prev.isConnected && prev.remove(), Math.max(350, duration + 100));
+        }
+      });
+
+      // Жёсткий лимит: держим максимум 2 изображения
+      const imgs = el.querySelectorAll('img._ui_cf');
+      for (let i = 0; i < imgs.length - 2; i++) {
+        if (imgs[i] !== next && imgs[i] !== prev) imgs[i].remove();
+      }
+
+      if (el.dataset) el.dataset.bg = url;
+    };
+
+    pre.onerror = () => {
+      // опционально можно логнуть/сбросить reqId, но не обязательно
+    };
+  };
+
+  // Текстовый апдейтер
+  UI.setText = function setText(elOrSel, text) {
+    const el = typeof elOrSel === 'string' ? document.querySelector(elOrSel) : elOrSel;
+    if (!el) return;
+    el.textContent = text ?? '';
+  };
+
+  // Единая шина событий смены трека
+  L.onTrack = function onTrack(handler, { immediate = true } = {}) {
+    H.add(handler);
+
+    if (!L._busInit) {
+      L._busInit = true;
+      const emit = (t) => { for (const fn of H) { try { fn(t); } catch {} } };
+
+      if (window.Player?.on) {
+        window.Player.on('trackChange', ({ state }) => emit(state?.track));
+        window.Player.on('openPlayer',  ({ state }) => emit(state?.track));
+      }
+      if (typeof L.trackWatcher === 'function') {
+        try { L.trackWatcher(t => emit(t)); } catch {}
+      }
+      const cur = L.getCurrentTrack?.();
+      if (cur) setTimeout(() => emit(cur), 0);
+    }
+
+    if (immediate) {
+      const cur = L.getCurrentTrack?.();
+      if (cur) handler(cur);
+    }
+    return () => H.delete(handler);
+  };
+
+  // Привязка UI к текущему треку одной строкой
+  // map = { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' }
+  UI.bindTrackUI = function bindTrackUI(map, opts = {}) {
+    const update = (track) => {
+      if (map.cover)  UI.crossfade(map.cover, U.coverURLFromTrack(track), opts);
+      if (map.title)  UI.setText(map.title,  track?.title || track?.name || '');
+      if (map.artist) UI.setText(map.artist, (track?.artists || []).map(a => a.name || a).join(', '));
+    };
+    const off = L.onTrack(update, { immediate: true });
+    return () => off && off();
+  };
+};
 
 /* ========================================================================== *
  *  PlayerEvents – полноценная обёртка над window.player (Yandex Music)
@@ -618,7 +768,10 @@ class SpotifyScreen {
   /* ════════════════════════════════════════════════════════════════════════════════════
    *  Export
    * ══════════════════════════════════════════════════════════════════════════════════ */
-  window.Theme = Theme;
-  window.Library = { EventEmitter, StylesManager, SettingsManager, UI, PlayerEvents, Theme, SpotifyScreen, coverURL, getHiResCover };
+window.Theme = Theme;
+const existing = window.Library || {};
+window.Library = Object.assign(existing, {
+  EventEmitter, StylesManager, SettingsManager, UI, PlayerEvents, Theme, SpotifyScreen, coverURL, getHiResCover
+});
   console.log('Library loaded ✓');
 })();

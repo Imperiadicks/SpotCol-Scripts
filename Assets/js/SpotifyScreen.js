@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN 0.5.7")
+console.log("проверка SPOTIFYSCREEN v0.5.9")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -132,62 +132,17 @@ const build = () => {
     info,
     'В сведениях иногда бывают неправильные результаты. Проверяйте информацию подробнее, если изначально вам не всё равно!'
   );
-};
 
-function updateCoverBackground(track) {
-  if (!$cover) return;
-  console.log("[updateCoverBackground] сработал")
-
-  let url = null;
-  if (track?.coverUri) {
-    url = `https://${track.coverUri.replace('%%', '1000x1000')}`;
-  } else {
-    url =
-      window.Library?.getHiResCover?.() ||
-      window.Library?.coverURL?.() ||
-      null;
-  }
-
-  if (!url || $cover.dataset.lastBg === url) return;
-  $cover.dataset.lastBg = url;
-
-  const oldImg = $cover.querySelector('img');
-
-  const newImg = document.createElement('img');
-  newImg.src = url;
-  newImg.alt = '';
-  newImg.style.cssText = `
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    opacity: 0;
-    transition: opacity 0.8s ease;
-    z-index: 0;
-  `;
-
-  // Устанавливаем background как fallback
-  $cover.style.backgroundImage = `url("${url}")`;
-  $cover.style.backgroundSize = 'cover';
-  $cover.style.backgroundPosition = 'center';
-  $cover.style.backgroundRepeat = 'no-repeat';
-  $cover.style.position = 'relative';
-  $cover.style.overflow = 'hidden';
-
-  $cover.appendChild(newImg);
-
-  requestAnimationFrame(() => {
-    newImg.style.opacity = '1';
-    if (oldImg) {
-      oldImg.style.opacity = '0';
-      oldImg.style.transition = 'opacity 0.5s ease';
-      setTimeout(() => oldImg.remove(), 500);
-    }
-  });
+  if (!window.__spotifyUIBound) {
+  window.Library?.initUI?.(); // инициализирует UI-утилиты, если ещё не
+  window.__spotifyUnbind = window.Library?.ui?.bindTrackUI?.({
+    cover:  '.SM_Cover',
+    title:  '.SM_Track_Name',
+    artist: '.SM_Artist'
+  }, { duration: 600 });
+  window.__spotifyUIBound = true;
 }
+};
 
 const update = (data) => {
   console.log('[SpotifyScreen] 🔄 update() — обновление состояния');
@@ -202,16 +157,11 @@ const update = (data) => {
   }
 
   build();
-  updateCoverBackground(track);
-
-  if (track) {
-    $track.textContent = track.title || '';
-    $artist.textContent = (track.artists || []).map(a => a.name).join(', ');
-  }
 
   syncState();
   $root.style.display = 'block';
 };
+
 
 /*_____________________________________________________________________________________________*/
 
@@ -409,12 +359,12 @@ SpotColЛичная.SpotifyScreen = {
     player.on('trackChange', ({ state }) => {
       this.check();
       update(state.track);
-      updateCoverBackground(state.track);
+      // updateCoverBackground(state.track); // ← теперь делается через Library.ui.bindTrackUI
     });
 
     player.on('openPlayer', ({ state }) => {
       update(state.track);
-      updateCoverBackground(state.track);
+      // updateCoverBackground(state.track); // ← перенесено в Library
     });
 
     player.on('pageChange', () => this.check());
@@ -422,7 +372,7 @@ SpotColЛичная.SpotifyScreen = {
     if (window.Library?.trackWatcher) {
       window.Library.trackWatcher(track => {
         update(track);
-        updateCoverBackground(track);
+        // updateCoverBackground(track); // ← перенесено в Library
       });
     }
 
@@ -434,13 +384,16 @@ SpotColЛичная.SpotifyScreen = {
 
     this.check();
   },
-  
+
   check() {
     const layout = document.querySelector('[class*="CommonLayout_root"]');
     const exists = document.querySelector('.Spotify_Screen');
 
     if (!layout) return;
-    if (!exists || !document.body.contains(exists)) build(), updateCoverBackground(); // пересоздание
+    if (!exists || !document.body.contains(exists)) {
+      build(); // пересоздание
+      // updateCoverBackground(); // ← больше не нужно, ковер ведёт Library
+    }
   },
 };
 /*_____________________________________________________________________________________________*/
