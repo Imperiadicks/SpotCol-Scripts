@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log("проверка SPOTIFYSCREEN v0.6.8")
+console.log("проверка SPOTIFYSCREEN v0.6.7")
 if (!SpotColЛичная) {
   console.error("[SpotifyScreen] Theme is not available.");
   throw new Error("Theme not loaded");
@@ -388,80 +388,106 @@ function ensureUIBound() {
 
 /*_____________________________________________________________________________________________*/
 SpotColЛичная.SpotifyScreen = {
-init(player) {
-  if (!player) return;
-  window.Player = window.Player || player;
+  init(player) {
+    if (!player) return;
 
-  // — состояние для сторожка
-  let __lastCoverURL = '';
+    window.Player = window.Player || player;
 
-  // — единый апдейтер: гарантирует DOM и проставляет обложку/титул/артиста
-  const applyTrack = (maybe) => {
-    try {
+    // ===== helpers =========================================================
+    const currentTrack = () =>
+      window.Theme?.player?.state?.track ||
+      window.Theme?.player?.getCurrentTrack?.() ||
+      window.Library?.getCurrentTrack?.() ||
+      null;
+
+    const updateAll = (maybeStateOrTrack) => {
       ensureBuilt();
       ensureUIBound();
 
-      const track =
-        (maybe && (maybe.track || maybe)) ||
-        window.Theme?.player?.state?.track ||
-        window.Theme?.player?.getCurrentTrack?.();
+      // Берём трек из события или из плеера прямо сейчас
+      const track = (maybeStateOrTrack?.track || maybeStateOrTrack) || currentTrack();
       if (!track) return;
 
+      // Один вызов, который и обложку проставит, и тайтл/артиста
       window.Library?.initUI?.();
       window.Library?.ui?.updateTrackUI?.(
         { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' },
         track,
         { duration: 600 }
       );
-    } catch (e) { /* no-op */ }
-  };
+    };
 
-  // — подписка на шину Library (даёт событие при любой смене трека)
-  try {
-    window.Library?.initUI?.();
-    window.Library?.onTrack?.((t) => applyTrack(t), { immediate: true });
-  } catch (_) {}
+    // ===== события плеера =================================================
+    player.on('trackChange', ({ state }) => updateAll(state));   // при любой смене трека — обновляем
+    player.on('openPlayer',  ({ state }) => updateAll(state));   // при открытии полноэкр. плеера — тоже
+    player.on('pageChange',  () => updateAll());                 // и на каждую смену страницы — тоже ставим обложку
+    // Раньше тут просто вызывалось ensureBuilt/ensureUIBound без повторной установки обложки, из-за чего обложка могла «пропасть» после навигации. Теперь всегда идёт updateAll(). :contentReference[oaicite:0]{index=0}
 
-  // — keep-alive: если .Spotify_Screen удалили, возвращаем и обновляем
-  const keepAlive = new MutationObserver(() => {
-    const r = window.__spotifyRoot;
-    if (r && !document.body.contains(r)) {
-      (findAnchor() || document.body).insertAdjacentElement('afterend', r);
-      applyTrack();
-    }
-  });
-  keepAlive.observe(document.body, { childList: true, subtree: true });
-
-  // — события плеера
-  player.on('trackChange', ({ state }) => applyTrack(state?.track || state));
-  player.on('openPlayer',  ({ state }) => applyTrack(state?.track || state));
-  player.on('pageChange',  () => applyTrack());
-
-  // — если layout перерисовали — обновим
-  const layout = document.querySelector('[class*="CommonLayout_root"]');
-  if (layout) {
-    const mo = new MutationObserver(() => applyTrack());
-    mo.observe(layout, { childList: true, subtree: true });
-  }
-
-  // — периодический сторожок: если URL поменялся или img потерялся — перерисуем
-  setInterval(() => {
+    // Дополнительно подписываемся на «шину» треков из Library (там есть и поллинг)
     try {
-      const t   = window.Theme?.player?.state?.track || window.Theme?.player?.getCurrentTrack?.();
-      if (!t) return;
-      const url = window.Library?.util?.coverURLFromTrack?.(t);
-      const $c  = document.querySelector('.SM_Cover');
-      const has = !!$c?.querySelector('img._ui_cf.current');
-      if (url && (url !== __lastCoverURL || !has)) {
-        window.Library?.ui?.crossfade?.('.SM_Cover', url, { duration: 600 });
-        __lastCoverURL = url;
-      }
+      window.Library?.initUI?.();
+      window.Library?.onTrack?.((t) => updateAll(t), { immediate: true });
     } catch (_) {}
-  }, 1000);
 
-  // — первичная отрисовка
-  applyTrack();
-}
+    // ===== страховки против удаления узла =================================
+    // 1) Если layout перерисовали — возвращаем экран и снова биндим UI
+    const layout = document.querySelector('[class*="CommonLayout_root"]');
+    if (layout) {
+      const mo = new MutationObserver(() => updateAll());
+      mo.observe(layout, { childList: true, subtree: true });
+    }
+
+    // 2) Если сам .Spotify_Screen выпал из DOM — тут же приаттачиваем обратно
+    const keepAlive = new MutationObserver(() => {
+      const r = window.__spotifyRoot;
+      if (r && !document.body.contains(r)) {
+        (findAnchor() || document.body).insertAdjacentElement('afterend', r);
+        // После возврата — ещё раз поставим актуальную обложку
+        updateAll();
+      }
+    });
+    keepAlive.observe(document.body, { childList: true, subtree: true });
+
+    // 3) Лёгкий интервал-сторожок: вдруг ни одно событие не пришло, а DOM поменяли
+    let lastCoverURL = '';
+    setInterval(() => {
+      ensureBuilt();
+      ensureUIBound();
+
+      const t = currentTrack();
+      if (!t) return;
+
+      const url = window.Library?.util?.coverURLFromTrack?.(t);
+      const $c = document.querySelector('.SM_Cover');
+
+      // Обновляем, если:
+      //  - URL другой,
+      //  - или в контейнере нет «текущего» изображения (после чужих перерисовок)
+      const hasImg = !!$c?.querySelector('img._ui_cf.current');
+      if (url && (url !== lastCoverURL || !hasImg)) {
+        window.Library?.ui?.crossfade?.('.SM_Cover', url, { duration: 600 });
+        lastCoverURL = url;
+      }
+    }, 1000);
+
+    // ===== первичная инициализация ========================================
+    updateAll(); // сразу проставим актуальные данные
+  },
+
+  // Внешняя проверка по таймеру темы — просто гарантируем присутствие и привязку
+  check() {
+    ensureBuilt();
+    ensureUIBound();
+    // На всякий случай — докинем обложку и тексты из текущего трека
+    const t = window.Theme?.player?.state?.track || window.Theme?.player?.getCurrentTrack?.();
+    if (t) {
+      window.Library?.ui?.updateTrackUI?.(
+        { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' },
+        t,
+        { duration: 600 }
+      );
+    }
+  }
 };
 /*_____________________________________________________________________________________________*/
 
