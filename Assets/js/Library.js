@@ -1,15 +1,20 @@
 (() => {
-  if (window.Library) return;     // защита от двойной загрузки
+  // защита от двойной загрузки (сохраняем семантику твоего файла)
+  if (window.Library) return;
+
   const DEBUG = !!window.__DEBUG__;
-  console.log('[Library] v1.2.6');
   const log   = (...a) => DEBUG && console.log('[Library]', ...a);
+  console.log('[Library] v1.3.0');
 
+  // ==========================================================================
+  // Внутренние helper'ы для извлечения обложек (fallback с DOM)
+  // ==========================================================================
   const coverURL = () => {
-    const imgMini = document.querySelector('div[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img');
-    if (imgMini?.src) return imgMini.src;
+    const mini = document.querySelector('div[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img');
+    if (mini?.src) return mini.src;
 
-    const imgFull = document.querySelector('[data-test-id="FULLSCREEN_PLAYER_MODAL"] img[data-test-id="ENTITY_COVER_IMAGE"]');
-    if (imgFull?.src) return imgFull.src;
+    const full = document.querySelector('[data-test-id="FULLSCREEN_PLAYER_MODAL"] img[data-test-id="ENTITY_COVER_IMAGE"]');
+    if (full?.src) return full.src;
 
     const any = document.querySelector('img[data-test-id="ENTITY_COVER_IMAGE"]');
     return any?.src || null;
@@ -20,101 +25,71 @@
     return img?.src?.includes('/100x100') ? img.src.replace('/100x100', '/1000x1000') : null;
   };
 
-  /* ════════════════════════════════════════════════════════════════════════════════════
-   *  EventEmitter
-   * ══════════════════════════════════════════════════════════════════════════════════ */
+  // ==========================================================================
+  // EventEmitter
+  // ==========================================================================
   class EventEmitter {
     #ev = Object.create(null);
-    on   (e, fn) { (
-      this.#ev[e] ??= []).push(fn); 
-      return this; 
-    }
-    once (e, fn) { 
-      const g = (...a)=>{
-        this.off(e,g);fn(...a);
-      }; 
-      return this.on(e,g); }
-    off  (e, fn) { 
-      this.#ev[e] = (
-        this.#ev[e] || []).filter(f=>f!==fn); 
-        return this; 
-      }
-    emit (e, d ) { (
-      this.#ev[e] || []).forEach(f=>f(d)); 
-      return this; 
-    }
-    removeAll(e) {
-       e ? delete this.#ev[e] : this.#ev = Object.create(null); 
-    }
+    on   (e, fn) { (this.#ev[e] ??= []).push(fn); return this; }
+    once (e, fn) { const g = (...a)=>{ this.off(e,g); fn(...a); }; return this.on(e,g); }
+    off  (e, fn) { this.#ev[e] = (this.#ev[e] || []).filter(f=>f!==fn); return this; }
+    emit (e, d ) { (this.#ev[e] || []).forEach(f=>f(d)); return this; }
+    removeAll(e) { e ? delete this.#ev[e] : this.#ev = Object.create(null); }
   }
 
-  /* ════════════════════════════════════════════════════════════════════════════════════
-   *  StylesManager
-   * ══════════════════════════════════════════════════════════════════════════════════ */
+  // ==========================================================================
+  // StylesManager
+  // ==========================================================================
   class StylesManager {
     #bag = {};
     #id  = 'style';
     #flush() {
       let tag = document.getElementById(this.#id);
-      if (!tag) { tag = document.createElement('style'); 
-        tag.id = this.#id; 
-        document.head.appendChild(tag); 
-      }
+      if (!tag) { tag = document.createElement('style'); tag.id = this.#id; document.head.appendChild(tag); }
       tag.textContent = Object.values(this.#bag).join('\n\n');
     }
-    add(id, css)    { if (!id||!css) return; this.#bag[id] = css.toString(); this.#flush(); }
-    remove(id)      { delete this.#bag[id]; this.#flush(); }
-    clear()         { this.#bag = {}; this.#flush(); }
-    has(id)         { return Object.hasOwn(this.#bag, id); }
-    get keys()      { return Object.keys(this.#bag); }
-    get size()      { return this.keys.length; }
+    add(id, css) { if (!id||!css) return; this.#bag[id] = String(css); this.#flush(); }
+    remove(id)   { delete this.#bag[id]; this.#flush(); }
+    clear()      { this.#bag = {}; this.#flush(); }
+    has(id)      { return Object.hasOwn(this.#bag, id); }
+    get keys()   { return Object.keys(this.#bag); }
+    get size()   { return this.keys.length; }
   }
 
-  /* ════════════════════════════════════════════════════════════════════════════════════
-   *  SettingsManager  (расширенный)
-   * ══════════════════════════════════════════════════════════════════════════════════ */
+  // ==========================================================================
+  // SettingsManager (расширенный, совместим с твоим API)
+  // ==========================================================================
   class SettingsManager extends EventEmitter {
-    #theme;
-    #cur   = {};
-    #prev  = {};
-    constructor(theme) { 
-      super(); 
-      this.#theme = theme; 
-    }
-    /* util */
+    #theme; #cur = {}; #prev = {};
+    constructor(theme){ super(); this.#theme = theme; }
     #pick(obj, path) { return path.split('.').reduce((o,k)=>o?.[k], obj); }
-
-    /* public API */
-    get(id)          { return this.#pick(this.#cur, id); }
-    has(id)          { return this.#pick(this.#cur, id) !== undefined; }
-    getAll()         { return structuredClone(this.#cur); }
-    hasChanged(id)   { return JSON.stringify(
-      this.#pick(this.#cur,id)) !== JSON.stringify(this.#pick(this.#prev,id)); }
-    onChange(id, cb) { this.on(`change:${id}`, cb); }
-    defaults(obj)    { for (const [k,v] of Object.entries(obj)) if (!this.has(k)) this.#silentSet(k,v); this.emit('update', {settings:this}); }
-
-    /* загрузка с PulseSync Controls */
+    get(id)        { return this.#pick(this.#cur, id); }
+    has(id)        { return this.#pick(this.#cur, id) !== undefined; }
+    getAll()       { return structuredClone(this.#cur); }
+    hasChanged(id) { return JSON.stringify(this.#pick(this.#cur,id)) !== JSON.stringify(this.#pick(this.#prev,id)); }
+    onChange(id, cb){ this.on(`change:${id}`, cb); }
+    defaults(obj)  { for (const [k,v] of Object.entries(obj)) if (!this.has(k)) this.#silentSet(k,v); this.emit('update', {settings:this}); }
     async update() {
       try {
         const url = `http://localhost:2007/get_handle?name=${encodeURIComponent(this.#theme.id)}`;
-        const r   = await fetch(url, {cache:'no-store'}); if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const { data } = await r.json(); if (!data?.sections) { log('settings: no sections'); return; }
+        const r   = await fetch(url, { cache:'no-store' });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const { data } = await r.json();
+        if (!data?.sections) { log('settings: no sections'); return; }
         this.#prev = structuredClone(this.#cur);
         this.#cur  = this.#transform(data.sections);
         this.emit('update', {settings:this});
-        for(const id of Object.keys(this.#cur))
+        for (const id of Object.keys(this.#cur))
           if (this.hasChanged(id)) this.emit(`change:${id}`, {settings:this});
       } catch(e){ console.error('[SettingsManager]', e); }
     }
-
-    /* преобразование API → плоский объект */
     #transform(sections) {
       const out = {};
-      for(const s of sections){
-        for(const it of s.items){
-          if(it.type==='text' && it.buttons){
+      for (const s of sections) {
+        for (const it of s.items) {
+          if (it.type==='text' && it.buttons) {
             out[it.id] = {};
-            for(const b of it.buttons) out[it.id][b.id] = { value:b.text, default:b.defaultParameter };
+            for (const b of it.buttons) out[it.id][b.id] = { value:b.text, default:b.defaultParameter };
           } else {
             const v = it.bool ?? it.input ?? it.filePath ?? it.selected ?? it.value;
             out[it.id] = { value:v, default:it.defaultParameter };
@@ -123,37 +98,32 @@
       }
       return out;
     }
-
     #silentSet(path,val){
       const keys = path.split('.'); let o=this.#cur;
       keys.slice(0,-1).forEach(k=>{ if(!o[k]) o[k] = {}; o=o[k]; });
       o[keys.at(-1)] = val;
     }
   }
-  /* ════════════════════════════════════════════════════════════════════════════════════
-   *                                          UI
-   * ══════════════════════════════════════════════════════════════════════════════════ */
-  const UI = {
-    /* --- helpers --- */
+
+  // ==========================================================================
+  // UI helpers (alert/modal/confirm/prompt/toast/progressBar)
+  // ==========================================================================
+  const UIHelpers = {
     _el(tag, styleObj = {}, parent = document.body, html='') {
       const n = document.createElement(tag);
       Object.assign(n.style, styleObj);
       if (html) n.innerHTML = html;
       parent.appendChild(n); return n;
     },
-
-    /* --- alert (удаляется автоматически) --- */
     alert(msg, ms=2500) {
-      const d = this._el('div',{
+      const d = this._el('div', {
         position:'fixed',bottom:'20px',left:'50%',transform:'translateX(-50%)',
         background:'#222',color:'#fff',padding:'10px 22px',borderRadius:'8px',
         font:'14px/1 sans-serif',opacity:0,transition:'opacity .25s',zIndex:9999
-      },document.body,msg);
+      }, document.body, msg);
       requestAnimationFrame(()=>d.style.opacity=1);
       setTimeout(()=>{ d.style.opacity=0; setTimeout(()=>d.remove(),250); }, ms);
     },
-
-    /* --- modal (клик по фону или Esc закрывает) --- */
     modal(html) {
       const wrap = this._el('div',{position:'fixed',inset:0,background:'rgba(0,0,0,.6)',display:'flex',
         alignItems:'center',justifyContent:'center',zIndex:10000});
@@ -162,9 +132,8 @@
       wrap.addEventListener('click',e=>e.target===wrap&&wrap.remove());
       const esc = e=>{ if(e.key==='Escape'){wrap.remove();document.removeEventListener('keydown',esc);} };
       document.addEventListener('keydown',esc);
+      return { close: () => wrap.remove() };
     },
-
-    /* --- confirm (promise) --- */
     confirm(text, ok='OK', cancel='Cancel') {
       return new Promise(res=>{
         const wrap=this._el('div',{position:'fixed',inset:0,background:'rgba(0,0,0,.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:10000});
@@ -175,8 +144,6 @@
         mkBtn(ok,true); mkBtn(cancel,false);
       });
     },
-
-    /* --- prompt (promise) --- */
     prompt(label, placeholder='', ok='OK', cancel='Cancel'){
       return new Promise(res=>{
         const wrap=this._el('div',{position:'fixed',inset:0,background:'rgba(0,0,0,.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:10000});
@@ -190,8 +157,6 @@
         mk(cancel,null); mk(ok,null); row.lastChild.onclick = ()=>{wrap.remove();res(input.value);} ;
       });
     },
-
-    /* --- toast (правый верх, стек) --- */
     toast(msg, ms=3000){
       const areaId='toast-area';
       let area=document.getElementById(areaId);
@@ -200,8 +165,6 @@
       requestAnimationFrame(()=>itm.style.opacity=1);
       setTimeout(()=>{itm.style.opacity=0; setTimeout(()=>itm.remove(),200);},ms);
     },
-
-    /* --- simple progress bar (returns {update,finish}) --- */
     progressBar(initial=0){
       const bar=this._el('div',{position:'fixed',bottom:0,left:0,height:'4px',width:'0%',background:'#1db954',transition:'width .1s',zIndex:9999});
       const update=p=>bar.style.width=`${Math.min(100,Math.max(0,p))}%`;
@@ -210,583 +173,546 @@
     }
   };
 
-// UI — универсальные хелперы для модулей (кроссфейд обложки, текст, шина треков)
-window.Library = window.Library || {};
-Library.initUI = function initUI() {
-  const L  = (window.Library = window.Library || {});
-  if (L.ui?.bindTrackUI && L.onTrack) return; // уже инициализировано
+  // ==========================================================================
+  // Library namespace + util
+  // ==========================================================================
+  const Library = (window.Library = window.Library || {});
+  Library.versions = Library.versions || {};
+  Library.util = Library.util || {};
+  Library.ui   = Library.ui   || {};
 
-  const UI = (L.ui = L.ui || {});
-  const U  = (L.util = L.util || {});
-  const H  = (L._trackHandlers = L._trackHandlers || new Set());
-
-U.coverURLFromTrack = function coverURLFromTrack(t) {
-  const norm = (u) => {
-    if (!u) return null;
-    if (typeof u !== 'string') return null;
-    // ЯМ-форматы
-    if (u.includes('%%')) u = u.replace('%%', '1000x1000');
-    if (u.includes('/100x100')) u = u.replace('/100x100', '/1000x1000');
-    // протокол
-    return /^https?:\/\//.test(u) ? u : `https://${u}`;
-  };
-
-  const url =
-    norm(t?.coverUri) ||
-    norm(t?.album?.coverUri) ||
-    norm(t?.albums?.[0]?.coverUri) ||
-    norm(t?.ogImage) ||
-    norm(t?.cover?.uri) ||
-    norm(t?.coverUrl);
-
-  if (url) return url;
-
-  // фолбэк: что видно в плеере прямо сейчас
-  return (typeof L.getHiResCover === 'function' && L.getHiResCover()) ||
-         (typeof L.coverURL      === 'function' && L.coverURL())      ||
-         null;
-};
-UI.crossfade = function crossfade(elOrSel, url, { duration = 600 } = {}) {
-  if (!url) return;
-  const el = typeof elOrSel === 'string' ? document.querySelector(elOrSel) : elOrSel;
-  if (!el) return;
-
-  // если URL тот же, но текущей картинки нет — всё равно ставим
-  if (el.dataset?.bg === url) {
-    const hasCurrent = el.querySelector('img._ui_cf.current');
-    if (hasCurrent) return;
-  }
-
-  const reqId = ((el.dataset?.reqId ? parseInt(el.dataset.reqId, 10) : 0) + 1) || 1;
-  el.dataset.reqId = String(reqId);
-
-  if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
-  el.style.overflow = 'hidden';
-
-  const pre = new Image();
-  pre.decoding = 'async';
-  pre.src = url;
-
-  pre.onload = () => {
-    if (el.dataset.reqId !== String(reqId)) return; // устаревший onload
-
-    const prev = el.querySelector('img._ui_cf.current');
-
-    const next = document.createElement('img');
-    next.className = '_ui_cf current';
-    next.alt = '';
-    next.src = url;
-    next.style.cssText = `
-      position:absolute; inset:0;
-      width:100%; height:100%;
-      object-fit:cover;
-      opacity:0; transition:opacity ${duration}ms ease;
-      pointer-events:none; will-change:opacity;
-    `;
-
-    el.appendChild(next);
-
-    requestAnimationFrame(() => {
-      next.style.opacity = '1';
-      if (prev) {
-        prev.classList.remove('current');
-        prev.classList.add('old');
-        prev.style.transition = `opacity ${Math.max(300, duration - 150)}ms ease`;
-        prev.style.opacity = '0';
-        prev.addEventListener('transitionend', () => prev.remove(), { once: true });
-        setTimeout(() => prev.isConnected && prev.remove(), Math.max(350, duration + 120));
-      }
-    });
-
-    // лимит в контейнере: не более 2 картинок
-    const imgs = el.querySelectorAll('img._ui_cf');
-    for (let i = 0; i < imgs.length - 2; i++) {
-      if (imgs[i] !== next && imgs[i] !== prev) imgs[i].remove();
-    }
-
-    if (el.dataset) el.dataset.bg = url;
-
-    if (window.Library?.debugUI) {
-      const cnt = el.querySelectorAll('img._ui_cf').length;
-      console.log('[crossfade] url=', url, 'imgs=', cnt, 'bg=', el.dataset.bg);
-    }
-  };
-
-  pre.onerror = () => {
-    if (window.Library?.debugUI) console.warn('[crossfade] onerror', url);
-  };
-};
-
-// Текстовый апдейтер
-  UI.setText = function setText(elOrSel, text) {
-    const el = typeof elOrSel === 'string' ? document.querySelector(elOrSel) : elOrSel;
-    if (!el) return;
-    el.textContent = text ?? '';
-  };
-// Единая шина событий смены трека (с фолбэк-вотчером)
-L.onTrack = function onTrack(handler, { immediate = true } = {}) {
-  H.add(handler);
-
-  if (!L._busInit) {
-    L._busInit = true;
-
-    const emit = (t, tag='') => {
-      if (!t) return;
-      if (window.Library?.debugUI) console.log('[onTrack:emit]', tag, t?.title || t?.name, t);
-      for (const fn of H) { try { fn(t); } catch (_) {} }
-    };
-
-    const tp = window.Theme?.player;
-    if (tp?.on) {
-      tp.on('trackChange', ({ state }) => emit(state?.track, 'event:trackChange'));
-      tp.on('openPlayer',  ({ state }) => emit(state?.track, 'event:openPlayer'));
-    }
-
-    if (window.Player?.on) {
-      window.Player.on('trackChange', ({ state }) => emit(state?.track, 'alias:trackChange'));
-      window.Player.on('openPlayer',  ({ state }) => emit(state?.track, 'alias:openPlayer'));
-    }
-
-    if (typeof L.trackWatcher === 'function') {
-      try { L.trackWatcher((t) => emit(t, 'custom:watcher')); } catch (_) {}
-    }
-
-    let lastId = null;
-    setInterval(() => {
-      const s = tp?.state?.track || tp?.getCurrentTrack?.() || L.getCurrentTrack?.();
-      const id = s?.id || s?.trackId || s?.uuid || (s ? `${s.title}|${s?.album?.id || s?.albums?.[0]?.id || ''}` : null);
-      if (!id) return;
-      if (id !== lastId) { lastId = id; emit(s, 'poll'); }
-    }, 800);
-
-    const cur = tp?.getCurrentTrack?.() || tp?.state?.track || L.getCurrentTrack?.();
-    if (cur) setTimeout(() => emit(cur, 'initial'), 0);
-  }
-
-  if (immediate) {
-    const tp = window.Theme?.player;
-    const cur = tp?.getCurrentTrack?.() || tp?.state?.track || L.getCurrentTrack?.();
-    if (cur) handler(cur);
-  }
-
-  return () => H.delete(handler);
-};
-
-  UI.bindTrackUI = function bindTrackUI(map, opts = {}) {
-    const update = (track) => {
-      if (map.cover)  UI.crossfade(map.cover, U.coverURLFromTrack(track), opts);
-      if (map.title)  UI.setText(map.title,  track?.title || track?.name || '');
-      if (map.artist) UI.setText(map.artist, (track?.artists || []).map(a => a.name || a).join(', '));
-    };
-    const off = L.onTrack(update, { immediate: true });
-    return () => off && off();
-  };
-
-UI.updateTrackUI = function updateTrackUI(map, track, opts = {}) {
-  if (!track) return;
-  if (map.cover)  UI.crossfade(map.cover, U.coverURLFromTrack(track), opts);
-  if (map.title)  UI.setText(map.title,  track.title || track.name || '');
-  if (map.artist) UI.setText(map.artist, (track.artists || []).map(a => a.name || a).join(', '));
-};
-
-};
-
-/* ========================================================================== *
- *  PlayerEvents – полноценная обёртка над window.player (Yandex Music)
- * ========================================================================== */
-class PlayerEvents extends EventEmitter {
-  #theme;
-  state = {
-    status : 'paused',
-    page   : location.pathname,
-    volume : 0,
-    shuffle: false,
-    repeat : 'none',
-    progress:{ duration:0, position:0, loaded:0, played:0 },
-    track   : {}
-  };
-
-  constructor(theme){
-    super();
-    this.#theme = theme;
-    this.#wait();        // ждём инициализации window.player
-    this.#watchPage();   // отлавливаем смену URL
-  }
-
-  /* ---------- ожидание window.player ---------- */
-  #wait(){
-    const iv = setInterval(()=>{
-      if (window?.player?.state?.playerState &&
-          window?.player?.state?.queueState?.currentEntity?.value?.entity?.data?.meta){
-        clearInterval(iv);
-        this.#hook();
-      }
-    }, 400);
-  }
-
-  /* ---------- подписки на observables ---------- */
-  #hook(){
-    const ps = player.state.playerState;
-    const qs = player.state.queueState;
-
-    this.state.track  = qs.currentEntity.value.entity.data.meta;
-    this.state.volume = ps.volume.value;
-    this.emit('trackChange', { state:this.state });
-
-    ps.status.onChange(s=>{
-      this.state.status = s==='loadingMediaData' ? 'paused' : s;
-      this.emit(s==='playing' ? 'play' : 'pause', { state:this.state });
-      if (s==='loadingMediaData'){
-        this.state.track = qs.currentEntity.value.entity.data.meta;
-        this.emit('trackChange', { state:this.state });
-      }
-    });
-
-    ps.event.onChange(ev=>{
-      if (ev==='audio-set-progress') this.emit('seek', { state:this.state });
-    });
-
-    ps.progress.onChange(p=>{
-      this.state.progress = p;
-      this.emit('progress', { state:this.state });
-    });
-
-    ps.volume.onChange(v=>{
-      this.state.volume = Math.round(v*100)/100;
-      this.emit('volume', { state:this.state });
-    });
-
-    qs.shuffle.onChange(sh=>{
-      this.state.shuffle = sh;
-      this.emit('shuffle', { state:this.state });
-    });
-
-    qs.repeat.onChange(r=>{
-      this.state.repeat = r;
-      this.emit('repeat', { state:this.state });
-    });
-
-    qs.currentEntity.onChange(()=>{
-      this.state.track = qs.currentEntity.value.entity.data.meta;
-      this.emit('trackChange', { state:this.state });
-    });
-
-    /* ---------- fullscreen‑player / lyrics / queue ---------- */
-    const test = {
-      player : n => n.querySelector?.('[data-test-id="FULLSCREEN_PLAYER_MODAL"]'),
-      text   : n => n.querySelector?.('[data-test-id="SYNC_LYRICS_CONTENT"]'),
-      queue  : n => n.querySelector?.('.PlayQueue_root__ponhw')
-    };
-    new MutationObserver(muts=>{
-      muts.forEach(mu=>{
-        mu.addedNodes.forEach(n=>{
-          if (test.player(n)) this.emit('openPlayer',  { state:this.state });
-          if (test.text  (n)) this.emit('openText',    { state:this.state });
-          if (test.queue (n)) this.emit('openQueue',   { state:this.state });
-        });
-        mu.removedNodes.forEach(n=>{
-          if (test.player(n)) this.emit('closePlayer', { state:this.state });
-          if (test.text  (n)) this.emit('closeText',   { state:this.state });
-          if (test.queue (n)) this.emit('closeQueue',  { state:this.state });
-        });
-      });
-    }).observe(document.body,{ childList:true, subtree:true });
-  }
-
-  /* ---------- слежение за сменой URL ---------- */
-  #watchPage(){
-    const upd = () => {
-      const p = location.pathname;
-      if (p !== this.state.page){
-        this.state.page = p;
-        this.emit('pageChange', { state:this.state });
-      }
-    };
-    ['pushState','replaceState'].forEach(fn=>{
-      const o = history[fn];
-      history[fn] = function(...a){ o.apply(this,a); upd(); };
-    });
-    addEventListener('popstate', upd);
-  }
-
-  /* ---------- безопасный getter текущего трека ---------- */
-  getCurrentTrack() {
-    if (this.state?.track?.title) return this.state.track;
-
-    try {
-      const src = coverURL();
-      const titleEl = document.querySelector('[class*="TrackInfo_title"]');
-      const artistEls = [...document.querySelectorAll('[class*="TrackInfo_artists"] a')];
-
-      return {
-        coverUri: src?.split('https://')[1]?.replace('100x100', '%%') || '',
-        title: titleEl?.textContent || '',
-        artists: artistEls.map(a => ({ name: a.textContent }))
+  // util: debounce/throttle
+  if (typeof Library.util.debounce !== 'function') {
+    Library.util.debounce = function debounce(fn, wait = 200) {
+      let t = null;
+      return function (...args) {
+        if (t) clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), wait);
       };
-    } catch (e) {
-      console.warn('[PlayerEvents] getCurrentTrack() fallback error:', e);
-      return {};
-    }
+    };
   }
-}
-
-
-// 📦 Добавление SpotifyScreen в библиотеку
-class SpotifyScreen {
-  #theme;
-  #player;
-  #root = null;
-  #bg = null;
-  #cover = null;
-  #track = null;
-  #artist = null;
-  #like = null;
-  #origLike = null;
-  #observer = null;
-  #prevLiked = null;
-
-  constructor(theme) {
-    this.#theme = theme;
-    this.#player = theme?.player;
-
-    if (!this.#player) {
-      console.warn('[SpotifyScreen] Нет player, инициализация невозможна.');
-      return;
-    }
-
-    this.#player.on('openPlayer',  ({ state }) => this.#update(state));
-    this.#player.on('trackChange', ({ state }) => this.#update(state));
+  if (typeof Library.util.throttle !== 'function') {
+    Library.util.throttle = function throttle(fn, wait = 100) {
+      let last = 0, timer = null, ctx, args;
+      return function throttled(...a) {
+        const now = Date.now();
+        const rem = wait - (now - last);
+        ctx = this; args = a;
+        if (rem <= 0) { last = now; fn.apply(ctx, args); }
+        else if (!timer) {
+          timer = setTimeout(() => { last = Date.now(); timer = null; fn.apply(ctx, args); }, rem);
+        }
+      };
+    };
   }
 
-  #el(tag, cls, parent, txt = '') {
-    const n = document.createElement(tag);
-    if (cls) n.className = cls;
-    if (txt) n.textContent = txt;
-    (parent ?? document.body).appendChild(n);
-    return n;
-  }
+  // util: coverURLFromTrack (универсально для ЯМ)
+  if (typeof Library.util.coverURLFromTrack !== 'function') {
+    Library.util.coverURLFromTrack = function coverURLFromTrack(track, size = '1000x1000') {
+      if (!track) return '';
+      let uri =
+        track.coverUri ||
+        track.cover_uri ||
+        track.cover ||
+        (track.album && (track.album.coverUri || track.album.cover)) ||
+        track.image ||
+        track.artwork ||
+        '';
 
-  #isLiked(node) {
-    if (!node) return false;
-    if (node.getAttribute('aria-checked') !== null)
-      return node.getAttribute('aria-checked') === 'true';
-    return node.classList.contains('Like_active') ||
-           !!node.querySelector('svg[class*="_active"],svg[class*="-active"],svg .LikeIcon_active');
-  }
-
-  #syncState() {
-    if (!this.#origLike || !this.#like) return;
-
-    const src = this.#origLike.querySelector('svg');
-    const dst = this.#like.querySelector('svg');
-
-    if (src) dst ? dst.replaceWith(src.cloneNode(true))
-                 : this.#like.appendChild(src.cloneNode(true));
-
-    const liked = this.#isLiked(this.#origLike);
-    this.#like.classList.toggle('Like_active', liked);
-    if (liked !== this.#prevLiked) {
-      this.#like.classList.add('animate');
-      setTimeout(() => this.#like?.classList.remove('animate'), 350);
-      this.#prevLiked = liked;
-    }
-  }
-
-  #attachObserver() {
-    if (this.#observer) this.#observer.disconnect();
-    if (!this.#origLike) return;
-    this.#observer = new MutationObserver(() => this.#syncState());
-    this.#observer.observe(this.#origLike, { attributes: true, childList: true, subtree: true });
-  }
-
-  #findOriginalLike() {
-    const sels = [
-      '.FullscreenPlayerDesktopControls_likeButton__vpJ7S[data-test-id="LIKE_BUTTON"]',
-      '.PlayerBarDesktop_root__d2Hwi [data-test-id="LIKE_BUTTON"]',
-      '[data-test-id="PLAYERBAR_DESKTOP_LIKE_BUTTON"]',
-      '[data-test-id="LIKE_BUTTON"]'
-    ];
-    return sels.map(q => document.querySelector(q)).find(Boolean) || null;
-  }
-
-  #createClone() {
-    this.#origLike = this.#findOriginalLike();
-    this.#prevLiked = null;
-    if (!this.#origLike) return this.#el('div', 'LikeTrack');
-
-    const c = this.#origLike.cloneNode(true);
-    c.classList.add('LikeTrack');
-    c.removeAttribute('data-test-id');
-    c.onclick = () => this.#origLike.click();
-
-    this.#attachObserver();
-    this.#syncState();
-
-    return c;
-  }
-
-  #build() {
-    if (this.#root) return;
-
-    const layout = document.querySelector('div[class^="CommonLayout_root"]');
-    const content = layout?.querySelector('div[class*="Content_rootOld"]');
-
-    this.#root  = this.#el('div', 'Spotify_Screen');
-    this.#bg    = this.#el('div', 'SM_Background', this.#root);
-    this.#cover = this.#el('div', 'SM_Cover',      this.#root);
-
-    if (content) {
-      content.insertAdjacentElement('afterend', this.#root);
-    } else if (layout) {
-      layout.appendChild(this.#root);
-    } else {
-      document.body.appendChild(this.#root);
-    }
-
-    const row = this.#el('div', 'SM_Title_Line', this.#root);
-    this.#track  = this.#el('div', 'SM_Track_Name', row);
-    this.#like   = this.#createClone();
-    row.appendChild(this.#like);
-    this.#artist = this.#el('div', 'SM_Artist', this.#root);
-  }
-
-  #update(state) {
-    this.#build();
-
-    if (!this.#origLike || !document.contains(this.#origLike)) {
-      const fresh = this.#createClone();
-      this.#like.replaceWith(fresh);
-      this.#like = fresh;
-    }
-
-    const t = state.track || {};
-    const img = t.coverUri
-      ? `https://${t.coverUri.replace('%%', '1000x1000')}`
-      : 'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/no-cover.png';
-
-    this.#bg.style.background = `url(${img}) center/cover no-repeat`;
-
-    let tag = this.#cover.querySelector('img');
-    if (!tag) {
-      tag = document.createElement('img');
-      tag.alt = '';
-      tag.style.cssText = `
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-      `;
-      this.#cover.appendChild(tag);
-    }
-    tag.src = img;
-    this.#track.textContent  = t.title || '';
-    this.#artist.textContent = (t.artists || []).map(a => a.name).join(', ');
-    this.#syncState();
-    this.#root.style.display = 'block';
-  }
-
-    trackWatcher(callback) {
-    let lastTrackId = null;
-
-    setInterval(() => {
-      const player = window.YaAudio;
-      if (!player || typeof player.getCurrentTrack !== 'function') return;
-
-      const track = player.getCurrentTrack();
-      if (!track || !track.id || track.id === lastTrackId) return;
-
-      lastTrackId = track.id;
-
-      try {
-        callback(track);
-      } catch (e) {
-        console.error('[Library] trackWatcher error:', e);
+      if (uri && typeof uri === 'string') {
+        if (uri.includes('%%')) uri = uri.replace('%%', size);
+        if (uri.includes('/100x100')) uri = uri.replace('/100x100', `/${size}`);
+        if (/^\/\//.test(uri)) uri = `https:${uri}`;
+        if (/^avatars\.yandex\.net/.test(uri)) uri = `https://${uri}`;
       }
-    }, 1000);
-  }
-}
-
-  /* ════════════════════════════════════════════════════════════════════════════════════
-   *  Theme  (applyTheme, addAction, update, start, stop, destroy)
-   * ══════════════════════════════════════════════════════════════════════════════════ */
-  class SonataState {
-  constructor() {
-    this.events = {};
+      return uri || getHiResCover() || coverURL() || '';
+    };
   }
 
-  on(event, handler) {
-    this.events[event] ??= [];
-    this.events[event].push(handler);
+  // helper: текущий трек
+  if (typeof Library.getCurrentTrack !== 'function') {
+    Library.getCurrentTrack = function getCurrentTrack() {
+      return (
+        window.Theme?.player?.state?.track ||
+        window.Theme?.player?.getCurrentTrack?.() ||
+        null
+      );
+    };
   }
 
-  emit(event, payload) {
-    (this.events[event] ?? []).forEach(fn => fn(payload));
+  // ==========================================================================
+  // UI core: crossfade, setText, updateTrackUI, bindTrackUI, onTrack шина
+  // ==========================================================================
+  Library.initUI = function initUI(){ /* заглушка на будущее */ };
+
+  // crossfade — плавная замена картинок в контейнере
+  if (typeof Library.ui.crossfade !== 'function') {
+    Library.ui.crossfade = function crossfade(elOrSel, url, { duration = 600, onStart=()=>{}, onLoad=()=>{}, onError=()=>{} } = {}) {
+      if (!url) return;
+      const el = typeof elOrSel === 'string' ? document.querySelector(elOrSel) : elOrSel;
+      if (!el) return;
+
+      // если URL тот же, но текущей картинки нет — всё равно ставим
+      if (el.dataset?.bg === url) {
+        const hasCurrent = el.querySelector('img._ui_cf.current');
+        if (hasCurrent) return;
+      }
+
+      const reqId = ((el.dataset?.reqId ? parseInt(el.dataset.reqId, 10) : 0) + 1) || 1;
+      el.dataset.reqId = String(reqId);
+      onStart(url);
+
+      if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+      el.style.overflow = 'hidden';
+
+      const pre = new Image();
+      pre.decoding = 'async';
+      pre.loading = 'eager';
+      pre.src = url;
+
+      pre.onload = () => {
+        if (el.dataset.reqId !== String(reqId)) return; // устаревший onload
+        const prev = el.querySelector('img._ui_cf.current');
+
+        const next = document.createElement('img');
+        next.className = '_ui_cf current';
+        next.alt = '';
+        next.src = url;
+        next.style.cssText = `
+          position:absolute; inset:0;
+          width:100%; height:100%;
+          object-fit:cover;
+          opacity:0; transition:opacity ${duration}ms ease;
+          pointer-events:none; will-change:opacity;
+        `;
+        el.appendChild(next);
+
+        requestAnimationFrame(() => {
+          next.style.opacity = '1';
+          if (prev) {
+            prev.classList.remove('current');
+            prev.classList.add('old');
+            prev.style.transition = `opacity ${Math.max(300, duration - 150)}ms ease`;
+            prev.style.opacity = '0';
+            prev.addEventListener('transitionend', () => prev.remove(), { once: true });
+            setTimeout(() => prev.isConnected && prev.remove(), Math.max(350, duration + 120));
+          }
+        });
+
+        // лимит: не более 2 картинок
+        const imgs = el.querySelectorAll('img._ui_cf');
+        for (let i = 0; i < imgs.length - 2; i++) {
+          if (imgs[i] !== next && imgs[i] !== prev) imgs[i].remove();
+        }
+
+        if (el.dataset) el.dataset.bg = url;
+        onLoad(url);
+      };
+
+      pre.onerror = () => { onError(url); };
+    };
   }
-}
 
-  
- class Theme {
-  id; stylesManager; settingsManager; assetsManager; player;
-  #ev = new EventEmitter(); #actions = {}; #loop = null; context = Object.create(null);
-
-  constructor(id) {
-    if (!id) throw Error('Theme id required');
-    this.id = id;
-    this.stylesManager = new StylesManager();
-    this.settingsManager = new SettingsManager(this);
-    this.sonataState = new SonataState();
-    this.playerState = this.sonataState;
-
-    if (typeof AssetsManager !== 'undefined')
-      this.assetsManager = new AssetsManager();
-
-    this.player = new PlayerEvents(this);
-    this.#watchPageChanges(); // ← добавлено
-    log('Theme', id, 'init');
+  // setText — простой текстовый апдейтер
+  if (typeof Library.ui.setText !== 'function') {
+    Library.ui.setText = function setText(elOrSel, text) {
+      const el = typeof elOrSel === 'string' ? document.querySelector(elOrSel) : elOrSel;
+      if (!el) return;
+      el.textContent = text ?? '';
+    };
   }
 
-  #watchPageChanges() {
-    let lastURL = location.href;
-    setInterval(() => {
-      if (location.href !== lastURL) {
-        lastURL = location.href;
-        if (this.SpotifyScreen?.check instanceof Function) {
-          this.SpotifyScreen.check();
+  // Единая шина событий смены трека (объединяет PlayerEvents и поллинг)
+  const _trackListeners = new Set();
+  Library.onTrack = function onTrack(handler, { immediate = true } = {}) {
+    _trackListeners.add(handler);
+
+    if (!Library._busInit) {
+      Library._busInit = true;
+
+      const emit = (t, tag='') => {
+        if (!t) return;
+        if (Library.debugUI) console.log('[onTrack:emit]', tag, t?.title || t?.name, t);
+        for (const fn of _trackListeners) { try { fn(t); } catch (_) {} }
+      };
+
+      const tp = window.Theme?.player;
+      if (tp?.on) {
+        tp.on('trackChange', ({ state }) => emit(state?.track, 'event:trackChange'));
+        tp.on('openPlayer',  ({ state }) => emit(state?.track, 'event:openPlayer'));
+        tp.on('pageChange',  ({ state }) => emit(state?.track, 'event:pageChange'));
+      }
+
+      if (window.Player?.on) {
+        window.Player.on('trackChange', ({ state }) => emit(state?.track, 'alias:trackChange'));
+        window.Player.on('openPlayer',  ({ state }) => emit(state?.track, 'alias:openPlayer'));
+      }
+
+      // фолбэк-поллер
+      let lastId = null;
+      setInterval(() => {
+        const s = tp?.state?.track || tp?.getCurrentTrack?.() || Library.getCurrentTrack?.();
+        const id = s?.id || s?.trackId || s?.uuid || (s ? `${s.title}|${s?.album?.id || s?.albums?.[0]?.id || ''}` : null);
+        if (!id) return;
+        if (id !== lastId) { lastId = id; emit(s, 'poll'); }
+      }, 800);
+
+      const cur = tp?.getCurrentTrack?.() || tp?.state?.track || Library.getCurrentTrack?.();
+      if (cur) setTimeout(() => emit(cur, 'initial'), 0);
+    }
+
+    if (immediate) {
+      const tp = window.Theme?.player;
+      const cur = tp?.getCurrentTrack?.() || tp?.state?.track || Library.getCurrentTrack?.();
+      if (cur) handler(cur);
+    }
+
+    return () => _trackListeners.delete(handler);
+  };
+
+  // updateTrackUI — проставляет обложку/название/артиста
+  if (typeof Library.ui.updateTrackUI !== 'function') {
+    Library.ui.updateTrackUI = function updateTrackUI(map, track, opts = {}) {
+      if (!map || !track) return;
+      const { cover, title, artist } = map;
+      const tTitle   = track?.title || track?.name || '—';
+      const tArtists = Array.isArray(track?.artists)
+        ? track.artists.map(a => a.name || a.title || a).filter(Boolean).join(', ')
+        : track?.artist || track?.author || '';
+
+      if (title)  Library.ui.setText(title,  tTitle);
+      if (artist) Library.ui.setText(artist, tArtists);
+
+      if (cover) {
+        const url = Library.util.coverURLFromTrack(track, '1000x1000');
+        if (url) {
+          Library.ui.crossfade(cover, url, {
+            duration: Number(opts.duration || 600),
+            onStart: (u) => Library.debugUI && console.log('[updateTrackUI] start cover', u),
+            onLoad:  ()  => Library.debugUI && console.log('[updateTrackUI] cover loaded'),
+            onError: (u) => console.error('[updateTrackUI] cover error', u),
+          });
         }
       }
-    }, 1000);
+
+      // раздать слушателям
+      try { Library.onTrack(()=>{}); /* ensure bus init */ } catch {}
+    };
   }
 
-    /* --- события темы --- */
+  // bindTrackUI — привязка к Theme.player событиям
+  if (typeof Library.ui.bindTrackUI !== 'function') {
+    Library.ui.bindTrackUI = function bindTrackUI(map, opts = {}) {
+      const off = Library.onTrack((t) => Library.ui.updateTrackUI(map, t, opts), { immediate: true });
+      return () => off && off();
+    };
+  }
+
+  // ==========================================================================
+  // Colorize — акцент-цвет и авто-яркость фона
+  // ==========================================================================
+  (() => {
+    const Colorize = (Library.colorize = Library.colorize || {});
+    const Util = Library.util;
+
+    Library.versions['Library.colorize'] = 'v0.1.0';
+
+    function rgbToHex(r, g, b) {
+      return '#' + [r,g,b].map(v => {
+        const s = Math.max(0, Math.min(255, v|0)).toString(16);
+        return s.length === 1 ? '0' + s : s;
+      }).join('');
+    }
+    function rgbToHsl(r, g, b) {
+      r/=255; g/=255; b/=255;
+      const max=Math.max(r,g,b), min=Math.min(r,g,b);
+      let h=0,s=0,l=(max+min)/2;
+      const d=max-min;
+      if(d){ s = l>.5 ? d/(2-max-min) : d/(max+min);
+        switch(max){ case r:h=(g-b)/d+(g<b?6:0);break; case g:h=(b-r)/d+2;break; default:h=(r-g)/d+4; }
+        h/=6;
+      }
+      return { h:Math.round(h*360), s:Math.round(s*100), l:Math.round(l*100) };
+    }
+
+    const _accentCache = new Map();
+    const _lumaCache   = new Map();
+    const _inflight    = new Map();
+    const _img = (url) => new Promise((resolve,reject)=>{
+      const img = new Image();
+      img.crossOrigin='anonymous'; img.decoding='async';
+      img.onload=()=>resolve(img); img.onerror=reject; img.src=url;
+    });
+
+    async function _accentFromCanvas(url, { size=16 } = {}) {
+      try {
+        const img = await _img(url);
+        const W=size,H=size, c=document.createElement('canvas');
+        c.width=W; c.height=H;
+        const g=c.getContext('2d', { willReadFrequently:true });
+        g.drawImage(img,0,0,W,H);
+        const d=g.getImageData(0,0,W,H).data;
+        let r=0,gc=0,b=0,cnt=0;
+        for (let i=0;i<d.length;i+=4){
+          const R=d[i],G=d[i+1],B=d[i+2],A=d[i+3];
+          if (A<32) continue;
+          const max=Math.max(R,G,B), min=Math.min(R,G,B), sat=max-min, lum=(R+G+B)/3;
+          if (sat<24) continue;
+          if (lum<32 || lum>240) continue;
+          r+=R; gc+=G; b+=B; cnt++;
+        }
+        if (!cnt){ r=200; gc=200; b=200; } else { r=Math.round(r/cnt); gc=Math.round(gc/cnt); b=Math.round(b/cnt); }
+        return { r, g:gc, b, hex:rgbToHex(r,gc,b), hsl:rgbToHsl(r,gc,b) };
+      } catch {
+        const r=200,g=200,b=200; return { r,g,b,hex:rgbToHex(r,g,b), hsl:rgbToHsl(r,g,b) };
+      }
+    }
+    async function _luminance(url, { size=12 } = {}) {
+      try {
+        const img = await _img(url);
+        const W=size,H=size, c=document.createElement('canvas');
+        c.width=W; c.height=H;
+        const g=c.getContext('2d', { willReadFrequently:true });
+        g.drawImage(img,0,0,W,H);
+        const d=g.getImageData(0,0,W,H).data;
+        let sum=0,n=0;
+        for (let i=0;i<d.length;i+=4){ const A=d[i+3]; if (A<24) continue; sum += (d[i]+d[i+1]+d[i+2])/3; n++; }
+        return n ? sum/n : 128;
+      } catch { return 128; }
+    }
+
+    Colorize.fromImage = function fromImage(url, opts={}) {
+      if (!url) return Promise.resolve(null);
+      if (_accentCache.has(url)) return Promise.resolve(_accentCache.get(url));
+      const key='accent:'+url;
+      if (_inflight.has(key)) return _inflight.get(key);
+      const p=(async()=>{
+        if (window.Vibrant && typeof window.Vibrant === 'function') {
+          try {
+            const pal = await window.Vibrant.from(url).getPalette();
+            const sw = pal.Vibrant || pal.Muted || pal.DarkVibrant || pal.LightVibrant || pal.DarkMuted || pal.LightMuted;
+            if (sw) {
+              const [r,g,b] = sw.getRgb().map(x=>Math.round(x));
+              const color = { r,g,b, hex:rgbToHex(r,g,b), hsl:rgbToHsl(r,g,b) };
+              _accentCache.set(url,color); return color;
+            }
+          } catch {}
+        }
+        const color = await _accentFromCanvas(url, opts); _accentCache.set(url,color); return color;
+      })().finally(()=>_inflight.delete(key));
+      _inflight.set(key,p); return p;
+    };
+
+    Colorize.applyAccentVar = function applyAccentVar(el, color, varName='--sm-accent') {
+      if (!color) return;
+      const target = el || document.documentElement;
+      const value = color.hex || `rgb(${color.r}, ${color.g}, ${color.b})`;
+      target.style.setProperty(varName, value);
+    };
+    Colorize.applyAccentFromImage = async function applyAccentFromImage(url, el, varName='--sm-accent', opts) {
+      const color = await Colorize.fromImage(url, opts);
+      if (color) Colorize.applyAccentVar(el, color, varName);
+      return color;
+    };
+
+    Colorize.luminance = function luminance(url, opts={}) {
+      if (!url) return Promise.resolve(128);
+      if (_lumaCache.has(url)) return Promise.resolve(_lumaCache.get(url));
+      const key='luma:'+url;
+      if (_inflight.has(key)) return _inflight.get(key);
+      const p=_luminance(url, opts).then(v=>{ _lumaCache.set(url,v); return v; }).finally(()=>_inflight.delete(key));
+      _inflight.set(key,p); return p;
+    };
+
+    Colorize.applyAutoBrightness = async function applyAutoBrightness(url, targets, base=0.7, opts) {
+      if (!url || !targets) return { lum:128, corr:1, brightness:base };
+      const lum = await Colorize.luminance(url, opts);
+      const corr = Math.max(0.55, Math.min(0.9, 1 - (lum - 96)/512));
+      const value = (base * corr).toFixed(3);
+      const list = Array.isArray(targets) ? targets : [targets];
+      list.filter(Boolean).forEach(layer => {
+        const fs = layer.style.filter || 'blur(24px)';
+        const parts = fs.split(/\)\s*/).filter(Boolean).map(s=>s+')');
+        const blur = parts.find(p=>p.startsWith('blur')) || 'blur(24px)';
+        layer.style.filter = `${blur} brightness(${value})`;
+      });
+      return { lum, corr, brightness:Number(value) };
+    };
+
+    Colorize.debounced = Colorize.debounced || {};
+    Colorize.debounced.applyAccentFromImage =
+      typeof Util.debounce === 'function' ? Util.debounce(Colorize.applyAccentFromImage, 120) : Colorize.applyAccentFromImage;
+    Colorize.debounced.applyAutoBrightness =
+      typeof Util.debounce === 'function' ? Util.debounce(Colorize.applyAutoBrightness, 120) : Colorize.applyAutoBrightness;
+
+    Colorize.clearCaches = function clearCaches(){ _accentCache.clear(); _lumaCache.clear(); };
+  })();
+
+  // ==========================================================================
+  // PlayerEvents — полноценная обёртка над window.player (ЯМ)
+  // ==========================================================================
+  class PlayerEvents extends EventEmitter {
+    #theme;
+    state = {
+      status : 'paused',
+      page   : location.pathname,
+      volume : 0,
+      shuffle: false,
+      repeat : 'none',
+      progress:{ duration:0, position:0, loaded:0, played:0 },
+      track   : {}
+    };
+    constructor(theme){ super(); this.#theme = theme; this.#wait(); this.#watchPage(); }
+    #wait(){
+      const iv = setInterval(()=>{
+        if (window?.player?.state?.playerState &&
+            window?.player?.state?.queueState?.currentEntity?.value?.entity?.data?.meta){
+          clearInterval(iv); this.#hook();
+        }
+      }, 400);
+    }
+    #hook(){
+      const ps = player.state.playerState;
+      const qs = player.state.queueState;
+
+      this.state.track  = qs.currentEntity.value.entity.data.meta;
+      this.state.volume = ps.volume.value;
+      this.emit('trackChange', { state:this.state });
+
+      ps.status.onChange(s=>{
+        this.state.status = s==='loadingMediaData' ? 'paused' : s;
+        this.emit(s==='playing' ? 'play' : 'pause', { state:this.state });
+        if (s==='loadingMediaData'){
+          this.state.track = qs.currentEntity.value.entity.data.meta;
+          this.emit('trackChange', { state:this.state });
+        }
+      });
+
+      ps.event.onChange(ev=>{ if (ev==='audio-set-progress') this.emit('seek', { state:this.state }); });
+      ps.progress.onChange(p=>{ this.state.progress = p; this.emit('progress', { state:this.state }); });
+      ps.volume.onChange(v=>{ this.state.volume = Math.round(v*100)/100; this.emit('volume', { state:this.state }); });
+      qs.shuffle.onChange(sh=>{ this.state.shuffle = sh; this.emit('shuffle', { state:this.state }); });
+      qs.repeat.onChange(r=>{ this.state.repeat  = r; this.emit('repeat',  { state:this.state }); });
+      qs.currentEntity.onChange(()=>{ this.state.track = qs.currentEntity.value.entity.data.meta; this.emit('trackChange', { state:this.state }); });
+
+      // fullscreen / lyrics / queue
+      const test = {
+        player : n => n.querySelector?.('[data-test-id="FULLSCREEN_PLAYER_MODAL"]'),
+        text   : n => n.querySelector?.('[data-test-id="SYNC_LYRICS_CONTENT"]'),
+        queue  : n => n.querySelector?.('.PlayQueue_root__ponhw')
+      };
+      new MutationObserver(muts=>{
+        muts.forEach(mu=>{
+          mu.addedNodes.forEach(n=>{
+            if (test.player(n)) this.emit('openPlayer',  { state:this.state });
+            if (test.text  (n)) this.emit('openText',    { state:this.state });
+            if (test.queue (n)) this.emit('openQueue',   { state:this.state });
+          });
+          mu.removedNodes.forEach(n=>{
+            if (test.player(n)) this.emit('closePlayer', { state:this.state });
+            if (test.text  (n)) this.emit('closeText',   { state:this.state });
+            if (test.queue (n)) this.emit('closeQueue',  { state:this.state });
+          });
+        });
+      }).observe(document.body,{ childList:true, subtree:true });
+    }
+    #watchPage(){
+      const upd = () => {
+        const p = location.pathname;
+        if (p !== this.state.page){ this.state.page = p; this.emit('pageChange', { state:this.state }); }
+      };
+      ['pushState','replaceState'].forEach(fn=>{
+        const o = history[fn];
+        history[fn] = function(...a){ o.apply(this,a); upd(); };
+      });
+      addEventListener('popstate', upd);
+    }
+    getCurrentTrack() {
+      if (this.state?.track?.title) return this.state.track;
+      try {
+        const src = coverURL();
+        const titleEl = document.querySelector('[class*="TrackInfo_title"]');
+        const artistEls = [...document.querySelectorAll('[class*="TrackInfo_artists"] a')];
+        return {
+          coverUri: src?.split('https://')[1]?.replace('100x100', '%%') || '',
+          title: titleEl?.textContent || '',
+          artists: artistEls.map(a => ({ name: a.textContent }))
+        };
+      } catch (e) {
+        console.warn('[PlayerEvents] getCurrentTrack() fallback error:', e);
+        return {};
+      }
+    }
+  }
+
+  // ==========================================================================
+  // Theme (applyTheme, addAction, update, start, stop, destroy)
+  // ==========================================================================
+  class SonataState {
+    constructor(){ this.events = {}; }
+    on(event, handler){ this.events[event] ??= []; this.events[event].push(handler); }
+    emit(event, payload){ (this.events[event] ?? []).forEach(fn => fn(payload)); }
+  }
+
+  class Theme {
+    id; stylesManager; settingsManager; assetsManager; player;
+    #ev = new EventEmitter(); #actions = {}; #loop = null; context = Object.create(null);
+
+    constructor(id) {
+      if (!id) throw Error('Theme id required');
+      this.id = id;
+      this.stylesManager   = new StylesManager();
+      this.settingsManager = new SettingsManager(this);
+      this.sonataState = new SonataState();
+      this.playerState = this.sonataState;
+
+      if (typeof AssetsManager !== 'undefined') this.assetsManager = new AssetsManager();
+      this.player = new PlayerEvents(this);
+
+      this.#watchPageChanges();
+      log('Theme', id, 'init');
+    }
+
+    #watchPageChanges() {
+      let lastURL = location.href;
+      setInterval(() => {
+        if (location.href !== lastURL) {
+          lastURL = location.href;
+          // хук для внешних виджетов, например SpotifyScreen.check()
+          try { this.SpotifyScreen?.check?.(); } catch {}
+        }
+      }, 1000);
+    }
+
+    // события темы
     on (...a){ this.#ev.on (...a); }
     off(...a){ this.#ev.off(...a); }
     emit(...a){ this.#ev.emit(...a); }
 
-    /* --- context --- */
+    // context
     ctx = Object.create(null);
     setContext(k,v){ this.ctx[k]=v; }
     getContext(k){ return this.ctx[k]; }
 
-    /* --- actions (реакция на изменение конкретной настройки) --- */
+    // actions
     addAction(id, fn){ this.#actions[id]=fn; }
 
-    /* --- применить тему = вызвать все actions и нарисовать CSS --- */
+    // применить тему: вызвать actions и нарисовать CSS
     applyTheme(){
       for(const id of Object.keys(this.#actions)){
         const changed = this.settingsManager.hasChanged(id);
         const val     = this.settingsManager.get(id);
         this.#actions[id]?.({value:val, changed, styles:this.stylesManager, settings:this.settingsManager, state:this.player.state });
       }
-      /* собственно вставить CSS */
-      this.stylesManager.clear();   // стили могли измениться внутри actions
+      this.stylesManager.clear();
       for(const [id,fn] of Object.entries(this.#actions))
         fn({value:this.settingsManager.get(id), changed:false, styles:this.stylesManager, settings:this.settingsManager, state:this.player.state });
     }
 
-    /* --- update(): тянем настройки и применяем тему --- */
+    // update(): тянем настройки и применяем тему
     async update(){ await this.settingsManager.update(); this.applyTheme(); }
 
-    /* --- циклическое обновление --- */
+    // циклическое обновление
     start(ms=2500){ if(this.#loop) return;
       const tick=async()=>{ try{ await this.update(); }finally{ this.#loop=setTimeout(tick,ms);} };
       tick();
@@ -796,106 +722,80 @@ class SpotifyScreen {
     destroy(){ this.stop(); this.stylesManager.clear(); this.#actions={}; this.emit('destroy'); }
   }
 
-  /* ════════════════════════════════════════════════════════════════════════════════════
-   *  Export
-   * ══════════════════════════════════════════════════════════════════════════════════ */
-window.Theme = Theme;
-const existing = window.Library || {};
-window.Library = Object.assign(existing, {
-  EventEmitter, StylesManager, SettingsManager, UI, PlayerEvents, Theme, SpotifyScreen, coverURL, getHiResCover
-});
+  // ==========================================================================
+  // Export
+  // ==========================================================================
+  window.Theme = Theme;
+  const existing = window.Library || {};
+  window.Library = Object.assign(existing, {
+    EventEmitter, StylesManager, SettingsManager, UI: UIHelpers,
+    PlayerEvents, Theme, coverURL, getHiResCover
+  });
+
   console.log('Library loaded ✓');
-  /* ════════════════════════════════════════════════════════════════════════════════════
-   *  Debug
-   * ══════════════════════════════════════════════════════════════════════════════════ */
-    Library.debugUI = true;
-    // === Lightweight UI Debug Panel ===
-Library.debug = (() => {
-  const BOX_ID = 'SM_DebugBox';
 
-  function ensure() {
-    let box = document.getElementById(BOX_ID);
-    if (box) return box;
-
-    box = document.createElement('div');
-    box.id = BOX_ID;
-    box.innerHTML = `
-      <div class="hdr">
-        <strong>UI Debug</strong>
-        <div class="btns">
-          <button data-act="clear" title="Очистить">✕</button>
-          <button data-act="hide"  title="Скрыть">⤫</button>
+  // ==========================================================================
+  // Debug panel
+  // ==========================================================================
+  Library.debugUI = true;
+  Library.debug = (() => {
+    const BOX_ID = 'SM_DebugBox';
+    function ensure() {
+      let box = document.getElementById(BOX_ID);
+      if (box) return box;
+      box = document.createElement('div');
+      box.id = BOX_ID;
+      box.innerHTML = `
+        <div class="hdr">
+          <strong>UI Debug</strong>
+          <div class="btns">
+            <button data-act="clear" title="Очистить">✕</button>
+            <button data-act="hide"  title="Скрыть">⤫</button>
+          </div>
         </div>
-      </div>
-      <div class="body"></div>
-    `;
-    Object.assign(box.style, {
-      position: 'fixed', right: '12px', bottom: '12px', zIndex: 999999,
-      width: '380px', maxWidth: '90vw', height: '220px', maxHeight: '50vh',
-      borderRadius: '12px', overflow: 'hidden',
-      background: 'rgba(20,20,25,.9)', color: '#ddd',
-      font: '12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
-      boxShadow: '0 8px 28px rgba(0,0,0,.45)', backdropFilter: 'blur(6px)'
-    });
-    const hdr = box.querySelector('.hdr');
-    Object.assign(hdr.style, {
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      background: 'rgba(255,255,255,.06)', padding: '6px 8px'
-    });
-    const btns = box.querySelector('.btns');
-    Object.assign(btns.style, { display: 'flex', gap: '6px' });
-    for (const b of btns.querySelectorAll('button')) {
-      Object.assign(b.style, {
-        background: 'rgba(255,255,255,.08)', color: '#eee',
-        border: 'none', borderRadius: '6px', padding: '2px 6px', cursor: 'pointer'
+        <div class="body"></div>
+      `;
+      Object.assign(box.style, {
+        position: 'fixed', right: '12px', bottom: '12px', zIndex: 999999,
+        width: '380px', maxWidth: '90vw', height: '220px', maxHeight: '50vh',
+        borderRadius: '12px', overflow: 'hidden',
+        background: 'rgba(20,20,25,.9)', color: '#ddd',
+        font: '12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
+        boxShadow: '0 8px 28px rgba(0,0,0,.45)', backdropFilter: 'blur(6px)'
       });
+      const hdr = box.querySelector('.hdr');
+      Object.assign(hdr.style, { display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(255,255,255,.06)', padding:'6px 8px' });
+      const btns = box.querySelector('.btns');
+      Object.assign(btns.style, { display:'flex', gap:'6px' });
+      for (const b of btns.querySelectorAll('button')) {
+        Object.assign(b.style, { background:'rgba(255,255,255,.08)', color:'#eee', border:'none', borderRadius:'6px', padding:'2px 6px', cursor:'pointer' });
+      }
+      const body = box.querySelector('.body');
+      Object.assign(body.style, { padding:'6px 8px', height:'calc(100% - 34px)', overflow:'auto', whiteSpace:'pre-wrap', wordBreak:'break-word' });
+
+      box.addEventListener('click', (e) => {
+        const act = e.target?.dataset?.act;
+        if (act === 'clear') body.textContent = '';
+        if (act === 'hide')  box.style.display = 'none';
+      });
+
+      document.body.appendChild(box);
+      return box;
     }
-    const body = box.querySelector('.body');
-    Object.assign(body.style, {
-      padding: '6px 8px', height: 'calc(100% - 34px)',
-      overflow: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word'
-    });
-
-    box.addEventListener('click', (e) => {
-      const act = e.target?.dataset?.act;
-      if (act === 'clear') body.textContent = '';
-      if (act === 'hide')  box.style.display = 'none';
-    });
-
-    document.body.appendChild(box);
-    return box;
-  }
-
-  function fmt(arg) {
-    if (arg == null) return String(arg);
-    if (typeof arg === 'string') return arg;
-    try { return JSON.stringify(arg); } catch { return String(arg); }
-  }
-
-  function log(...args) {
-    if (!Library.debugUI) return;
-    const box = ensure();
-    const body = box.querySelector('.body');
-    const line = document.createElement('div');
-    line.textContent = `[${new Date().toLocaleTimeString()}] ` + args.map(fmt).join(' ');
-    body.appendChild(line);
-    body.scrollTop = body.scrollHeight;
-    // дублируем в консоль
-    try { console.log('[UI]', ...args); } catch {}
-  }
-
-  function clear() {
-    const box = document.getElementById(BOX_ID);
-    if (box) box.querySelector('.body').textContent = '';
-  }
-
-  function toggle() {
-    Library.debugUI = !Library.debugUI;
-    const box = ensure();
-    box.style.display = Library.debugUI ? '' : 'none';
-  }
-
-  return { log, clear, toggle, ensure };
-})();
+    function fmt(arg){ if (arg == null) return String(arg); if (typeof arg === 'string') return arg; try { return JSON.stringify(arg); } catch { return String(arg); } }
+    function log(...args) {
+      if (!Library.debugUI) return;
+      const box = ensure();
+      const body = box.querySelector('.body');
+      const line = document.createElement('div');
+      line.textContent = `[${new Date().toLocaleTimeString()}] ` + args.map(fmt).join(' ');
+      body.appendChild(line);
+      body.scrollTop = body.scrollHeight;
+      try { console.log('[UI]', ...args); } catch {}
+    }
+    function clear(){ const box = document.getElementById(BOX_ID); if (box) box.querySelector('.body').textContent = ''; }
+    function toggle(){ Library.debugUI = !Library.debugUI; const box = ensure(); box.style.display = Library.debugUI ? '' : 'none'; }
+    return { log, clear, toggle, ensure };
+  })();
 
 })();
