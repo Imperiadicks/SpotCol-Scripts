@@ -1,37 +1,36 @@
 (() => {
-  console.log('[Main] v1.0.2');
+  console.log('[Main] v1.0.3');
 
   // 1) Создаём инстанс темы (класс берём из Library.js)
   const ThemeClass = window.Theme;           // класс
   const App = new ThemeClass('SpotColЛичная');
   window.Theme = App;                        // глобально доступный ИНСТАНС
 
-  // 2) Инициализация SettingsManager (дефолты)
+  // 2) Инициализация SettingsManager (дефолты — согласованы с handleEvents.json)
   const sm = App.settingsManager;
   sm.defaults({
-    // Тема / базовый цвет (может переопределяться handle'ом)
     'Тема.useCustomColor': { value:false },
     'Тема.baseColor':      { value:'#7da6ff' },
 
-    // Эффекты
+    // Эффекты (дефолты как в handle: BG=true, FullVibe=false, Zoom=true)
     'Эффекты.enableBackgroundImage': { value:true },
     'Эффекты.enableAvatarZoom':      { value:true },
-    'Эффекты.enableFullVibe':        { value:true }
+    'Эффекты.enableFullVibe':        { value:false }
   });
 
-  // Флаг готовности настроек (пока handle не подгружен — ничего «насильно» не вставляем)
+  // Пока handle не подгружен — эффекты не применяем
   App.__settingsReady = false;
 
-  // 3) Автоподтяжка актуальных настроек из локального handle (если доступен)
+  // 3) Подтягиваем handle, после — синхронизируем эффекты строго по настройкам
   (async () => {
     try { await sm.update(); } catch {}
     finally {
       App.__settingsReady = true;
-      syncEffects(); // сразу применим/отключим по фактическим настройкам
+      syncEffects();
     }
   })();
 
-  // 4) Open-Blocker: подкачка CSS с GitHub при включённых модулях
+  // 4) Open-Blocker CSS (по настройкам)
   const openBlockerCache = new Map(); // module -> injected?
   const OB_MODULES = [
     'donations','concerts','userprofile','trailers','betabutton',
@@ -50,6 +49,7 @@
 
       const link = document.createElement('link');
       link.rel  = 'stylesheet';
+      // оставляю существующий CDN-путь; если переключишься на локальные файлы — заменим href
       link.href = `https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/css/open-blocker/${module}.css`;
       link.dataset.id = `ob:${module}`;
       document.head.appendChild(link);
@@ -58,15 +58,26 @@
   sm.on('update', () => { applyOpenBlocker(); syncEffects(); });
   applyOpenBlocker();
 
-  // === Background/Vibe utilities (усиленные DOM-проверки + уважение handle) ===
+  // === Background/Vibe utilities (DOM-проверки + уважение handle) ===
   (function integrateBackgroundTools(App){
     App.__lastBgUrl = App.__lastBgUrl || null;
     App.__bgRetryTimer = null;
     App.__vibeObserver = null;
 
     const findVibe = () => document.querySelector('[class*="MainPage_vibe"]');
-    const bgEnabled = () => sm.get('Эффекты.enableBackgroundImage')?.value === true;
-    const fullVibeEnabled = () => sm.get('Эффекты.enableFullVibe')?.value === true;
+
+    // Универсальный геттер булевых настроек (проверяет и "Эффекты.xxx", и id из handle)
+    function getBoolSM(paths, def=false) {
+      for (const key of paths) {
+        const v = sm.get(key);
+        if (typeof v?.value === 'boolean') return v.value;
+        if (typeof v === 'boolean') return v;
+      }
+      return def;
+    }
+    const bgEnabled       = () => getBoolSM(['Эффекты.enableBackgroundImage','enableBackgroundImage'], false);
+    const fullVibeEnabled = () => getBoolSM(['Эффекты.enableFullVibe','FullVibe'], false);
+    const zoomEnabled     = () => getBoolSM(['Эффекты.enableAvatarZoom','enableAvatarZoom'], true);
 
     function ensureVibeThen(imageURL, retries = 24) { // ~7.2s (шаг 300мс)
       if (!App.__settingsReady || !bgEnabled()) return;
@@ -76,7 +87,6 @@
         if (retries > 0) App.__bgRetryTimer = setTimeout(() => ensureVibeThen(imageURL, retries - 1), 300);
         return;
       }
-      // если слой уже есть и URL тот же — ничего не делаем
       const hasLayer = !!target.querySelector('.bg-layer');
       if (imageURL === App.__lastBgUrl && hasLayer) return;
       applyBackground(target, imageURL, hasLayer);
@@ -110,19 +120,18 @@
         gradient.className = 'bg-gradient';
         Object.assign(gradient.style, {
           position:'absolute', inset:'0',
-          background:'var(--grad-main)', // ← твой линейный градиент оставляем
+          background:'var(--grad-main)', // линейный градиент — оставить
           mixBlendMode:'multiply',
           opacity:'0', transition:'opacity 1.2s ease', pointerEvents:'none'
         });
 
-        // убрать старый слой, если был
         const old = target.querySelector('.bg-layer');
         if (old) { old.style.opacity = '0'; setTimeout(() => old.remove(), 900); }
 
         wrapper.appendChild(imageLayer);
         wrapper.appendChild(gradient);
 
-        target.style.position = target.style.position || 'relative';
+        target.style.position ||= 'relative';
         target.insertAdjacentElement('afterbegin', wrapper);
 
         requestAnimationFrame(() => {
@@ -135,7 +144,6 @@
     }
 
     function backgroundReplace(imageURL) {
-      // Уважаем handle: пока настройки не готовы ИЛИ выключено — выходим
       if (!App.__settingsReady || !bgEnabled()) return;
       ensureVibeThen(imageURL);
     }
@@ -186,13 +194,11 @@
       if (vibe) vibe.style.setProperty('height', '88.35vh', 'important');
     }
     function RemoveFullVibe() {
-      // Не прячем блок, а возвращаем нативную высоту
       const vibe = findVibe();
       if (vibe) vibe.style.removeProperty('height');
     }
 
-    // Наблюдатель: когда блок Vibe появляется заново (возврат на «Главное»),
-    // автоматически восстанавливаем фон, только если разрешено в настройках.
+    // При возврате на «Главное» — восстановить фон только если включено
     function ensureVibeObserver() {
       if (App.__vibeObserver) return;
       App.__vibeObserver = new MutationObserver(() => {
@@ -211,17 +217,26 @@
     // Синхронизация эффектов с настройками
     function syncEffects() {
       if (!App.__settingsReady) return;
-      if (bgEnabled()) {
+
+      const bg   = bgEnabled();
+      const full = fullVibeEnabled();
+      const zoom = zoomEnabled();
+      console.log('[Main] syncEffects', { bg, full, zoom });
+
+      if (bg) {
         const url = window.Library?.getHiResCover?.() || window.Library?.coverURL?.() || App.__lastBgUrl;
         if (url) ensureVibeThen(url, 6);
       } else {
         removeBackgroundImage();
       }
-      if (fullVibeEnabled()) FullVibe(); else RemoveFullVibe();
-    }
-    App.__syncEffects = syncEffects; // экспорт внутрь инстанса
 
-    // Экспорт в инстанс темы
+      if (full) FullVibe(); else RemoveFullVibe();
+
+      if (zoom) setupAvatarZoomEffect(); else removeAvatarZoomEffect();
+    }
+    App.__syncEffects = syncEffects;
+
+    // Экспорт API в инстанс темы
     App.backgroundReplace      = backgroundReplace;
     App.removeBackgroundImage  = removeBackgroundImage;
     App.setupAvatarZoomEffect  = setupAvatarZoomEffect;
@@ -230,7 +245,7 @@
     App.RemoveFullVibe         = RemoveFullVibe;
   })(App);
 
-  // Локальная обёртка, чтобы можно было вызвать изнаружи
+  // Обёртка, чтобы вызывать снаружи
   function syncEffects(){ App.__syncEffects?.(); }
 
   // финал
