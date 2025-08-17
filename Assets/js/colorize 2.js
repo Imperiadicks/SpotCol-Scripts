@@ -5,7 +5,7 @@
   const Colorize2 = (Library.colorize2 = Library.colorize2 || {});
   const Util      = (Library.util     = Library.util     || {});
   Library.versions = Library.versions || {};
-  Library.versions['Library.colorize2'] = 'v3.0.1';
+  Library.versions['Library.colorize2'] = 'v3.0.2';
   console.log('[colorize 2] load v3.0.1');
 
   /* ───────────────────────── helpers: color math ───────────────────────── */
@@ -254,17 +254,15 @@
 --ym-brand-accent: var(--color-accent);
 `;
 const EXTRA_CSS = `
-/* прибираем штатный вайб, чтобы наш градиент был виден */
-.VibeBlock_canvas__EtGGS { opacity:.22 !important; filter: blur(360px) !important; }
-.VibeBlock_gradient__32n9m { opacity: 0 !important; }
-.VibeBlock_wrap__KsKTk:has(.VibeBlock_vibeAnimation__XVEE6) canvas { opacity:.2 !important; filter: blur(360px) !important; }
-.VibeBlock_vibeAnimation__XVEE6:after { background:transparent !important; }
-
-/* страховка: если класс меняется — наш контейнер всё равно получает градиент */
-.bg-layer .bg-gradient { background: var(--grad-main) !important; mix-blend-mode: multiply; }
-
-/* общий фон страницы подчищаем, чтобы не забивал цвет */
-.DefaultLayout_root__*, .CommonLayout_root__* { background: transparent !important; }
+/* Layout background */
+.CommonLayout_root__WC_W1,
+[class*="CommonLayout_root"] {
+  background:
+    radial-gradient(120% 140% at 68% 32%,
+      var(--color-dark-2) 0%,
+      var(--color-dark-3) 56%,
+      var(--color-dark-5) 100%) !important;
+}
 `;
 
   /* ───────────────────────── style tags + apply ───────────────────────── */
