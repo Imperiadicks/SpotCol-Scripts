@@ -1,17 +1,19 @@
-// === SpotifyScreen — panel + cover/title/artist + like + GPT slots ===
+// === SpotifyScreen — panel + cover/title/artist + like + GPT slots (with watchdog) ===
 (() => {
   const Theme = window.Theme;
   if (!Theme) { console.error('[SpotifyScreen] Theme is not available'); return; }
-  console.log('[SpotifyScreen] load v1.1');
+  console.log('[SpotifyScreen] load v1.2');
 
   const Lib = window.Library || {};
   const LOG = '[SpotifyScreen]';
 
   let $root, $cover, $title, $artist, $like, $origLike, likeObserver, keepAliveObs;
-  let $gpt, $gptTitle, $gptText, $gptExtra, $gptActions, $alert;
+  let $gptTitle, $gptText, $gptExtra, $gptActions, $alert;
   let uiBound = false;
   let prevLiked = null;
   let lastCover = '';
+  let lastTrackKey = '';
+  let watchdogIv = null;
 
   // ───────────────────────── DOM helpers ─────────────────────────
   function findAnchor() {
@@ -23,15 +25,12 @@
       document.body
     );
   }
-
   function findPlayerBar() {
     return (
       document.querySelector('[data-test-id="PLAYERBAR_DESKTOP"]') ||
       document.querySelector('[class*="PlayerBarDesktop_root"]')
     );
   }
-
-  // лайк ТОЛЬКО из плеербара (чтобы к альбомам/плейлистам не липнуть)
   function findTrackLikeButton() {
     const bar = findPlayerBar();
     if (!bar) return null;
@@ -80,7 +79,6 @@
     $cover    = root.querySelector('.SM_Cover');
     $title    = root.querySelector('.SM_Track_Name');
     $artist   = root.querySelector('.SM_Artist');
-    $gpt      = root.querySelector('.SM_GPT');
     $gptTitle = root.querySelector('.SM_GPT_Title');
     $gptText  = root.querySelector('.SM_GPT_Text');
     $gptExtra = root.querySelector('.SM_GPT_Extra');
@@ -95,7 +93,6 @@
     attachLikeObserver();
     ensureKeepAlive();
   }
-
   function ensureMounted() {
     if (!$root || !document.body.contains($root)) {
       (findAnchor() || document.body).insertAdjacentElement('afterbegin', $root);
@@ -108,54 +105,37 @@
     if (node.getAttribute('aria-checked') !== null) {
       return node.getAttribute('aria-checked') === 'true';
     }
-    return (
-      node.classList.contains('Like_active') ||
-      !!node.querySelector('svg[class*="_active"],svg[class*="-active"],svg .LikeIcon_active')
-    );
+    return node.classList.contains('Like_active');
   }
-
   function syncLikeState() {
     if (!$origLike || !$like) return;
-
-    // синхронизируем SVG
     const svgO = $origLike.querySelector('svg');
     const svgC = $like.querySelector('svg');
     if (svgO) {
       svgC ? svgC.replaceWith(svgO.cloneNode(true)) : $like.appendChild(svgO.cloneNode(true));
     }
-
     const liked = isLiked($origLike);
     $like.classList.toggle('Like_active', liked);
-
     if (liked !== prevLiked) {
-      // анимация на «переключение» (ожидается, что CSS её оформляет)
       $like.classList.add('animate');
       setTimeout(() => $like && $like.classList.remove('animate'), 300);
       prevLiked = liked;
     }
   }
-
   function attachLikeObserver() {
     if (likeObserver) likeObserver.disconnect();
     $origLike = findTrackLikeButton();
     if (!$origLike) return;
-
     likeObserver = new MutationObserver(syncLikeState);
     likeObserver.observe($origLike, { attributes: true, childList: true, subtree: true });
     syncLikeState();
   }
-
   function createLikeClone() {
     $origLike = findTrackLikeButton();
     prevLiked = null;
-
     const clone = document.createElement('div');
     clone.className = 'LikeTrack';
-    clone.addEventListener('click', () => {
-      console.log(`${LOG} 💚 like click (track only)`);
-      $origLike?.click();
-    });
-
+    clone.addEventListener('click', () => $origLike?.click());
     if ($origLike) {
       const svgO = $origLike.querySelector('svg');
       if (svgO) clone.appendChild(svgO.cloneNode(true));
@@ -173,45 +153,45 @@
       ''
     );
   }
-
-  function deriveTitle(track) {
-    return track?.title || track?.name || '';
-  }
-
+  function deriveTitle(track)  { return track?.title || track?.name || ''; }
   function deriveArtist(track) {
-    if (track?.artists && Array.isArray(track.artists) && track.artists.length) {
+    if (Array.isArray(track?.artists) && track.artists.length) {
       return track.artists.map(a => a.name || a.title || a).join(', ');
     }
     return track?.artist || track?.author || '';
   }
+  function trackKey(track) {
+    return [deriveTitle(track), deriveArtist(track), deriveCoverURL(track)].join(' | ');
+  }
+  function getCurrentTrackSafe() {
+    return Theme?.player?.state?.track || Lib.getCurrentTrack?.() || null;
+  }
 
-  // если у тебя в CSS есть переходы для .SM_Cover — просто меняем bgImage
+  // мгновенное обновление
   function updateCover(url) {
     if (!url || !$cover) return;
     if (url === lastCover) return;
     lastCover = url;
     $cover.style.backgroundImage = `url("${url}")`;
   }
-
   function updateTexts(track) {
     if (!$title || !$artist) return;
-    const t = deriveTitle(track);
-    const a = deriveArtist(track);
-    $title.textContent = t || '';
-    $artist.textContent = a || '';
+    $title.textContent  = deriveTitle(track)  || '';
+    $artist.textContent = deriveArtist(track) || '';
   }
 
-  // ───────────────────────── Track update ─────────────────────────
-  function updateTrackUI(track) {
+  function onTrack(track, force=false) {
     if (!track) return;
-    buildOnce();
-    ensureMounted();
+    buildOnce(); ensureMounted();
+    const key = trackKey(track);
+    if (!force && key === lastTrackKey) return;
+    lastTrackKey = key;
 
-    // 1) обложка/тексты (fallback своими руками)
+    // 1) обложка/тексты
     updateCover(deriveCoverURL(track));
     updateTexts(track);
 
-    // 2) если есть твой helper — пусть тоже отработает (он умеет кроссфейдить)
+    // 2) кроссфейд, если есть твой helper
     try {
       Lib.ui?.updateTrackUI?.(
         { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' },
@@ -220,34 +200,51 @@
       );
     } catch {}
 
-    // 3) на всякий — перехватить лайк после изменения вёрстки
+    // 3) синхронизируем лайк
     attachLikeObserver();
+
+    // 4) принудительно дергаем цвет и фон (чтобы не ждать событий)
+    try { window.Library?.colorize2?.recolor?.(true); } catch {}
+    try { Theme?.backgroundReplace?.(deriveCoverURL(track)); } catch {}
   }
 
+  // страховочный таймер (некоторые клики не шлют событий)
+  function startWatchdog() {
+    if (watchdogIv) return;
+    watchdogIv = setInterval(() => {
+      const t = getCurrentTrackSafe();
+      if (t) onTrack(t, false);
+    }, 800);
+  }
+
+  // ───────────────────────── bind bus ─────────────────────────
   function bindToTrackBusOnce() {
     if (uiBound) return;
     uiBound = true;
 
-    // единая шина из Library
     try {
       Lib.initUI?.();
-      Lib.onTrack?.(t => updateTrackUI(t), { immediate: true });
+      Lib.onTrack?.((t) => onTrack(t, true), { immediate: true });
     } catch (e) {
       console.warn(LOG, 'onTrack bind failed', e);
     }
 
-    // страховка: если Theme.player есть — тоже слушаем
     const tp = Theme?.player;
     if (tp?.on) {
-      tp.on('trackChange', ({ state }) => updateTrackUI(state?.track));
-      tp.on('openPlayer',  ({ state }) => updateTrackUI(state?.track));
+      tp.on('trackChange', ({ state }) => onTrack(state?.track, true));
+      tp.on('openPlayer',  ({ state }) => onTrack(state?.track, true));
       tp.on('pageChange',  () => {
         ensureMounted();
         attachLikeObserver();
         const cur = tp?.state?.track || tp?.getCurrentTrack?.();
-        if (cur) updateTrackUI(cur);
+        if (cur) onTrack(cur, true);
       });
     }
+
+    // запустим сторожа и обновим разово
+    startWatchdog();
+    const atStart = getCurrentTrackSafe();
+    if (atStart) onTrack(atStart, true);
   }
 
   function ensureKeepAlive() {
@@ -261,23 +258,18 @@
     keepAliveObs.observe(document.body, { childList: true, subtree: true });
   }
 
-  // ───────────────────────── Public API (в т.ч. для GPT-файла) ──────────
-  // Эти методы будут вызывать из отдельного файла с fetch к ChatGPT
-  const API = {
+  // ───────────────────────── Public API ─────────────────────────
+  Theme.SpotifyScreen = {
     init() { buildOnce(); bindToTrackBusOnce(); },
     check(){ buildOnce(); attachLikeObserver(); },
 
-    // управление GPT-блоком (без логики fetch)
-    setGPTTitle(text)      { buildOnce(); $gptTitle.textContent = text ?? ''; },
-    setGPTText(htmlOrText) { buildOnce(); $gptText.innerHTML = htmlOrText ?? ''; },
+    setGPTTitle(text)        { buildOnce(); $gptTitle.textContent = text ?? ''; },
+    setGPTText(htmlOrText)   { buildOnce(); $gptText.innerHTML = htmlOrText ?? ''; },
     setGPTExtra(html, show=true){ buildOnce(); $gptExtra.innerHTML = html ?? ''; $gptExtra.hidden = !show; },
-    setGPTActions(node)    { buildOnce(); $gptActions.replaceChildren(); if (node) $gptActions.appendChild(node); },
-    showAlert(flag=true)   { buildOnce(); $alert.hidden = !flag; },
-    hideAlert()            { buildOnce(); $alert.hidden = true; }
+    setGPTActions(node)      { buildOnce(); $gptActions.replaceChildren(); if (node) $gptActions.appendChild(node); },
+    showAlert(flag=true)     { buildOnce(); $alert.hidden = !flag; },
+    hideAlert()              { buildOnce(); $alert.hidden = true; }
   };
 
-  Theme.SpotifyScreen = API;
-
-  // автоинициализация (если плеер уже есть)
   try { Theme.SpotifyScreen.init(); } catch {}
 })();

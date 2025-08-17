@@ -5,13 +5,13 @@
   const Colorize2 = (Library.colorize2 = Library.colorize2 || {});
   const Util      = (Library.util     = Library.util     || {});
   Library.versions = Library.versions || {};
-  Library.versions['Library.colorize2'] = 'v3.0.2';
-  console.log('[colorize 2] load v3.0.1');
+  Library.versions['Library.colorize2'] = 'v3.1.0';
+  console.log('[colorize 2] load v3.1.0');
 
-  /* ───────────────────────── helpers: color math ───────────────────────── */
+  /* ───────────────────────── color math ───────────────────────── */
   function rgb2hsl(r, g, b) {
     r /= 255; g /= 255; b /= 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const max = Math.max(r, g, b), min = Math.min(r, r, b) === undefined ? Math.min(r, g, b) : Math.min(r, g, b);
     const d = max - min;
     let h = 0, s = 0, l = (max + min) / 2;
     if (d !== 0) {
@@ -21,7 +21,7 @@
         case g: h = (b - r) / d + 2; break;
         case b: h = (r - g) / d + 4; break;
       }
-      h = h / 6;
+      h /= 6;
     }
     return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
   }
@@ -43,18 +43,18 @@
     return rgb2hsl(r, g, b);
   }
 
-  const clamp   = (x, a, b) => Math.max(a, Math.min(b, x));
-  const clampL  = (o) => ({ ...o, l: clamp(o.l, 20, 85) });
-  const addS    = (k, d) => ({ ...k, s: clamp(Math.round(k.s + d), 0, 100) });
-  const addL    = (k, d) => ({ ...k, l: clamp(Math.round(k.l + d), 0, 100) });
-  const toHSL   = ({h,s,l}) => `hsl(${h} ${s}% ${l}%)`;
+  const clamp  = (x, a, b) => Math.max(a, Math.min(b, x));
+  const addS   = (k, d) => ({ ...k, s: clamp(Math.round(k.s + d), 0, 100) });
+  const addL   = (k, d) => ({ ...k, l: clamp(Math.round(k.l + d), 0, 100) });
+  const toHSL  = ({h,s,l}) => `hsl(${h} ${s}% ${l}%)`;
+  const clampL = (o) => ({ ...o, l: clamp(o.l, 20, 85) });
 
-  // Лёгкая «подкраска» серых/ч/б обложек и мягкая коррекция яркости
+  // лёгкая корректировка для ч/б и экстремальной яркости
   function nudgeAccent(hsl) {
     let { h, s, l } = hsl;
     if (s < 12) {
-      s = 16;                 // делаем минимальную насыщенность
-      l = l >= 55 ? l - 4 : l + 4; // «пара процентов»: затемнить светлое / подсветлить тёмное
+      s = 16;
+      l = l >= 55 ? l - 4 : l + 4; // «пара процентов»
     } else {
       if (l > 92) l = 88;
       if (l < 8)  l = 12;
@@ -92,7 +92,6 @@
     return p;
   }
 
-  // Акцент с устойчивым выбором: бины по hue + фильтры по S/L + нудж
   async function colorsFromCover(src) {
     if (!src) return null;
     if (_paletteCache.has(src)) return _paletteCache.get(src);
@@ -110,21 +109,17 @@
     _ctx.drawImage(img, 0, 0, Math.round(w * scale), Math.round(h * scale));
     const d = _ctx.getImageData(0, 0, 64, 64).data;
 
-    const bins = new Map(); // hue(int) -> {count, s, l}
+    const bins = new Map(); // hue -> {count, s, l}
     let strongCount = 0;
 
     for (let y = 0; y < 64; y++) {
       for (let x = 0; x < 64; x++) {
         const i = (y * 64 + x) * 4;
         const A = d[i + 3]; if (A < 18) continue;
-
         const R = d[i], G = d[i + 1], B = d[i + 2];
         const { h, s, l } = rgb2hsl(R, G, B);
-
-        // Жёсткие отсечки: слишком тёмные/светлые игнорим
         if (l < 8 || l > 92) continue;
 
-        // Основная масса — с нормальной насыщенностью и средней яркостью
         if (s >= 20 && l >= 16 && l <= 84) {
           strongCount++;
           const key = Math.round(h);
@@ -138,7 +133,6 @@
     let base = { h: 220, s: 80, l: 56 };
 
     if (strongCount >= 96 && bins.size > 0) {
-      // Выбираем «модальный» оттенок с учётом насыщенности и близости к среднему l
       let bestHue = 220, bestScore = -1, bestS = 80, bestL = 56;
       for (const [hue, stats] of bins) {
         const c = stats.count;
@@ -149,7 +143,6 @@
       }
       base = { h: bestHue, s: clamp(Math.round(bestS), 20, 92), l: clamp(Math.round(bestL), 18, 82) };
     } else {
-      // Мало сильных пикселей → средняя оценка по всем приемлемым + нудж
       let S = 0, L = 0, N = 0;
       for (let y = 0; y < 64; y++) {
         for (let x = 0; x < 64; x++) {
@@ -166,13 +159,12 @@
       base = { h: 220, s: clamp(Math.round(avgS), 12, 92), l: clamp(Math.round(avgL), 18, 82) };
     }
 
-    // Нудж для ч/б, чёрного и белого
     base = nudgeAccent(base);
     _paletteCache.set(src, base);
     return base;
   }
 
-  /* ───────────────────────── vars builder (только «краска») ───────────── */
+  /* ───────────────────────── vars builder ───────────────────────── */
   function buildVars(baseHSL) {
     const o = clampL(baseHSL);
 
@@ -183,7 +175,6 @@
     const grad1  = addS(addL(o, -8),  8);
     const grad2  = addS(addL(o, -24), 8);
 
-    // Акцент с коррекцией (серые/ч/б) — делаем читаемым и живым
     const accent = nudgeAccent(addS(addL(o, 6), 10));
 
     return {
@@ -202,12 +193,11 @@
 
       '--color-accent':  toHSL(accent),
 
-      // ЛИНЕЙНЫЙ ГРАДИЕНТ ОСТАВЛЯЕМ (круговой не используем)
       '--grad-main': `linear-gradient(180deg, ${toHSL(grad1)} 0%, ${toHSL(grad2)} 76%)`,
     };
   }
 
-  /* ───────────────────────── YM variable map (совместимость) ──────────── */
+  /* ───────────────────────── YM map (совместимость) ───────────────────── */
   const YM_MAP_RAW = `
 --ym-button-primary-normal: var(--color-light-2);
 --ym-button-primary-hovered: var(--color-light-1);
@@ -253,8 +243,19 @@
 
 --ym-brand-accent: var(--color-accent);
 `;
-const EXTRA_CSS = `
-/* Layout background */
+
+  /* ───────────────────────── Extra CSS (включая вариант A) ────────────── */
+  const EXTRA_CSS = `
+/* убрать штатные затемнения вайба, чтобы наш градиент был виден */
+.VibeBlock_canvas__EtGGS { opacity:.22 !important; filter: blur(360px) !important; }
+.VibeBlock_gradient__32n9m { opacity: 0 !important; }
+.VibeBlock_wrap__KsKTk:has(.VibeBlock_vibeAnimation__XVEE6) canvas { opacity:.2 !important; filter: blur(360px) !important; }
+.VibeBlock_vibeAnimation__XVEE6:after { background:transparent !important; }
+
+/* гарантируем наш линейный градиент внутри слоя фона */
+.bg-layer .bg-gradient { background: var(--grad-main) !important; mix-blend-mode: multiply; }
+
+/* Layout background — Вариант A */
 .CommonLayout_root__WC_W1,
 [class*="CommonLayout_root"] {
   background:
@@ -266,13 +267,12 @@ const EXTRA_CSS = `
 `;
 
   /* ───────────────────────── style tags + apply ───────────────────────── */
-let _styleVars = null, _styleExtra = null, _styleOverlay = null;
-function ensureStyleTags() {
-  if (!_styleVars)   { _styleVars   = document.createElement('style'); _styleVars.id   = 'sc-vars';         document.head.appendChild(_styleVars); }
-  if (!_styleExtra)  { _styleExtra  = document.createElement('style'); _styleExtra.id  = 'sc-extra';        document.head.appendChild(_styleExtra); _styleExtra.textContent = EXTRA_CSS; }
-  if (!_styleOverlay){ _styleOverlay= document.createElement('style'); _styleOverlay.id= 'sc-grad-overlay'; document.head.appendChild(_styleOverlay); }
-}
-
+  let _styleVars = null, _styleExtra = null, _styleOverlay = null;
+  function ensureStyleTags() {
+    if (!_styleVars)   { _styleVars   = document.createElement('style'); _styleVars.id   = 'sc-vars';         document.head.appendChild(_styleVars); }
+    if (!_styleExtra)  { _styleExtra  = document.createElement('style'); _styleExtra.id  = 'sc-extra';        document.head.appendChild(_styleExtra); _styleExtra.textContent = EXTRA_CSS; }
+    if (!_styleOverlay){ _styleOverlay= document.createElement('style'); _styleOverlay.id= 'sc-grad-overlay'; document.head.appendChild(_styleOverlay); }
+  }
 
   function applyVars(vars) {
     ensureStyleTags();
@@ -281,8 +281,6 @@ function ensureStyleTags() {
         ${Object.entries(vars).map(([k,v]) => `${k}:${v};`).join('\n')}
         ${YM_MAP_RAW}
       }
-      /* очищаем фон от нативных заливок; круговой градиент не используем */
-      .DefaultLayout_root__*, .CommonLayout_root__* { background: transparent !important; }
     `;
   }
 
@@ -298,7 +296,7 @@ function ensureStyleTags() {
     document.body.classList.add('sc-has-grad');
   }
 
-  /* ───────────────────────── settings bridge (HEX / cover) ────────────── */
+  /* ───────────────────────── settings bridge ──────────────────────────── */
   function _settings() {
     const sm = window.Theme?.settingsManager;
     const get = (k, d) => sm?.get(k)?.value ?? d;
@@ -308,7 +306,7 @@ function ensureStyleTags() {
     };
   }
 
-  /* ───────────────────────── core recolor (без фоновых вставок!) ──────── */
+  /* ───────────────────────── core recolor ─────────────────────────────── */
   let _lastKey = '';
   async function recolor(force = false) {
     const { useHex, hex } = _settings();
@@ -329,7 +327,7 @@ function ensureStyleTags() {
 
     const vars = buildVars(base);
     applyVars(vars);
-    ensureGradientOverlay(); // линейный оверлей оставляем
+    ensureGradientOverlay();
   }
 
   /* ───────────────────────── lifecycle / watchers ─────────────────────── */
@@ -373,14 +371,15 @@ function ensureStyleTags() {
   }
 
   /* ───────────────────────── public API ───────────────────────────────── */
-  Colorize2.recolor       = recolor;
-  Colorize2.start         = () => { startWatchers(); recolor(true); };
-  Colorize2.stop          = () => { stopWatchers(); };
-  Colorize2.applyVars     = applyVars;
-  Colorize2.buildVars     = buildVars;
+  Colorize2.recolor         = recolor;
+  Colorize2.start           = () => { startWatchers(); recolor(true); };
+  Colorize2.stop            = () => { stopWatchers(); };
+  Colorize2.applyVars       = applyVars;
+  Colorize2.buildVars       = buildVars;
   Colorize2.colorsFromCover = colorsFromCover;
-  Colorize2.clearCaches   = () => { _paletteCache.clear(); _imgCache.clear(); };
+  Colorize2.clearCaches     = () => { _paletteCache.clear(); _imgCache.clear(); };
   Colorize2.ensureGradientOverlay = ensureGradientOverlay;
+  Colorize2.setExtraCSS     = (css) => { ensureStyleTags(); _styleExtra.textContent = css || ''; };
 
   // автостарт
   try { Colorize2.start(); } catch(e) { console.warn('[colorize 2] start failed', e); }
