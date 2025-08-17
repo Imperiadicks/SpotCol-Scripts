@@ -3,8 +3,9 @@
   const Colorize2 = (Library.colorize2 = Library.colorize2 || {});
   const Util = (Library.util = Library.util || {});
   Library.versions = Library.versions || {};
-  Library.versions['Library.colorize2'] = 'v2.0.0';
-  console.log("[colorize 2] load v2.0.0")
+  Library.versions['Library.colorize2'] = 'v2.0.1';
+  console.log('[colorize 2] load v2.0.1');
+
   const LOG = (...a) => console.log('[Library.colorize2]', ...a);
 
   /* ───────────────────────── helpers: color math ───────────────────────── */
@@ -82,8 +83,6 @@
           const d = _ctx.getImageData(0, 0, 64, 64).data;
 
           const hueBins = new Map(); // hue -> {count, s, l}
-          let total = 0;
-
           for (let y = 0; y < 64; y++) {
             for (let x = 0; x < 64; x++) {
               const i = (y * 64 + x) * 4;
@@ -97,7 +96,6 @@
               entry.count++;
               entry.s += s; entry.l += l;
               hueBins.set(key, entry);
-              total++;
             }
           }
 
@@ -122,13 +120,12 @@
     });
   }
 
-  /* ───────────────────────── vars builder / applier ───────────────────────── */
+  /* ───────────────────────── vars builder ───────────────────────── */
   const clampL = (o) => ({ ...o, l: Math.max(20, Math.min(85, o.l)) });
 
   function buildVars(baseHSL) {
     const o = clampL(baseHSL);
     const toHSL = ({h,s,l}) => `hsl(${h} ${s}% ${l}%)`;
-    const mul  = (k, m) => ({...k, l: Math.max(0, Math.min(100, Math.round(k.l*m)))});
     const addS = (k, d) => ({...k, s: Math.max(0, Math.min(100, Math.round(k.s+d)))});
     const addL = (k, d) => ({...k, l: Math.max(0, Math.min(100, Math.round(k.l+d)))});
 
@@ -162,10 +159,95 @@
     return vars;
   }
 
+  /* ───────────────────────── YM variable map + extra CSS (integrated) ──── */
+  const YM_MAP_RAW = `
+--ym-button-primary-normal: var(--color-light-2);
+--ym-button-primary-hovered: var(--color-light-1);
+--ym-button-primary-pressed: var(--color-dark-1);
+--ym-button-primary-disabled: var(--color-dark-4);
+
+--ym-letterleds-main-text: var(--color-light-1);
+
+--ym-shimmers-primary: var(--color-light-1);
+--ym-shimmers-secondary: var(--color-light-2);
+
+--ym-favorite: var(--color-light-1);
+--ym-dislike: var(--color-dark-3);
+
+--ym-toast-border: var(--color-light-3);
+--ym-toast-notify: var(--color-accent);
+--ym-toast-warning: var(--color-dark-5);
+
+--ym-divider-main: var(--color-dark-4);
+--ym-divider-active: var(--color-light-2);
+
+--ym-waves-brand: var(--color-accent);
+
+--ym-background-color-primary-enabled-basic: var(--color-dark-7);
+--ym-background-color-primary-enabled-content: var(--color-dark-6);
+--ym-background-color-primary-enabled-blur: var(--color-dark-5);
+--ym-background-color-primary-enabled-contrast: var(--color-dark-4);
+
+--ym-background-color-secondary-enabled-basic: var(--color-dark-6);
+--ym-background-color-secondary-enabled-content: var(--color-dark-5);
+--ym-background-color-secondary-enabled-blur: var(--color-dark-4);
+--ym-background-color-secondary-enabled-contrast: var(--color-dark-3);
+
+--ym-background-alpha-color-enabled: rgba(0,0,0,.4);
+
+--ym-foreground-color-enabled-basic: var(--color-light-4);
+--ym-foreground-color-enabled-basic-hover: var(--color-light-3);
+--ym-foreground-color-enabled-basic-press: var(--color-light-2);
+--ym-foreground-color-enabled-additional-contrast: var(--color-light-1);
+
+--ym-semitransparent-color-1: rgba(0,0,0,.35);
+--ym-semitransparent-color-2: rgba(0,0,0,.5);
+
+--ym-brand-accent: var(--color-accent);
+`;
+
+  const EXTRA_CSS = `
+.VibeBlock_canvas__EtGGS { opacity:.22 !important; filter: blur(360px) !important; }
+.VibeBlock_gradient__32n9m { opacity: 0 !important; }
+.VibeBlock_wrap__KsKTk:has(.VibeBlock_vibeAnimation__XVEE6) canvas { opacity:.2 !important; filter: blur(360px) !important; }
+.VibeBlock_vibeAnimation__XVEE6:after { background:transparent !important; }
+
+.CommonLayout_root__WC_W1 {
+  background: radial-gradient(circle at 70% 70%,
+    var(--ym-background-color-secondary-enabled-blur) 0%,
+    var(--ym-background-color-primary-enabled-content) 70%,
+    var(--ym-background-color-primary-enabled-basic) 100%) !important;
+}
+.Navbar_root__chfAR,
+.EntitySidebar_root__D1fGh,
+.Divider_root__99zZ {
+  background: radial-gradient(circle at 70% 70%,
+    var(--ym-background-color-secondary-enabled-blur) 0%,
+    var(--ym-background-color-primary-enabled-content) 70%,
+    var(--ym-background-color-primary-enabled-basic) 100%) !important;
+}
+
+.CommonLayout_content__zy_Ja::before {
+  content: '';
+  position: fixed;
+  pointer-events: none;
+  inset: 0;
+  background: var(--grad-main);
+  opacity: .65;
+  z-index: 0;
+}
+.MainPage_releasedAlbums__4I9_j,
+.Person_root__X9jhu,
+.NewReleasesPage_root__jZk4L,
+.ArtistPage_tracksGridWrap__5bzuE,
+.CommonLayout_content__zy_Ja > * { position: relative; z-index: 1; }
+`;
+
+  /* ───────────────────────── style tags + apply ───────────────────────── */
   let _styleVars = null, _styleExtra = null, _styleOverlay = null;
   function ensureStyleTags() {
     if (!_styleVars)  { _styleVars  = document.createElement('style'); _styleVars.id  = 'sc-vars';  document.head.appendChild(_styleVars); }
-    if (!_styleExtra) { _styleExtra = document.createElement('style'); _styleExtra.id = 'sc-extra'; document.head.appendChild(_styleExtra); }
+    if (!_styleExtra) { _styleExtra = document.createElement('style'); _styleExtra.id = 'sc-extra'; document.head.appendChild(_styleExtra); _styleExtra.textContent = EXTRA_CSS; }
     if (!_styleOverlay){ _styleOverlay = document.createElement('style'); _styleOverlay.id = 'sc-grad-overlay'; document.head.appendChild(_styleOverlay); }
   }
 
@@ -174,6 +256,7 @@
     _styleVars.textContent = `
       :root {
         ${Object.entries(vars).map(([k,v])=>`${k}:${v};`).join('\n')}
+        ${YM_MAP_RAW}
       }
       .DefaultLayout_root__*, .CommonLayout_root__* { background: transparent !important; }
     `;
@@ -181,7 +264,6 @@
 
   function ensureGradientOverlay() {
     ensureStyleTags();
-    _styleOverlay.id = 'sc-grad-overlay';
     _styleOverlay.textContent = `
       body.sc-has-grad::before {
         content: '';
@@ -189,7 +271,6 @@
         background: var(--grad-main);
         z-index: -1; pointer-events: none;
       }`;
-    document.head.appendChild(_styleOverlay);
     document.body.classList.add('sc-has-grad');
   }
 
@@ -201,11 +282,11 @@
     const useHex = getBool(['Тема.useCustomColor', 'useCustomColor'], false);
     const hex = getText(['Тема.baseColor', 'baseColor'], '');
 
-    let base, c1, c2;
+    let base;
 
     if (useHex) {
       if (!force && hex === _lastHex) return;
-      base = clampL(parseHEX(hex)); c1 = c2 = base; _lastHex = hex;
+      base = clampL(parseHEX(hex)); _lastHex = hex;
       LOG('palette: HEX mode', hex, base);
     } else {
       const src = currentCoverURL();
@@ -214,7 +295,7 @@
 
       const p = await colorsFromCover(src);
       if (!p) return;
-      base = p; c1 = p; c2 = p; _lastSrc = src;
+      base = p; _lastSrc = src;
       LOG('palette: COVER mode', src, base);
     }
 
@@ -318,4 +399,3 @@
   // авто-инициализация
   try { Colorize2.start(); } catch (e) { console.warn('[colorize2] start failed', e); }
 })();
-
