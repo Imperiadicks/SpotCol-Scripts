@@ -1,5 +1,5 @@
 (() => {
-  console.log('[Main] v1.0.1');
+  console.log('[Main] v1.0.2');
 
   // 1) Создаём инстанс темы (класс берём из Library.js)
   const ThemeClass = window.Theme;           // класс
@@ -19,8 +19,17 @@
     'Эффекты.enableFullVibe':        { value:true }
   });
 
+  // Флаг готовности настроек (пока handle не подгружен — ничего «насильно» не вставляем)
+  App.__settingsReady = false;
+
   // 3) Автоподтяжка актуальных настроек из локального handle (если доступен)
-  (async () => { try { await sm.update(); } catch {} })();
+  (async () => {
+    try { await sm.update(); } catch {}
+    finally {
+      App.__settingsReady = true;
+      syncEffects(); // сразу применим/отключим по фактическим настройкам
+    }
+  })();
 
   // 4) Open-Blocker: подкачка CSS с GitHub при включённых модулях
   const openBlockerCache = new Map(); // module -> injected?
@@ -41,37 +50,40 @@
 
       const link = document.createElement('link');
       link.rel  = 'stylesheet';
-      link.href = `https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/css/blocker-css/${module}.css`;
+      link.href = `https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/css/open-blocker/${module}.css`;
       link.dataset.id = `ob:${module}`;
       document.head.appendChild(link);
     }
   }
-  sm.on('update', applyOpenBlocker);
+  sm.on('update', () => { applyOpenBlocker(); syncEffects(); });
   applyOpenBlocker();
 
-  // === Background/Vibe utilities (усиленные DOM-проверки) ===
+  // === Background/Vibe utilities (усиленные DOM-проверки + уважение handle) ===
   (function integrateBackgroundTools(App){
     App.__lastBgUrl = App.__lastBgUrl || null;
     App.__bgRetryTimer = null;
     App.__vibeObserver = null;
 
     const findVibe = () => document.querySelector('[class*="MainPage_vibe"]');
-    const bgEnabled = () => sm.get('Эффекты.enableBackgroundImage')?.value !== false;
+    const bgEnabled = () => sm.get('Эффекты.enableBackgroundImage')?.value === true;
+    const fullVibeEnabled = () => sm.get('Эффекты.enableFullVibe')?.value === true;
 
-    function ensureVibeThen(imageURL, retries = 24) { // ~7.2s с шагом 300мс
+    function ensureVibeThen(imageURL, retries = 24) { // ~7.2s (шаг 300мс)
+      if (!App.__settingsReady || !bgEnabled()) return;
       const target = findVibe();
       if (!target) {
         clearTimeout(App.__bgRetryTimer);
         if (retries > 0) App.__bgRetryTimer = setTimeout(() => ensureVibeThen(imageURL, retries - 1), 300);
         return;
       }
-      // если слоя нет — вставляем даже при том же URL
+      // если слой уже есть и URL тот же — ничего не делаем
       const hasLayer = !!target.querySelector('.bg-layer');
       if (imageURL === App.__lastBgUrl && hasLayer) return;
       applyBackground(target, imageURL, hasLayer);
     }
 
-    function applyBackground(target, imageURL, hadLayer) {
+    function applyBackground(target, imageURL/*, hadLayer*/) {
+      if (!App.__settingsReady || !bgEnabled()) return;
       if (!target || !imageURL) return;
 
       const img = new Image();
@@ -98,7 +110,7 @@
         gradient.className = 'bg-gradient';
         Object.assign(gradient.style, {
           position:'absolute', inset:'0',
-          background:'var(--grad-main)',
+          background:'var(--grad-main)', // ← твой линейный градиент оставляем
           mixBlendMode:'multiply',
           opacity:'0', transition:'opacity 1.2s ease', pointerEvents:'none'
         });
@@ -123,8 +135,8 @@
     }
 
     function backgroundReplace(imageURL) {
-      if (!bgEnabled()) return;
-      // не выходим, если слоя ещё нет — даём шанс дорисовать при том же URL
+      // Уважаем handle: пока настройки не готовы ИЛИ выключено — выходим
+      if (!App.__settingsReady || !bgEnabled()) return;
       ensureVibeThen(imageURL);
     }
 
@@ -169,21 +181,24 @@
     }
 
     function FullVibe() {
+      if (!App.__settingsReady || !fullVibeEnabled()) return;
       const vibe = findVibe();
       if (vibe) vibe.style.setProperty('height', '88.35vh', 'important');
     }
     function RemoveFullVibe() {
+      // Не прячем блок, а возвращаем нативную высоту
       const vibe = findVibe();
-      if (vibe) vibe.style.setProperty('height', '0', 'important');
+      if (vibe) vibe.style.removeProperty('height');
     }
 
-    // Наблюдатель: когда блок Vibe появляется заново (навигация → возвращение на «Главное»),
-    // автоматически восстанавливаем фон, даже если URL не менялся
+    // Наблюдатель: когда блок Vibe появляется заново (возврат на «Главное»),
+    // автоматически восстанавливаем фон, только если разрешено в настройках.
     function ensureVibeObserver() {
       if (App.__vibeObserver) return;
       App.__vibeObserver = new MutationObserver(() => {
+        if (!App.__settingsReady || !bgEnabled()) return;
         const target = findVibe();
-        if (target && bgEnabled()) {
+        if (target) {
           const url = window.Library?.getHiResCover?.() || window.Library?.coverURL?.() || App.__lastBgUrl;
           if (url) ensureVibeThen(url, 8);
         }
@@ -193,6 +208,19 @@
     }
     ensureVibeObserver();
 
+    // Синхронизация эффектов с настройками
+    function syncEffects() {
+      if (!App.__settingsReady) return;
+      if (bgEnabled()) {
+        const url = window.Library?.getHiResCover?.() || window.Library?.coverURL?.() || App.__lastBgUrl;
+        if (url) ensureVibeThen(url, 6);
+      } else {
+        removeBackgroundImage();
+      }
+      if (fullVibeEnabled()) FullVibe(); else RemoveFullVibe();
+    }
+    App.__syncEffects = syncEffects; // экспорт внутрь инстанса
+
     // Экспорт в инстанс темы
     App.backgroundReplace      = backgroundReplace;
     App.removeBackgroundImage  = removeBackgroundImage;
@@ -201,6 +229,9 @@
     App.FullVibe               = FullVibe;
     App.RemoveFullVibe         = RemoveFullVibe;
   })(App);
+
+  // Локальная обёртка, чтобы можно было вызвать изнаружи
+  function syncEffects(){ App.__syncEffects?.(); }
 
   // финал
 })();

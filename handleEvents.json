@@ -257,14 +257,14 @@
                     "id": "OBdonations",
                     "name": "Донаты",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBconcerts",
                     "name": "Концерты",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
@@ -278,98 +278,98 @@
                     "id": "OBtrailers",
                     "name": "Трейлеры",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBvibeanimation",
                     "name": "Анимация моей волны",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBrelevantnow",
                     "name": "Актуально сейчас",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBinstyle",
                     "name": "В стиле",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBlikesandhistory",
                     "name": "Любимое и история",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBneuromusic",
                     "name": "Нейромузыка",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBnewreleases",
                     "name": "Новые релизы",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBpersonalartists",
                     "name": "Личные артисты",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBpersonalplaylists",
                     "name": "Настроили для вас",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBrecommendedplaylists",
                     "name": "Исследуйте жанр",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBsmartopenplaylist",
                     "name": "Премьера и т.д.",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBwaves",
                     "name": "Больше открытий",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBartistrecommends",
                     "name": "Артист рекомендует",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBbarbelow",
                     "name": "Рекламные беннеры",
                     "type": "button",
-                    "bool": true,
+                    "bool": false,
                     "defaultParameter": true
                 }
             ]
