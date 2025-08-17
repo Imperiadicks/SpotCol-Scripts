@@ -4,7 +4,7 @@
   const Util = (Library.util = Library.util || {});
   Library.versions = Library.versions || {};
   Library.versions['Library.colorize2'] = 'v2.0.3';
-  console.log('[colorize 2] load v2.0.1');
+  console.log('[colorize 2] load v2.0.3');
 
   const LOG = (...a) => console.log('[Library.colorize2]', ...a);
 

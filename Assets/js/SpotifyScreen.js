@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log('[SpotifyScreen] load v0.7.0-test2');
+console.log('[SpotifyScreen] load v0.7.0-test3');
 if (!SpotColЛичная) {
   console.error('[SpotifyScreen] Theme is not available.');
   throw new Error('Theme not loaded');
@@ -78,26 +78,12 @@ SpotColЛичная.stylesManager.add(
       </div>
     `;
 
-    // базовое позиционирование (аккуратный floating-виджет)
-    Object.assign(root.style, {
-      position: 'fixed', right: '24px', bottom: '24px',
-      zIndex: '2147483000', width: '360px', maxWidth: 'calc(100vw - 32px)',
-      borderRadius: '16px', overflow: 'hidden',
-      border: '1px solid var(--sm-accent, rgba(255,255,255,.3))',
-      boxShadow: '0 10px 30px rgba(0,0,0,.35)',
-      backdropFilter: 'blur(10px)', background: 'rgba(0,0,0,.35)',
-      color: '#fff', padding: '12px'
-    });
-
     (findAnchor() || document.body).insertAdjacentElement('afterend', root);
 
     $root   = root;
     $cover  = root.querySelector('.SM_Cover');
     $track  = root.querySelector('.SM_Track_Name');
     $artist = root.querySelector('.SM_Artist');
-
-    Object.assign($root.style, { position:'fixed', zIndex: '2147483000' });
-    Object.assign($cover.style, { position:'relative', overflow:'hidden', width:'100%', aspectRatio:'1 / 1', borderRadius:'12px', boxShadow: '0 8px 24px rgba(0,0,0,.35), 0 0 20px var(--sm-accent, rgba(255,255,255,.15))' });
 
     ensureBgLayers();
     ensureCoverLogging();
@@ -111,14 +97,6 @@ SpotColЛичная.stylesManager.add(
       attachObserver();
       syncState();
     }
-
-    // пульсация при play
-    const cssPulse = document.createElement('style');
-    cssPulse.textContent = `
-      @keyframes coverPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-      .Spotify_Screen.playing .SM_Cover img._ui_cf.current { animation: coverPulse 4200ms ease-in-out infinite; }
-    `;
-    document.head.appendChild(cssPulse);
 
     window.__spotifyBuilt = true;
     window.__spotifyRoot  = root;
