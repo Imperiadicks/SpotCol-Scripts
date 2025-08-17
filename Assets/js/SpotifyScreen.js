@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log('[SpotifyScreen] load v0.7.0-test1');
+console.log('[SpotifyScreen] load v0.7.0-test2');
 if (!SpotColЛичная) {
   console.error('[SpotifyScreen] Theme is not available.');
   throw new Error('Theme not loaded');
@@ -130,7 +130,7 @@ SpotColЛичная.stylesManager.add(
   }
   function ensureBuilt() { if (!window.__spotifyBuilt) build(); else ensureMounted(); }
 
-/*   function ensureBgLayers() {
+  function ensureBgLayers() {
     if (!$bg) return;
     if (!$bg1 || !$bg2) {
       $bg.innerHTML = '';
@@ -152,12 +152,12 @@ SpotColЛичная.stylesManager.add(
       $bg.appendChild($bg2);
       bgActive = 1;
     }
-  } */
+  }
 
   // двухслойный фон (плавная смена)
   function setBackground(url) {
     if (!$bg || !url) return;
-/*     ensureBgLayers(); */
+    ensureBgLayers();
     const active = bgActive === 1 ? $bg1 : $bg2;
     const next   = bgActive === 1 ? $bg2 : $bg1;
 
