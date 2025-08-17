@@ -1,5 +1,5 @@
 const SpotColЛичная = window.Theme;
-console.log('[SpotifyScreen] load v0.7.0');
+console.log('[SpotifyScreen] load v0.7.0-test1');
 if (!SpotColЛичная) {
   console.error('[SpotifyScreen] Theme is not available.');
   throw new Error('Theme not loaded');
@@ -41,7 +41,6 @@ SpotColЛичная.stylesManager.add(
   function build() {
     if (window.__spotifyBuilt && window.__spotifyRoot) {
       $root   = window.__spotifyRoot;
-      $bg     = $root.querySelector('.SM_Background');
       $cover  = $root.querySelector('.SM_Cover');
       $track  = $root.querySelector('.SM_Track_Name');
       $artist = $root.querySelector('.SM_Artist');
@@ -53,7 +52,6 @@ SpotColЛичная.stylesManager.add(
     const root = document.createElement('div');
     root.className = 'Spotify_Screen';
     root.innerHTML = `
-      <div class="SM_Background"></div>
 
       <div class="SM_Cover"></div>
 
@@ -94,7 +92,6 @@ SpotColЛичная.stylesManager.add(
     (findAnchor() || document.body).insertAdjacentElement('afterend', root);
 
     $root   = root;
-    $bg     = root.querySelector('.SM_Background');
     $cover  = root.querySelector('.SM_Cover');
     $track  = root.querySelector('.SM_Track_Name');
     $artist = root.querySelector('.SM_Artist');
@@ -133,7 +130,7 @@ SpotColЛичная.stylesManager.add(
   }
   function ensureBuilt() { if (!window.__spotifyBuilt) build(); else ensureMounted(); }
 
-  function ensureBgLayers() {
+/*   function ensureBgLayers() {
     if (!$bg) return;
     if (!$bg1 || !$bg2) {
       $bg.innerHTML = '';
@@ -155,12 +152,12 @@ SpotColЛичная.stylesManager.add(
       $bg.appendChild($bg2);
       bgActive = 1;
     }
-  }
+  } */
 
   // двухслойный фон (плавная смена)
   function setBackground(url) {
     if (!$bg || !url) return;
-    ensureBgLayers();
+/*     ensureBgLayers(); */
     const active = bgActive === 1 ? $bg1 : $bg2;
     const next   = bgActive === 1 ? $bg2 : $bg1;
 
