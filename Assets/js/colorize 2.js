@@ -5,8 +5,8 @@
   const Colorize2 = (Library.colorize2 = Library.colorize2 || {});
   const Util      = (Library.util     = Library.util     || {});
   Library.versions = Library.versions || {};
-  Library.versions['Library.colorize2'] = 'v3.0.0';
-  console.log('[colorize 2] load v3.0.0');
+  Library.versions['Library.colorize2'] = 'v3.0.1';
+  console.log('[colorize 2] load v3.0.1');
 
   /* ───────────────────────── helpers: color math ───────────────────────── */
   function rgb2hsl(r, g, b) {
@@ -253,13 +253,28 @@
 
 --ym-brand-accent: var(--color-accent);
 `;
+const EXTRA_CSS = `
+/* прибираем штатный вайб, чтобы наш градиент был виден */
+.VibeBlock_canvas__EtGGS { opacity:.22 !important; filter: blur(360px) !important; }
+.VibeBlock_gradient__32n9m { opacity: 0 !important; }
+.VibeBlock_wrap__KsKTk:has(.VibeBlock_vibeAnimation__XVEE6) canvas { opacity:.2 !important; filter: blur(360px) !important; }
+.VibeBlock_vibeAnimation__XVEE6:after { background:transparent !important; }
+
+/* страховка: если класс меняется — наш контейнер всё равно получает градиент */
+.bg-layer .bg-gradient { background: var(--grad-main) !important; mix-blend-mode: multiply; }
+
+/* общий фон страницы подчищаем, чтобы не забивал цвет */
+.DefaultLayout_root__*, .CommonLayout_root__* { background: transparent !important; }
+`;
 
   /* ───────────────────────── style tags + apply ───────────────────────── */
-  let _styleVars = null, _styleOverlay = null;
-  function ensureStyleTags() {
-    if (!_styleVars)   { _styleVars   = document.createElement('style'); _styleVars.id   = 'sc-vars';         document.head.appendChild(_styleVars); }
-    if (!_styleOverlay){ _styleOverlay= document.createElement('style'); _styleOverlay.id= 'sc-grad-overlay'; document.head.appendChild(_styleOverlay); }
-  }
+let _styleVars = null, _styleExtra = null, _styleOverlay = null;
+function ensureStyleTags() {
+  if (!_styleVars)   { _styleVars   = document.createElement('style'); _styleVars.id   = 'sc-vars';         document.head.appendChild(_styleVars); }
+  if (!_styleExtra)  { _styleExtra  = document.createElement('style'); _styleExtra.id  = 'sc-extra';        document.head.appendChild(_styleExtra); _styleExtra.textContent = EXTRA_CSS; }
+  if (!_styleOverlay){ _styleOverlay= document.createElement('style'); _styleOverlay.id= 'sc-grad-overlay'; document.head.appendChild(_styleOverlay); }
+}
+
 
   function applyVars(vars) {
     ensureStyleTags();
