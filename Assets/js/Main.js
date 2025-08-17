@@ -41,7 +41,7 @@
 
       const link = document.createElement('link');
       link.rel  = 'stylesheet';
-      link.href = `https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/css/open-blocker/${module}.css`;
+      link.href = `https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/css/blocker-css/${module}.css`;
       link.dataset.id = `ob:${module}`;
       document.head.appendChild(link);
     }
