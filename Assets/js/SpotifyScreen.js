@@ -2,7 +2,7 @@
 (() => {
   const Theme = window.Theme;
   if (!Theme) { console.error('[SpotifyScreen] Theme is not available'); return; }
-  console.log('[SpotifyScreen] load v1.3');
+  console.log('[SpotifyScreen] load v1.3.1');
 
   const Lib = window.Library || {};
   const LOG = '[SpotifyScreen]';
@@ -19,7 +19,7 @@
   function getContentContainer() {
     // приоритет — строго твой класс; дальше fallback'и
     return (
-      document.querySelector('.CommonLayout_content__zy_Ja') ||
+      document.querySelector('.CommonLayout_root__WC_W1') ||
       document.querySelector('.Content_rootOld__g85_m') ||
       document.querySelector('[class*="CommonLayout_content__"]') ||
       document.querySelector('[class*="Content_root"]') ||
