@@ -1,13 +1,13 @@
-// === SpotifyScreen — panel + cover/title/artist + like + GPT slots (with watchdog) ===
+// === SpotifyScreen — panel + cover/title/artist + like + GPT slots (anchor-fixed) ===
 (() => {
   const Theme = window.Theme;
   if (!Theme) { console.error('[SpotifyScreen] Theme is not available'); return; }
-  console.log('[SpotifyScreen] load v1.2');
+  console.log('[SpotifyScreen] load v1.3');
 
   const Lib = window.Library || {};
   const LOG = '[SpotifyScreen]';
 
-  let $root, $cover, $title, $artist, $like, $origLike, likeObserver, keepAliveObs;
+  let $root, $cover, $title, $artist, $like, $origLike, likeObserver, keepAliveObs, reanchorObs;
   let $gptTitle, $gptText, $gptExtra, $gptActions, $alert;
   let uiBound = false;
   let prevLiked = null;
@@ -16,12 +16,13 @@
   let watchdogIv = null;
 
   // ───────────────────────── DOM helpers ─────────────────────────
-  function findAnchor() {
+  function getContentContainer() {
+    // приоритет — строго твой класс; дальше fallback'и
     return (
-      document.querySelector('[class*="CommonLayout_content"]') ||
+      document.querySelector('.CommonLayout_content__zy_Ja') ||
+      document.querySelector('.Content_rootOld__g85_m') ||
+      document.querySelector('[class*="CommonLayout_content__"]') ||
       document.querySelector('[class*="Content_root"]') ||
-      document.querySelector('[data-test-id="PLAYERBAR_DESKTOP"]')?.parentElement ||
-      document.querySelector('[class*="CommonLayout_root"]') ||
       document.body
     );
   }
@@ -73,7 +74,7 @@
       </footer>
     `;
 
-    (findAnchor() || document.body).insertAdjacentElement('afterbegin', root);
+    (getContentContainer() || document.body).insertAdjacentElement('afterbegin', root);
 
     $root     = root;
     $cover    = root.querySelector('.SM_Cover');
@@ -85,18 +86,29 @@
     $gptActions = root.querySelector('.SM_GPT_Actions');
     $alert    = root.querySelector('.Achtung_Alert');
 
-    // лайк-кнопка (клон оригинала из playerbar)
     const likeSlot = root.querySelector('.LikeTrack');
     $like = createLikeClone();
     likeSlot.replaceWith($like);
 
     attachLikeObserver();
     ensureKeepAlive();
+    ensureReanchor();
   }
+
   function ensureMounted() {
-    if (!$root || !document.body.contains($root)) {
-      (findAnchor() || document.body).insertAdjacentElement('afterbegin', $root);
+    if (!$root) return;
+    const anchor = getContentContainer();
+    if (!anchor) return;
+    if ($root.parentElement !== anchor) {
+      anchor.insertAdjacentElement('afterbegin', $root);
     }
+  }
+
+  // следим, чтобы узел ВСЕГДА был внутри целевого контейнера
+  function ensureReanchor() {
+    if (reanchorObs) return;
+    reanchorObs = new MutationObserver(() => ensureMounted());
+    reanchorObs.observe(document.body, { childList: true, subtree: true });
   }
 
   // ───────────────────────── Like (clone & sync) ─────────────────────────
@@ -187,11 +199,9 @@
     if (!force && key === lastTrackKey) return;
     lastTrackKey = key;
 
-    // 1) обложка/тексты
     updateCover(deriveCoverURL(track));
     updateTexts(track);
 
-    // 2) кроссфейд, если есть твой helper
     try {
       Lib.ui?.updateTrackUI?.(
         { cover: '.SM_Cover', title: '.SM_Track_Name', artist: '.SM_Artist' },
@@ -200,15 +210,12 @@
       );
     } catch {}
 
-    // 3) синхронизируем лайк
     attachLikeObserver();
 
-    // 4) принудительно дергаем цвет и фон (чтобы не ждать событий)
     try { window.Library?.colorize2?.recolor?.(true); } catch {}
     try { Theme?.backgroundReplace?.(deriveCoverURL(track)); } catch {}
   }
 
-  // страховочный таймер (некоторые клики не шлют событий)
   function startWatchdog() {
     if (watchdogIv) return;
     watchdogIv = setInterval(() => {
@@ -241,7 +248,6 @@
       });
     }
 
-    // запустим сторожа и обновим разово
     startWatchdog();
     const atStart = getCurrentTrackSafe();
     if (atStart) onTrack(atStart, true);
@@ -250,8 +256,8 @@
   function ensureKeepAlive() {
     if (keepAliveObs) return;
     keepAliveObs = new MutationObserver(() => {
-      if ($root && !document.body.contains($root)) {
-        (findAnchor() || document.body).insertAdjacentElement('afterbegin', $root);
+      if ($root && !getContentContainer()?.contains($root)) {
+        (getContentContainer() || document.body).insertAdjacentElement('afterbegin', $root);
         attachLikeObserver();
       }
     });
@@ -263,12 +269,12 @@
     init() { buildOnce(); bindToTrackBusOnce(); },
     check(){ buildOnce(); attachLikeObserver(); },
 
-    setGPTTitle(text)        { buildOnce(); $gptTitle.textContent = text ?? ''; },
-    setGPTText(htmlOrText)   { buildOnce(); $gptText.innerHTML = htmlOrText ?? ''; },
+    setGPTTitle(text)          { buildOnce(); $gptTitle.textContent = text ?? ''; },
+    setGPTText(htmlOrText)     { buildOnce(); $gptText.innerHTML = htmlOrText ?? ''; },
     setGPTExtra(html, show=true){ buildOnce(); $gptExtra.innerHTML = html ?? ''; $gptExtra.hidden = !show; },
-    setGPTActions(node)      { buildOnce(); $gptActions.replaceChildren(); if (node) $gptActions.appendChild(node); },
-    showAlert(flag=true)     { buildOnce(); $alert.hidden = !flag; },
-    hideAlert()              { buildOnce(); $alert.hidden = true; }
+    setGPTActions(node)        { buildOnce(); $gptActions.replaceChildren(); if (node) $gptActions.appendChild(node); },
+    showAlert(flag=true)       { buildOnce(); $alert.hidden = !flag; },
+    hideAlert()                { buildOnce(); $alert.hidden = true; }
   };
 
   try { Theme.SpotifyScreen.init(); } catch {}

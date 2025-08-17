@@ -3,14 +3,15 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.12');
+  console.log('SPOTCOL v1.0.13');
 
   const scripts = [
     'Library.js',
     'colorize 2.js',
     // 'BetterPlayer.js',
     'Main.js',
-    'SpotifyScreen.js'
+    'SpotifyScreen.js',
+    'SpotifyInfoGPT.js'
   ];
 
   const styles = [
