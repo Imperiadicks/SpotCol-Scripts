@@ -1,3 +1,4 @@
+// === BEGIN: Library.colorize2 — FULL REWRITE (v3.2.0) ===
 (() => {
   'use strict';
 
@@ -5,13 +6,14 @@
   const Colorize2 = (Library.colorize2 = Library.colorize2 || {});
   const Util      = (Library.util     = Library.util     || {});
   Library.versions = Library.versions || {};
-  Library.versions['Library.colorize2'] = 'v3.1.0';
-  console.log('[colorize 2] load v3.1.0');
+  Library.versions['Library.colorize2'] = 'v3.2.0';
+  console.log('[colorize 2] load v3.2.0');
 
   /* ───────────────────────── color math ───────────────────────── */
   function rgb2hsl(r, g, b) {
     r /= 255; g /= 255; b /= 255;
-    const max = Math.max(r, g, b), min = Math.min(r, r, b) === undefined ? Math.min(r, g, b) : Math.min(r, g, b);
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
     const d = max - min;
     let h = 0, s = 0, l = (max + min) / 2;
     if (d !== 0) {
@@ -255,7 +257,7 @@
 /* гарантируем наш линейный градиент внутри слоя фона */
 .bg-layer .bg-gradient { background: var(--grad-main) !important; mix-blend-mode: multiply; }
 
-/* Layout background — Вариант A */
+/* Layout background — Вариант A (мягкий тёмный) */
 .CommonLayout_root__WC_W1,
 [class*="CommonLayout_root"] {
   background:
@@ -381,6 +383,42 @@
   Colorize2.ensureGradientOverlay = ensureGradientOverlay;
   Colorize2.setExtraCSS     = (css) => { ensureStyleTags(); _styleExtra.textContent = css || ''; };
 
+  // === Persistent Theme settings watcher for colorize2 ===
+  (() => {
+    let prevSig = '';
+    let inflight = false;
+
+    function getSig() {
+      const sm = window.Theme?.settingsManager;
+      const get = (k, d) => sm?.get(k)?.value ?? d;
+      const useHex = get('Тема.useCustomColor', get('useCustomColor', false));
+      const hex    = get('Тема.baseColor',      get('baseColor',      ''));
+      return `useHex=${useHex}|hex=${hex}`;
+    }
+
+    async function tick() {
+      if (inflight) return;
+      inflight = true;
+      try { await window.Theme?.settingsManager?.update?.(); } catch {}
+      finally { inflight = false; }
+
+      const sig = getSig();
+      if (sig !== prevSig) {
+        prevSig = sig;
+        try { window.Library?.colorize2?.recolor?.(true); } catch {}
+      }
+    }
+
+    // стартуем сразу и опрашиваем раз в 1.2с
+    tick();
+    window.__colorizeSettingsWatcher && clearInterval(window.__colorizeSettingsWatcher);
+    window.__colorizeSettingsWatcher = setInterval(tick, 1200);
+
+    // плюс слушаем storage (если handle меняет localStorage)
+    window.addEventListener('storage', tick);
+  })();
+
   // автостарт
   try { Colorize2.start(); } catch(e) { console.warn('[colorize 2] start failed', e); }
 })();
+// === END: Library.colorize2 — FULL REWRITE (v3.2.0) ===

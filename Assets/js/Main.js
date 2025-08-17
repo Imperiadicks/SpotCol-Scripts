@@ -1,6 +1,6 @@
-// === Main.js — core bootstrap (v1.0.4) ===
+// === Main.js — core bootstrap (v1.0.5) ===
 (() => {
-  console.log('[Main] v1.0.4');
+  console.log('[Main] v1.0.5');
 
   // 1) Инициализируем тему (класс приходит из Library.js)
   const ThemeClass = window.Theme;
@@ -49,7 +49,7 @@
   ];
 
   function cssBase() {
-    // Если укажешь глобально base, возьмём его, иначе — официальный репозиторий
+    // Можно переопределить глобально window.OpenBlockerBaseCSS
     return window.OpenBlockerBaseCSS || 'https://raw.githubusercontent.com/Open-Blocker-FYM/Open-Blocker/main/blocker-css';
   }
 
@@ -288,6 +288,75 @@
   function syncEffects(){ App.__syncEffects?.(); }
   window.syncEffects = syncEffects; // не обязателен, но удобно
 
+  // 7) === Persistent handle watcher (poll + react) ===
+  (() => {
+    // какие ключи отслеживаем
+    const EFFECT_KEYS = [
+      'Эффекты.enableBackgroundImage',
+      'Эффекты.enableAvatarZoom',
+      'Эффекты.enableFullVibe'
+    ];
+    const OB_KEYS = ([
+      'donations','concerts','userprofile','trailers','betabutton',
+      'vibeanimation','globaltabs','relevantnow','instyle','likesandhistory','neuromusic',
+      'newreleases','personalartists','personalplaylists','recommendedplaylists','smartopenplaylist',
+      'waves','charttracks','artistrecommends','barbelow','podcasts','chartalbums',
+      'continuelisten','editorialartists','editorialnewreleases','mixedblock',
+      'mixesgrid','newplaylists','nonmusiceditorialcompilation','openplaylist'
+    ]).map(m => `OpenBlocker.OB${m.charAt(0).toUpperCase()}${m.slice(1)}`);
+
+    let sigPrev = '';
+    let inflight = false;
+
+    function valOf(key, def=null) {
+      const v = sm.get(key);
+      return (v && 'value' in v) ? v.value : (typeof v !== 'undefined' ? v : def);
+    }
+
+    function makeSignature() {
+      const eff = EFFECT_KEYS.map(k => `${k}=${valOf(k)}`).join('|');
+      const ob  = OB_KEYS.map(k => `${k}=${valOf(k)}`).join('|');
+      const theme = [
+        `Тема.useCustomColor=${valOf('Тема.useCustomColor')}`,
+        `Тема.baseColor=${valOf('Тема.baseColor')}`,
+        `useCustomColor=${valOf('useCustomColor')}`,
+        `baseColor=${valOf('baseColor')}`
+      ].join('|');
+      return `${eff}#${ob}#${theme}`;
+    }
+
+    async function tick() {
+      if (inflight || !App.__settingsReady) return;
+      inflight = true;
+      try { await sm.update(); } catch {}
+      finally { inflight = false; }
+
+      const sig = makeSignature();
+      if (sig !== sigPrev) {
+        sigPrev = sig;
+        try { applyOpenBlocker(); } catch {}
+        try { App.__syncEffects?.(); } catch {}
+        try { window.Library?.colorize2?.recolor?.(true); } catch {}
+      }
+    }
+
+    // старт: как только handle готов, потом — каждые 1.2с
+    const startPoll = () => {
+      tick();
+      App.__settingsWatcher && clearInterval(App.__settingsWatcher);
+      App.__settingsWatcher = setInterval(tick, 1200);
+    };
+
+    if (App.__settingsReady) startPoll();
+    else {
+      const readyIv = setInterval(() => {
+        if (App.__settingsReady) { clearInterval(readyIv); startPoll(); }
+      }, 250);
+    }
+
+    // слушаем изменения localStorage (если handle пишет туда)
+    window.addEventListener('storage', tick);
+  })();
+
   // финал
 })();
-
