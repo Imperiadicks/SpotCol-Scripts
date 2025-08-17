@@ -3,7 +3,7 @@
   const Colorize2 = (Library.colorize2 = Library.colorize2 || {});
   const Util = (Library.util = Library.util || {});
   Library.versions = Library.versions || {};
-  Library.versions['Library.colorize2'] = 'v2.0.2';
+  Library.versions['Library.colorize2'] = 'v2.0.3';
   console.log('[colorize 2] load v2.0.1');
 
   const LOG = (...a) => console.log('[Library.colorize2]', ...a);
@@ -123,41 +123,62 @@
   /* ───────────────────────── vars builder ───────────────────────── */
   const clampL = (o) => ({ ...o, l: Math.max(20, Math.min(85, o.l)) });
 
-  function buildVars(baseHSL) {
-    const o = clampL(baseHSL);
-    const toHSL = ({h,s,l}) => `hsl(${h} ${s}% ${l}%)`;
-    const addS = (k, d) => ({...k, s: Math.max(0, Math.min(100, Math.round(k.s+d)))});
-    const addL = (k, d) => ({...k, l: Math.max(0, Math.min(100, Math.round(k.l+d)))});
+  function nudgeAccent(hsl) {
+  let { h, s, l } = hsl;
+  h = Math.round(h);
+  s = Math.round(s);
+  l = Math.round(l);
 
-    const light1 = addL(o, 22), light2 = addL(o, 16), light3 = addL(o, 10), light4 = addL(o, 6);
-    const dark1  = addL(o, -10), dark2  = addL(o, -16), dark3  = addL(o, -22), dark4 = addL(o, -28);
-    const dark5  = addL(o, -34), dark6  = addL(o, -40), dark7  = addL(o, -46);
-
-    const grad1  = addS(addL(o, -8),  8);
-    const grad2  = addS(addL(o, -24), 8);
-
-    const accent = addS(addL(o, 6), 10);
-
-    const vars = {
-      '--color-light-1': toHSL(light1),
-      '--color-light-2': toHSL(light2),
-      '--color-light-3': toHSL(light3),
-      '--color-light-4': toHSL(light4),
-
-      '--color-dark-1':  toHSL(dark1),
-      '--color-dark-2':  toHSL(dark2),
-      '--color-dark-3':  toHSL(dark3),
-      '--color-dark-4':  toHSL(dark4),
-      '--color-dark-5':  toHSL(dark5),
-      '--color-dark-6':  toHSL(dark6),
-      '--color-dark-7':  toHSL(dark7),
-
-      '--color-accent':  toHSL(accent),
-
-      '--grad-main': `linear-gradient(180deg, ${toHSL(grad1)} 0%, ${toHSL(grad2)} 76%)`,
-    };
-    return vars;
+  // Если почти серый/чёрно-белый — слегка подкрашиваем и нуджим яркость
+  if (s < 12) {
+    s = 16; // лёгкая насыщенность, чтобы не было "грязной" серости
+    l = l >= 55 ? l - 4 : l + 4; // «пару процентов»: затемнить светлое / подсветлить тёмное
+  } else {
+    // Для слишком ярких/тёмных — мягкий предел
+    if (l > 92) l = 88;
+    if (l < 8)  l = 12;
   }
+  return { h, s, l };
+}
+
+  function buildVars(baseHSL) {
+  const clampL = (o) => ({ ...o, l: Math.max(20, Math.min(85, o.l)) });
+  const o = clampL(baseHSL);
+
+  const toHSL = ({h,s,l}) => `hsl(${h} ${s}% ${l}%)`;
+  const addS = (k, d) => ({...k, s: Math.max(0, Math.min(100, Math.round(k.s+d)))});
+  const addL = (k, d) => ({...k, l: Math.max(0, Math.min(100, Math.round(k.l+d)))});
+
+  const light1 = addL(o, 22), light2 = addL(o, 16), light3 = addL(o, 10), light4 = addL(o, 6);
+  const dark1  = addL(o, -10), dark2  = addL(o, -16), dark3  = addL(o, -22), dark4 = addL(o, -28);
+  const dark5  = addL(o, -34), dark6  = addL(o, -40), dark7  = addL(o, -46);
+
+  const grad1  = addS(addL(o, -8),  8);
+  const grad2  = addS(addL(o, -24), 8);
+
+  // accent с корректировкой для ч/б кадров: лёгкая подсветка/затемнение
+  const accentBase = addS(addL(o, 6), 10);
+  const accent     = nudgeAccent(accentBase);
+
+  return {
+    '--color-light-1': toHSL(light1),
+    '--color-light-2': toHSL(light2),
+    '--color-light-3': toHSL(light3),
+    '--color-light-4': toHSL(light4),
+
+    '--color-dark-1':  toHSL(dark1),
+    '--color-dark-2':  toHSL(dark2),
+    '--color-dark-3':  toHSL(dark3),
+    '--color-dark-4':  toHSL(dark4),
+    '--color-dark-5':  toHSL(dark5),
+    '--color-dark-6':  toHSL(dark6),
+    '--color-dark-7':  toHSL(dark7),
+
+    '--color-accent':  toHSL(accent),
+
+    '--grad-main': `linear-gradient(180deg, ${toHSL(grad1)} 0%, ${toHSL(grad2)} 76%)`,
+  };
+}
 
   /* ───────────────────────── YM variable map + extra CSS (integrated) ──── */
   const YM_MAP_RAW = `
