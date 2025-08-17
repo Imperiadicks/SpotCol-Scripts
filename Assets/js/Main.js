@@ -16,67 +16,41 @@
       if (id) link.dataset.id = id;
       document.head.appendChild(link);
     };
-    ensure({ rel: 'preconnect', href: 'https://fonts.googleapis.com', id: 'gfonts-preconnect-1' });
-    ensure({ rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous', id: 'gfonts-preconnect-2' });
-    ensure({ rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap', id: 'gfonts-noto-sans' });
+    ensure({ rel:'preconnect', href:'https://fonts.googleapis.com' });
+    ensure({ rel:'preconnect', href:'https://fonts.gstatic.com', crossOrigin:'anonymous' });
+    ensure({ rel:'stylesheet', href:'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap', id:'noto-sans' });
   })();
 
-  // 3) Отключаем двойной клик в нижней панели плеера (без setInterval)
-  (function disableDoubleClick() {
-    const handler = (evt) => {
-      const bar = evt.target.closest?.('.PlayerBar_root__cXUnU, .PlayerBarDesktop_root__d2Hwi');
-      if (bar) {
-        evt.preventDefault();
-        evt.stopPropagation();
-      }
-    };
-    // в «захвате», чтобы гарантированно перехватить
-    document.addEventListener('dblclick', handler, true);
-  })();
+  // 3) Вставляем глобальные CSS (аккуратно, через stylesManager темы)
+  App.stylesManager.add('global-ui-reset', `
+    :root, html, body { font-family: "Noto Sans", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol"; }
+    .Spotify_Screen .SM_Title_Line { line-height: 1.2; }
+  `);
 
-  // 4) Двигаем «Плейлист Мне нравится» в закреплённых — наверх
-  (function pinLikedPlaylistToTop() {
-    const obs = new MutationObserver(() => {
-      const pin = document.querySelector('.PinItem_root__WSoCn > a[aria-label="Плейлист Мне нравится"]');
-      if (!pin) return;
-      const parent = pin.closest('.PinItem_root__WSoCn');
-      if (parent && parent.parentNode.firstChild !== parent) {
-        parent.parentNode.insertBefore(parent, parent.parentNode.firstChild);
-      }
-    });
-    obs.observe(document.body, { childList: true, subtree: true });
-  })();
-
-  // 5) Адаптер чтения настроек из SettingsManager (поддержка и "секция.ключ", и "ключ")
+  // 4) Инициализация SettingsManager для темы (и дефолты)
   const sm = App.settingsManager;
-  const readSetting = (keys, def) => {
-    const arr = Array.isArray(keys) ? keys : [keys];
-    for (const k of arr) {
-      // пытаемся получить как есть
-      let v = sm.get?.(k);
-      // если не нашли — пробуем «секция.ключ» → «ключ»
-      if (v === undefined && k.includes('.')) v = sm.get?.(k.split('.').pop());
-      if (v === undefined) continue;
-      if (v && typeof v === 'object') {
-        if ('value' in v) return v.value;
-        if ('text' in v) return v.text;
-      }
-      return v;
-    }
-    return def;
-  };
+  sm.defaults({
+    // Тема / базовый цвет (опционально может переопределяться handle'ом)
+    'Тема.useCustomColor': { value:false },
+    'Тема.baseColor':      { value:'#7da6ff' },
 
-  // 6) Стили по тумблерам пользователя (один <style>, всё внутри)
-  const styleId = 'sc-user-style';
-  function ensureStyleTag() {
-    let tag = document.getElementById(styleId);
-    if (!tag) {
-      tag = document.createElement('style');
-      tag.id = styleId;
-      document.head.appendChild(tag);
-    }
-    return tag;
-  }
+    // Эффекты
+    'Эффекты.enableBackgroundImage': { value:true },
+    'Эффекты.enableAvatarZoom':      { value:true },
+    'Эффекты.enableFullVibe':        { value:true }
+  });
+
+  // 5) Автозагрузка актуальных настроек из локального handle (если доступен)
+  (async () => {
+    try { await sm.update(); } catch {}
+  })();
+
+  // 6) Небольшие утилиты UI
+  App.stylesManager.add('spotify-screen-basics', `
+    .Spotify_Screen{ --sm-accent: rgba(255,255,255,.85); }
+    .Spotify_Screen .SM_Background,
+    .Spotify_Screen .SM_Cover{ transition: opacity .45s ease; }
+  `);
 
   // 7) Open-Blocker: подкачка CSS с GitHub при выключенных блоках
   const openBlockerCache = new Map(); // module -> true/false (injected)
@@ -92,134 +66,151 @@
   async function applyOpenBlocker() {
     for (const module of OB_MODULES) {
       const keyId = `OB${module.charAt(0).toUpperCase()}${module.slice(1)}`; // как у тебя было
-      const val = !!readSetting([`Open-Blocker.${keyId}`, keyId], true);
-      const styleId = `openblocker-${module}`;
-      const existing = document.getElementById(styleId);
+      const isEnabled = sm.get(`OpenBlocker.${keyId}`)?.value ?? false;
+      if (!isEnabled) continue;
+      if (openBlockerCache.get(module)) continue;
+      openBlockerCache.set(module, true);
 
-      // Логика как в старом коде:
-      // - true  → блок ВКЛЮЧЕН (ничего не загружаем, уверены что видим нативный блок)
-      // - false → подгружаем CSS, чтобы ЗАБЛОКИРОВАТЬ элемент
-      if (val === true) {
-        if (existing) existing.remove();
-        openBlockerCache.set(module, false);
-      } else {
-        if (!existing && openBlockerCache.get(module) !== true) {
-          try {
-            const res = await fetch(`https://raw.githubusercontent.com/Open-Blocker-FYM/Open-Blocker/refs/heads/main/blocker-css/${module}.css`, { cache: 'no-store' });
-            const css = await res.text();
-            const st = document.createElement('style');
-            st.id = styleId;
-            st.textContent = css;
-            document.head.appendChild(st);
-            openBlockerCache.set(module, true);
-          } catch (e) {
-            console.error('[Main][Open-Blocker] load error:', module, e);
-          }
-        }
+      // подкачиваем css с GitHub, где у тебя лежат стили этих блоков
+      const link = document.createElement('link');
+      link.rel  = 'stylesheet';
+      link.href = `https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/css/open-blocker/${module}.css`;
+      link.dataset.id = `ob:${module}`;
+      document.head.appendChild(link);
+    }
+  }
+  // следим за обновлениями настроек и применяем OpenBlocker
+  sm.on('update', applyOpenBlocker);
+  applyOpenBlocker();
+
+  // === Moved from colorize 2.js: Background/Vibe utilities ===
+  (function integrateBackgroundTools(App){
+    App.__lastBgUrl = App.__lastBgUrl || null;
+
+function backgroundReplace(imageURL) {
+    const target = document.querySelector('[class*="MainPage_vibe"]');
+    if (!target || !imageURL || imageURL === App.__lastBgUrl) return;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      App.__lastBgUrl = imageURL;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'bg-layer';
+      Object.assign(wrapper.style, {
+        position: 'absolute', inset: '0', zIndex: 0, pointerEvents: 'none'
+      });
+
+      const imageLayer = document.createElement('div');
+      imageLayer.className = 'bg-cover';
+      Object.assign(imageLayer.style, {
+        position: 'absolute', inset: '0',
+        backgroundImage: `url("${imageURL}")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        opacity: '0', transition: 'opacity 1s ease', pointerEvents: 'none'
+      });
+
+      const gradient = document.createElement('div');
+      gradient.className = 'bg-gradient';
+      Object.assign(gradient.style, {
+        position: 'absolute', inset: '0',
+        background: 'var(--grad-main)',
+        mixBlendMode: 'multiply',
+        opacity: '0', transition: 'opacity 1.2s ease', pointerEvents: 'none'
+      });
+
+      const vibe = target;
+      const old = vibe.querySelector('.bg-layer');
+      if (old) {
+        old.style.opacity = '0';
+        setTimeout(() => old.remove(), 1000);
       }
+
+      wrapper.appendChild(imageLayer);
+      wrapper.appendChild(gradient);
+      wrapper.style.opacity = '0';
+      vibe.style.position = 'relative';
+      vibe.insertAdjacentElement('afterbegin', wrapper);
+
+      requestAnimationFrame(() => {
+        wrapper.style.transition = 'opacity 1s ease';
+        wrapper.style.opacity = '1';
+        imageLayer.style.opacity = '1';
+        gradient.style.opacity = '1';
+      });
+    };
+    img.src = imageURL;
+  }
+
+  function removeBackgroundImage() {
+    const target = document.querySelector('[class*="MainPage_vibe"]');
+    const old = target?.querySelector('.bg-layer');
+    if (old) {
+      old.style.opacity = '0';
+      setTimeout(() => old.remove(), 500);
     }
   }
 
-  // 8) UI-твики из секции «Действия» и «Особое»
-  let _lastBgURL = '';
-  function applyUiTweaks() {
-    const st = ensureStyleTag();
-
-    // Смена фонового изображения (если у тебя есть глобальная setNewBackground)
-    const bgURL = readSetting(['Действия.myBackgroundButton', 'myBackgroundButton'], '');
-    if (bgURL && bgURL !== _lastBgURL) {
-      _lastBgURL = bgURL;
-      try { window.setNewBackground?.(bgURL); } catch (e) { console.warn('[Main] setNewBackground failed', e); }
-    }
-
-    // Прозрачности/границы (togglePlayerBackground)
-    const toggleBg = !!readSetting(['Действия.togglePlayerBackground', 'togglePlayerBackground'], false);
-
-    // Увеличенная Vibe-зона (Newbuttona)
-    const vibeTall = !!readSetting(['Действия.Newbuttona', 'Newbuttona'], false);
-
-    // Включить пункт меню (NewbuttonHide) — по старой логике наоборот: если false — скрыть
-    const showMenuItem = !!readSetting(['Действия.NewbuttonHide', 'NewbuttonHide'], true);
-
-    // Автоплей при старте
-    const autoPlay = !!readSetting(['Действия.devAutoPlayOnStart', 'devAutoPlayOnStart'], false);
-    if (autoPlay && !window.__scAutoPlayed) {
-      window.__scAutoPlayed = true;
-      document.querySelector(`section.PlayerBar_root__cXUnU * [data-test-id="PLAY_BUTTON"]`)?.click();
-    }
-
-    st.textContent = `
-      /* Прозрачности/фоны */
-      .PlayerBarDesktop_root__d2Hwi { background: ${toggleBg ? 'transparent' : ''} !important; }
-      .Content_main__8_wIa { background: ${toggleBg ? 'transparent' : ''} !important; }
-      .Spotify_Screen,
-      .All_Info_Container,
-      .Artist_Info_Container,
-      .GPT_Info_Container { background: ${toggleBg ? 'transparent' : ''} !important; }
-      .LikesAndHistoryItem_root__oI1gk,
-      .MixCard_root__9tPLV,
-      .NewReleaseCard_root__IY5m_,
-      .VibeButton_button__tXFAm,
-      .NeuromusicButton_button__kT4GN {
-        ${toggleBg ? 'background: transparent !important; border: 0 !important;' : ''}
-      }
-      .nHWc2sto1C6Gm0Dpw_l0 { backdrop-filter: ${toggleBg ? 'blur(0px)' : ''} !important; }
-      .VibeContext_context__Z_82k { backdrop-filter: ${toggleBg ? 'blur(0px)' : 'blur(5px)'} !important; }
-
-      /* Высота Vibe */
-      .MainPage_vibe__XEBbh { height: ${vibeTall ? '89vh' : '57vh'} !important; }
-
-      /* Пункты меню (селекторы как в старом коде) */
-      body > div.WithTopBanner_root__P__x3 > div > div > aside > div > div.NavbarDesktop_scrollableContainer__HLc9D > div > nav > ol > li:nth-child(3) > a > div.zpkgiiHgDpbBThy6gavq {
-        visibility: ${showMenuItem ? 'visible' : 'hidden'} !important;
-      }
-      body > div.WithTopBanner_root__P__x3 > div > div > aside > div > div.NavbarDesktop_scrollableContainer__HLc9D > div > nav > ol > li:nth-child(4) > a > div.zpkgiiHgDpbBThy6gavq {
-        left: ${showMenuItem ? '175px' : '125px'} !important;
-      }
-    `;
+  function onAvatarMove(e) {
+    const avatar = e.currentTarget;
+    const rect = avatar.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = (e.clientX - cx) / (rect.width / 2);
+    const dy = (e.clientY - cy) / (rect.height / 2);
+    avatar.style.transform = `scale(1.05) translate(${dx * 6}px, ${dy * 6}px)`;
+    avatar.style.filter = 'drop-shadow(0 10px 25px rgba(0,0,0,.5))';
   }
 
-  // 9) Применение настроек при каждом апдейте SettingsManager
-  sm.on('update', async () => {
-    try {
-      await applyOpenBlocker();
-      applyUiTweaks();
+  function onAvatarLeave(e) {
+    const avatar = e.currentTarget;
+    avatar.style.transform = 'scale(1) translate(0,0)';
+    avatar.style.filter = 'drop-shadow(0 6px 20px rgba(0,0,0,.35))';
+  }
 
-      // Динамическая частота опроса настроек (Особое.setInterval)
-      const msText = readSetting(['Особое.setInterval', 'setInterval'], { text: '1000' })?.text || readSetting('Особое.setInterval.text', '1000') || '1000';
-      const ms = Math.max(300, parseInt(msText, 10) || 1000);
+  function setupAvatarZoomEffect() {
+    const avatar = document.querySelector('[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img');
+    if (!avatar || avatar.classList.contains('avatar-zoom-initialized')) return;
+    Object.assign(avatar.style, {
+      transition: 'transform .25s ease, filter .25s ease',
+      willChange: 'transform',
+      filter: 'drop-shadow(0 6px 20px rgba(0,0,0,.35))'
+    });
+    avatar.addEventListener('mousemove', onAvatarMove);
+    avatar.addEventListener('mouseleave', onAvatarLeave);
+    avatar.classList.add('avatar-zoom-initialized');
+  }
 
-      if (App.__pollMs !== ms) {
-        App.__pollMs = ms;
-        App.stop();
-        App.start(ms);
-        console.log('[Main] settings poll interval =', ms, 'ms');
-      }
-    } catch (e) {
-      console.error('[Main] apply settings failed:', e);
-    }
-  });
+  function removeAvatarZoomEffect() {
+    const avatar = document.querySelector('[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img');
+    if (!avatar) return;
+    avatar.removeEventListener('mousemove', onAvatarMove);
+    avatar.removeEventListener('mouseleave', onAvatarLeave);
+    avatar.classList.remove('avatar-zoom-initialized');
+  }
 
-  // 10) Первый запуск: один апдейт и старт цикла
-  (async () => {
-    try {
-      await App.update();
-    } catch (e) {
-      console.warn('[Main] initial update failed', e);
-    }
-    const initialMs = Math.max(300, parseInt(readSetting(['Особое.setInterval.text', 'setInterval.text'], '1000'), 10) || 1000);
-    App.__pollMs = initialMs;
-    App.start(initialMs);
-  })();
+  /* ───────────────────────── FullVibe height ───────────────────────── */
+  function FullVibe() {
+    const vibe = document.querySelector('[class*="MainPage_vibe"]');
+    if (vibe) vibe.style.setProperty('height', '88.35vh', 'important');
+  }
+  function RemoveFullVibe() {
+    const vibe = document.querySelector('[class*="MainPage_vibe"]');
+    if (vibe) vibe.style.setProperty('height', '0', 'important');
+  }
 
-  // 11) SpotifyScreen пересоздастся при смене адреса САМ (Theme это уже делает),
-  //    но на всякий случай синхронизируем при возвращении на вкладку.
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      try { App.SpotifyScreen?.check?.(); } catch {}
-    }
-  });
+    // expose API
+    App.backgroundReplace = backgroundReplace;
+    App.removeBackgroundImage = removeBackgroundImage;
+    App.setupAvatarZoomEffect = setupAvatarZoomEffect;
+    App.removeAvatarZoomEffect = removeAvatarZoomEffect;
+    App.FullVibe = FullVibe;
+    App.RemoveFullVibe = RemoveFullVibe;
+  })(App);
+  // === End moved block ===
 
-  // 12) Включаем расширенный цветокор (новый модуль) — он уже авто-стартует, но пусть будет вызов
-  try { window.Library?.colorize2?.start?.(); } catch {}
+  // финал: можно разместить любые хелперы, завязанные на App
 })();
