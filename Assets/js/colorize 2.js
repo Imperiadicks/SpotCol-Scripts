@@ -3,7 +3,7 @@
   const Colorize2 = (Library.colorize2 = Library.colorize2 || {});
   const Util = (Library.util = Library.util || {});
   Library.versions = Library.versions || {};
-  Library.versions['Library.colorize2'] = 'v2.0.1';
+  Library.versions['Library.colorize2'] = 'v2.0.2';
   console.log('[colorize 2] load v2.0.1');
 
   const LOG = (...a) => console.log('[Library.colorize2]', ...a);
@@ -236,11 +236,6 @@
   opacity: .65;
   z-index: 0;
 }
-.MainPage_releasedAlbums__4I9_j,
-.Person_root__X9jhu,
-.NewReleasesPage_root__jZk4L,
-.ArtistPage_tracksGridWrap__5bzuE,
-.CommonLayout_content__zy_Ja > * { position: relative; z-index: 1; }
 `;
 
   /* ───────────────────────── style tags + apply ───────────────────────── */
