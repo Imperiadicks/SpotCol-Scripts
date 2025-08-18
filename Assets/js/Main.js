@@ -1,6 +1,6 @@
-// === Main.js — rebooted core (v2.0.0) ===
+// === Main.js — rebooted core (v2.0.1) ===
 (() => {
-  console.log('[Main] v2.0.0');
+  console.log('[Main] v2.0.1');
 
   // ── 1. Bootstrap Theme instance
   const ThemeClass = window.Theme;
@@ -85,15 +85,29 @@
   function removeOB(mod) {
     document.querySelector(`link[data-id="ob:${mod}"]`)?.remove();
   }
+
+  // ← ключевой фикс: поддерживаем легаси-ключ "NewbuttonHide" для подкастов
+  function readOBEnabled(module) {
+    // обычные варианты: OpenBlocker/ Open-Blocker / просто ключ (OBxxxx)
+    const key = obKey(module);
+    let v =
+      readSM(`OpenBlocker.${key}`) ??
+      readSM(`Open-Blocker.${key}`) ??
+      readSM(key);
+
+    // legacy: id "NewbuttonHide" = «Подкасты: убрать». True → включаем скрывающий CSS podcasts.
+    if ((v === undefined || v === null) && module === 'podcasts') {
+      v = readSM(['Open-Blocker.NewbuttonHide', 'OpenBlocker.NewbuttonHide', 'NewbuttonHide']);
+    }
+    return !!v;
+  }
+
   function applyOpenBlocker() {
     for (const mod of OB_MODULES) {
-      const en =
-        !!(readSM(`OpenBlocker.${obKey(mod)}`) ??
-           readSM(`Open-Blocker.${obKey(mod)}`) ??
-           readSM(obKey(mod)));
+      const enabled = readOBEnabled(mod);
       const prev = obCache.get(mod) ?? false;
-      if (en && !prev) { injectOB(mod); obCache.set(mod, true); }
-      else if (!en && prev) { removeOB(mod); obCache.set(mod, false); }
+      if (enabled && !prev) { injectOB(mod); obCache.set(mod, true); }
+      else if (!enabled && prev) { removeOB(mod); obCache.set(mod, false); }
     }
   }
 
@@ -127,7 +141,7 @@
       Object.assign(layer.style, {
         position:'absolute', inset:'0',
         pointerEvents:'none',
-        zIndex: '-1',           // ниже контента — ничего не «ломаем»
+        zIndex: '-1',
         opacity:'0', transition:'opacity .9s ease'
       });
 
@@ -201,7 +215,7 @@
     function removeZoom() {
       const img = document.querySelector('[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img');
       if (!img || !img.dataset.zoomReady) return;
-      img.replaceWith(img.cloneNode(true)); // быстрее всего скинуть листенеры
+      img.replaceWith(img.cloneNode(true));
     }
 
     // FullVibe
@@ -257,7 +271,7 @@
 
   // ── экспорт, чтобы SpotifyScreen мог дёргать
   App.backgroundReplace     = (url) => Effects.onTrack(url || getCover());
-  App.removeBackgroundImage = ()    => { /* оставлено для совместимости, делает nothing */ };
+  App.removeBackgroundImage = ()    => { /* compat */ };
   App.FullVibe              = ()    => Effects.sync();
   App.RemoveFullVibe        = ()    => Effects.sync();
   App.setupAvatarZoomEffect = ()    => Effects.sync();
@@ -279,7 +293,7 @@
     tp?.on?.('trackChange', ({state}) => onChange(state?.track));
     tp?.on?.('openPlayer',  ({state}) => onChange(state?.track));
     tp?.on?.('pageChange',  ()        => onChange());
-    setInterval(onChange, 1500); // страховка
+    setInterval(onChange, 1500);
   })();
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -295,6 +309,8 @@
       `OpenBlocker.OB${m.charAt(0).toUpperCase()}${m.slice(1)}`,
       `Open-Blocker.OB${m.charAt(0).toUpperCase()}${m.slice(1)}`
     ]).flat();
+    // ← добавили легаси ключи подкастов
+    const LEGACY_PODCAST_KEYS = ['Open-Blocker.NewbuttonHide', 'OpenBlocker.NewbuttonHide', 'NewbuttonHide'];
 
     let prev = '';
     let inflight = false;
@@ -302,7 +318,8 @@
     const signature = () => {
       const eff = EFFECT_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
       const ob  = OB_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
-      return eff + '#' + ob;
+      const lg  = LEGACY_PODCAST_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
+      return eff + '#' + ob + '#' + lg;
     };
 
     async function tick() {
