@@ -1,60 +1,62 @@
-// === Main.js — core bootstrap (v1.1.0) ===
+// === Main.js — rebooted core (v2.0.0) ===
 (() => {
-  console.log('[Main] v1.1.0');
+  console.log('[Main] v2.0.0');
 
-  // 1) Инициализация Theme (класс приходит из Library.js)
+  // ── 1. Bootstrap Theme instance
   const ThemeClass = window.Theme;
   if (typeof ThemeClass !== 'function') {
     console.error('[Main] Theme class not found on window.Theme');
     return;
   }
   const App = new ThemeClass('SpotColЛичная');
-  window.Theme = App; // публикуем ИНСТАНС
+  window.Theme = App;
 
-  // 2) Настройки (дефолты согласованы с handle)
   const sm = App.settingsManager;
+
+  // ── 2. Defaults (минимум)
   sm.defaults({
     'Тема.useCustomColor': { value:false },
     'Тема.baseColor':      { value:'#7da6ff' },
 
-    // Эффекты
     'Эффекты.enableBackgroundImage': { value:true  },
     'Эффекты.enableAvatarZoom':      { value:true  },
     'Эффекты.enableFullVibe':        { value:false }
   });
 
-  // флаг — пока настройки не подтянуты, ничего не «насильно» не вставляем
   App.__settingsReady = false;
 
-  // 3) Подтягиваем handle (первый раз) и сразу синхронизируем всё
+  // ── 3. First load from handle, then sync everything
   (async () => {
     try { await sm.update(); } catch {}
     finally {
       App.__settingsReady = true;
       try { window.Library?.colorize2?.recolor?.(true); } catch {}
       applyOpenBlocker();
-      syncEffects();
+      Effects.sync();
     }
   })();
 
-  // ───────────────────────── helpers для чтения настроек ─────────────────────────
-  function readSetting(paths, def = null) {
-    const tryKeys = Array.isArray(paths) ? paths : [paths];
-    for (const k of tryKeys) {
+  // ────────────────────────────────────────────────────────────────────────────
+  // Helpers
+  const readSM = (keys, def=null) => {
+    const list = Array.isArray(keys) ? keys : [keys];
+    for (const k of list) {
       let v = sm.get?.(k);
       if (v === undefined && k.includes('.')) v = sm.get?.(k.split('.').pop());
       if (v === undefined) continue;
-      if (v && typeof v === 'object') {
-        if ('value' in v) return v.value;
-        if ('text'  in v) return v.text;
-      }
+      if (v && typeof v === 'object' && 'value' in v) return v.value;
       return v;
     }
     return def;
-  }
+  };
 
-  // ───────────────────────── Open-Blocker ─────────────────────────
-  const openBlockerCache = new Map(); // module -> injected?
+  const getCover = () =>
+    window.Library?.getHiResCover?.() ||
+    window.Library?.coverURL?.()     ||
+    '';
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // 4) Open-Blocker (Git-only)
   const OB_MODULES = [
     'donations','concerts','userprofile','trailers','betabutton',
     'vibeanimation','globaltabs','relevantnow','instyle','likesandhistory','neuromusic',
@@ -63,274 +65,245 @@
     'continuelisten','editorialartists','editorialnewreleases','mixedblock',
     'mixesgrid','newplaylists','nonmusiceditorialcompilation','openplaylist'
   ];
+  const OB_REMOTE = () =>
+    window.OpenBlockerBaseCSSRemote ||
+    'https://raw.githubusercontent.com/Open-Blocker-FYM/Open-Blocker/main/blocker-css';
+  const obCache = new Map();
+  const obKey   = (m) => `OB${m.charAt(0).toUpperCase()}${m.slice(1)}`;
 
-  function cssBase() {
-    // Можно переопределить глобально window.OpenBlockerBaseCSS
-    return window.OpenBlockerBaseCSS || 'https://raw.githubusercontent.com/Open-Blocker-FYM/Open-Blocker/main/blocker-css';
+  function injectOB(mod) {
+    const id = `ob:${mod}`;
+    if (document.querySelector(`link[data-id="${id}"]`)) return;
+    const link = document.createElement('link');
+    link.rel  = 'stylesheet';
+    link.href = `${OB_REMOTE()}/${mod}.css`;
+    link.dataset.id = id;
+    link.crossOrigin   = 'anonymous';
+    link.referrerPolicy = 'no-referrer';
+    document.head.appendChild(link);
   }
-
+  function removeOB(mod) {
+    document.querySelector(`link[data-id="ob:${mod}"]`)?.remove();
+  }
   function applyOpenBlocker() {
-    for (const module of OB_MODULES) {
-      const keyId = `OB${module.charAt(0).toUpperCase()}${module.slice(1)}`;
-      // поддерживаем обе нотации в handle: "OpenBlocker" и "Open-Blocker"
-      const val = !!readSetting([`OpenBlocker.${keyId}`, `Open-Blocker.${keyId}`, keyId], false);
-      const id = `ob:${module}`;
-      const already = document.querySelector(`link[data-id="${id}"]`);
-
-      if (val && !already) {
-        // включена блокировка — подгружаем CSS
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = `${cssBase()}/${module}.css`;
-        link.dataset.id = id;
-        document.head.appendChild(link);
-        openBlockerCache.set(module, true);
-      } else if (!val && already) {
-        // выключено — удаляем CSS если был
-        already.remove();
-        openBlockerCache.delete(module);
-      }
+    for (const mod of OB_MODULES) {
+      const en =
+        !!(readSM(`OpenBlocker.${obKey(mod)}`) ??
+           readSM(`Open-Blocker.${obKey(mod)}`) ??
+           readSM(obKey(mod)));
+      const prev = obCache.get(mod) ?? false;
+      if (en && !prev) { injectOB(mod); obCache.set(mod, true); }
+      else if (!en && prev) { removeOB(mod); obCache.set(mod, false); }
     }
   }
-  sm.on('update', () => { applyOpenBlocker(); syncEffects(); });
 
-  // ───────────────────────── Background / Zoom / FullVibe ─────────────────────────
-  ;(function integrateBackgroundTools(App){
-    App.__lastBgUrl    = App.__lastBgUrl    || null;
-    App.__bgRetryTimer = App.__bgRetryTimer || null;
-    App.__vibeObserver = App.__vibeObserver || null;
-    App.__vibeGuard    = App.__vibeGuard    || null;
+  // ────────────────────────────────────────────────────────────────────────────
+  // 5) Background / FullVibe / Zoom — аккуратно и локально
+  const Effects = (() => {
+    let lastURL = '';
+    let guardIv = null;
+    let domObs  = null;
 
-    const findVibe = () => document.querySelector('[class*="MainPage_vibe"]');
-
-    function getBool(paths, def=false) { return !!readSetting(paths, def); }
-    const bgEnabled       = () => getBool(['Эффекты.enableBackgroundImage','enableBackgroundImage'], false);
-    const fullVibeEnabled = () => getBool(['Эффекты.enableFullVibe','FullVibe'], false);
-    const zoomEnabled     = () => getBool(['Эффекты.enableAvatarZoom','enableAvatarZoom'], true);
-
-    function currentCover() {
-      return window.Library?.getHiResCover?.()
-          || window.Library?.coverURL?.()
-          || App.__lastBgUrl
-          || '';
-    }
-
-    function ensureVibeThen(imageURL, retries = 24) {
-      if (!App.__settingsReady || !bgEnabled()) return;
-      const target = findVibe();
-      if (!target) {
-        clearTimeout(App.__bgRetryTimer);
-        if (retries > 0) App.__bgRetryTimer = setTimeout(() => ensureVibeThen(imageURL, retries - 1), 300);
-        return;
+    const VIBE_SELECTORS = [
+      '[class*="MainPage_vibe"]',
+      '[class*="VibeBlock_wrap"]',
+      'main section:has([class*="vibe"])'
+    ];
+    const findVibe = () => {
+      for (const s of VIBE_SELECTORS) {
+        const n = document.querySelector(s);
+        if (n) return n;
       }
-      const hasLayer = !!target.querySelector('.bg-layer');
-      if (imageURL === App.__lastBgUrl && hasLayer) return;
-      applyBackground(target, imageURL);
-    }
+      return null;
+    };
 
-    function applyBackground(target, imageURL) {
-      if (!App.__settingsReady || !bgEnabled()) return;
-      if (!target || !imageURL) return;
+    const bgEnabled   = () => !!readSM(['Эффекты.enableBackgroundImage','enableBackgroundImage'], true);
+    const fullVEnabled= () => !!readSM(['Эффекты.enableFullVibe','FullVibe'], false);
+    const zoomEnabled = () => !!readSM(['Эффекты.enableAvatarZoom','enableAvatarZoom'], true);
 
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        App.__lastBgUrl = imageURL;
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'bg-layer';
-        Object.assign(wrapper.style, {
-          position:'absolute', inset:'0', zIndex:0, pointerEvents:'none',
-          opacity:'0', transition:'opacity 1s ease'
-        });
-
-        const imageLayer = document.createElement('div');
-        imageLayer.className = 'bg-cover';
-        Object.assign(imageLayer.style, {
-          position:'absolute', inset:'0',
-          backgroundImage:`url("${imageURL}")`,
-          backgroundSize:'cover', backgroundPosition:'center', backgroundRepeat:'no-repeat',
-          opacity:'0', transition:'opacity 1s ease', pointerEvents:'none'
-        });
-
-        const gradient = document.createElement('div');
-        gradient.className = 'bg-gradient';
-        Object.assign(gradient.style, {
-          position:'absolute', inset:'0',
-          background:'var(--grad-main)', // линейный градиент оставляем
-          mixBlendMode:'multiply',
-          opacity:'0', transition:'opacity 1.2s ease', pointerEvents:'none'
-        });
-
-        const old = target.querySelector('.bg-layer');
-        if (old) { old.style.opacity = '0'; setTimeout(() => old.remove(), 900); }
-
-        wrapper.appendChild(imageLayer);
-        wrapper.appendChild(gradient);
-
-        target.style.position ||= 'relative';
-        target.insertAdjacentElement('afterbegin', wrapper);
-
-        requestAnimationFrame(() => {
-          wrapper.style.opacity = '1';
-          imageLayer.style.opacity = '1';
-          gradient.style.opacity = '1';
-        });
-      };
-      img.src = imageURL;
-    }
-
-    function backgroundReplace(imageURL) {
-      if (!App.__settingsReady || !bgEnabled()) return;
-      ensureVibeThen(imageURL);
-    }
-
-    function removeBackgroundImage() {
-      const target = findVibe();
-      const old = target?.querySelector('.bg-layer');
-      if (old) { old.style.opacity = '0'; setTimeout(() => old.remove(), 500); }
-    }
-
-    // Avatar Zoom
-    function onAvatarMove(e) {
-      const avatar = e.currentTarget;
-      const rect = avatar.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-      const dx = (e.clientX - cx) / (rect.width / 2);
-      const dy = (e.clientY - cy) / (rect.height / 2);
-      avatar.style.transform = `scale(1.05) translate(${dx * 6}px, ${dy * 6}px)`;
-      avatar.style.filter = 'drop-shadow(0 10px 25px rgba(0,0,0,.5))';
-    }
-    function onAvatarLeave(e) {
-      const avatar = e.currentTarget;
-      avatar.style.transform = 'scale(1) translate(0,0)';
-      avatar.style.filter = 'drop-shadow(0 6px 20px rgba(0,0,0,.35))';
-    }
-    function setupAvatarZoomEffect() {
-      const avatar = document.querySelector('[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img');
-      if (!avatar || avatar.classList.contains('avatar-zoom-initialized')) return;
-      Object.assign(avatar.style, {
-        transition:'transform .25s ease, filter .25s ease',
-        willChange:'transform',
-        filter:'drop-shadow(0 6px 20px rgba(0,0,0,.35))'
+    function makeLayer(url) {
+      const layer = document.createElement('div');
+      layer.className = 'bg-layer';
+      Object.assign(layer.style, {
+        position:'absolute', inset:'0',
+        pointerEvents:'none',
+        zIndex: '-1',           // ниже контента — ничего не «ломаем»
+        opacity:'0', transition:'opacity .9s ease'
       });
-      avatar.addEventListener('mousemove', onAvatarMove);
-      avatar.addEventListener('mouseleave', onAvatarLeave);
-      avatar.classList.add('avatar-zoom-initialized');
+
+      const img = document.createElement('div');
+      img.className = 'bg-cover';
+      Object.assign(img.style, {
+        position:'absolute', inset:'0',
+        backgroundImage:`url("${url}")`,
+        backgroundSize:'cover', backgroundPosition:'center', backgroundRepeat:'no-repeat',
+        opacity:'1', pointerEvents:'none'
+      });
+
+      const grad = document.createElement('div');
+      grad.className = 'bg-gradient';
+      Object.assign(grad.style, {
+        position:'absolute', inset:'0',
+        background:'var(--grad-main)',
+        mixBlendMode:'multiply',
+        opacity:'1', pointerEvents:'none'
+      });
+
+      layer.dataset.src = url;
+      layer.appendChild(img);
+      layer.appendChild(grad);
+      return layer;
     }
-    function removeAvatarZoomEffect() {
-      const avatar = document.querySelector('[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img');
-      if (!avatar) return;
-      avatar.removeEventListener('mousemove', onAvatarMove);
-      avatar.removeEventListener('mouseleave', onAvatarLeave);
-      avatar.classList.remove('avatar-zoom-initialized');
+
+    function mountBackground(url) {
+      const tgt = findVibe();
+      if (!tgt || !url) return;
+      tgt.style.position ||= 'relative';
+
+      const current = tgt.querySelector('.bg-layer');
+      if (current && current.dataset.src === url) return;
+
+      const next = makeLayer(url);
+      tgt.insertAdjacentElement('afterbegin', next);
+      requestAnimationFrame(() => { next.style.opacity = '1'; });
+
+      if (current) { current.style.opacity = '0'; setTimeout(()=>current.remove(), 700); }
+      lastURL = url;
+    }
+
+    function unmountBackground() {
+      const tgt = findVibe();
+      const cur = tgt?.querySelector('.bg-layer');
+      if (cur) { cur.style.opacity='0'; setTimeout(()=>cur.remove(), 400); }
+      lastURL = '';
+    }
+
+    // Zoom на обложку в плеере
+    function setupZoom() {
+      const img = document.querySelector('[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img');
+      if (!img || img.dataset.zoomReady) return;
+      Object.assign(img.style, { transition:'transform .25s ease, filter .25s ease', willChange:'transform' });
+      img.addEventListener('mousemove', onMove);
+      img.addEventListener('mouseleave', onLeave);
+      img.dataset.zoomReady = '1';
+      function onMove(e){
+        const r = img.getBoundingClientRect();
+        const dx = (e.clientX - (r.left + r.width/2)) / (r.width/2);
+        const dy = (e.clientY - (r.top  + r.height/2)) / (r.height/2);
+        img.style.transform = `scale(1.05) translate(${dx*6}px, ${dy*6}px)`;
+        img.style.filter = 'drop-shadow(0 10px 25px rgba(0,0,0,.45))';
+      }
+      function onLeave(){
+        img.style.transform = 'scale(1)';
+        img.style.filter    = 'drop-shadow(0 6px 18px rgba(0,0,0,.35))';
+      }
+    }
+    function removeZoom() {
+      const img = document.querySelector('[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img');
+      if (!img || !img.dataset.zoomReady) return;
+      img.replaceWith(img.cloneNode(true)); // быстрее всего скинуть листенеры
     }
 
     // FullVibe
-    function FullVibe() {
-      if (!App.__settingsReady || !fullVibeEnabled()) return;
-      const vibe = findVibe();
-      if (vibe) vibe.style.setProperty('height', '88.35vh', 'important');
+    function applyFullVibe() {
+      const v = findVibe();
+      if (v) v.style.setProperty('height','88.35vh','important');
     }
-    function RemoveFullVibe() {
-      const vibe = findVibe();
-      if (vibe) vibe.style.removeProperty('height');
+    function resetFullVibe() {
+      const v = findVibe();
+      if (v) v.style.removeProperty('height');
     }
 
-    // Наблюдатель за DOM (возврат на «Главное» и т.п.)
-    function ensureVibeObserver() {
-      if (App.__vibeObserver) return;
-      App.__vibeObserver = new MutationObserver(() => {
-        if (!App.__settingsReady) return;
-        if (bgEnabled()) {
-          const url = currentCover();
-          if (url) ensureVibeThen(url, 8);
-        } else {
-          removeBackgroundImage();
-        }
-        if (fullVibeEnabled()) FullVibe(); else RemoveFullVibe();
-      });
-      const root = document.querySelector('[class*="CommonLayout_root"]') || document.body;
-      App.__vibeObserver.observe(root, { childList:true, subtree:true });
-    }
-    ensureVibeObserver();
+    function updateAll() {
+      if (!App.__settingsReady) return;
 
-    // Сторож: фон обязан быть актуален
-    if (!App.__vibeGuard) {
-      App.__vibeGuard = setInterval(() => {
+      if (bgEnabled()) {
+        const url = getCover();
+        if (url) mountBackground(url); else unmountBackground();
+      } else {
+        unmountBackground();
+      }
+
+      if (fullVEnabled()) applyFullVibe(); else resetFullVibe();
+      if (zoomEnabled())  setupZoom();     else removeZoom();
+    }
+
+    function watchDOM() {
+      if (domObs) return;
+      domObs = new MutationObserver(() => updateAll());
+      (document.querySelector('[class*="CommonLayout_root"]') || document.body)
+        .addEventListener?.('transitionend', updateAll, { passive:true });
+      domObs.observe(document.body, { childList:true, subtree:true });
+    }
+
+    function startGuard() {
+      if (guardIv) return;
+      guardIv = setInterval(() => {
         if (!App.__settingsReady || !bgEnabled()) return;
-        const target = findVibe();
-        if (!target) return;
-
-        const src = currentCover();
-        const hasBg = target.querySelector('.bg-layer');
-        if (src && (!hasBg || src !== App.__lastBgUrl)) {
-          ensureVibeThen(src, 4);
-        }
+        const tgt = findVibe();
+        const url = getCover();
+        if (!tgt || !url) return;
+        const cur = tgt.querySelector('.bg-layer')?.dataset?.src;
+        if (cur !== url) mountBackground(url);
       }, 1200);
     }
 
-    // Применение эффектов в одном месте
-    function syncEffects() {
-      if (!App.__settingsReady) return;
+    return {
+      sync: updateAll,
+      start() { watchDOM(); startGuard(); updateAll(); },
+      onTrack(url) { if (!bgEnabled()) return; if (url) mountBackground(url); }
+    };
+  })();
 
-      const bg   = bgEnabled();
-      const full = fullVibeEnabled();
-      const zoom = zoomEnabled();
-      console.log('[Main] syncEffects', { bg, full, zoom });
+  // ── экспорт, чтобы SpotifyScreen мог дёргать
+  App.backgroundReplace     = (url) => Effects.onTrack(url || getCover());
+  App.removeBackgroundImage = ()    => { /* оставлено для совместимости, делает nothing */ };
+  App.FullVibe              = ()    => Effects.sync();
+  App.RemoveFullVibe        = ()    => Effects.sync();
+  App.setupAvatarZoomEffect = ()    => Effects.sync();
+  App.removeAvatarZoomEffect= ()    => Effects.sync();
 
-      if (bg) {
-        const url = currentCover();
-        if (url) ensureVibeThen(url, 6);
-      } else {
-        removeBackgroundImage();
-      }
+  // ────────────────────────────────────────────────────────────────────────────
+  // 6) Track hooks: как только трек меняется — цвет и фон обновляются сразу
+  ;(() => {
+    const Lib = window.Library || {};
+    const tp  = Theme?.player;
 
-      if (full) FullVibe(); else RemoveFullVibe();
-      if (zoom) setupAvatarZoomEffect(); else removeAvatarZoomEffect();
-    }
-    App.__syncEffects = syncEffects;
+    const onChange = () => {
+      const url = getCover();
+      try { Effects.onTrack(url); } catch {}
+      try { window.Library?.colorize2?.recolor?.(true); } catch {}
+    };
 
-    // Публичное API
-    App.backgroundReplace      = backgroundReplace;
-    App.removeBackgroundImage  = removeBackgroundImage;
-    App.setupAvatarZoomEffect  = setupAvatarZoomEffect;
-    App.removeAvatarZoomEffect = removeAvatarZoomEffect;
-    App.FullVibe               = FullVibe;
-    App.RemoveFullVibe         = RemoveFullVibe;
-  })(App);
+    try { Lib.onTrack?.(() => onChange(), { immediate:true }); } catch {}
+    tp?.on?.('trackChange', ({state}) => onChange(state?.track));
+    tp?.on?.('openPlayer',  ({state}) => onChange(state?.track));
+    tp?.on?.('pageChange',  ()        => onChange());
+    setInterval(onChange, 1500); // страховка
+  })();
 
-  // 6) Внешняя обёртка (удобно дёргать из консоли)
-  function syncEffects(){ App.__syncEffects?.(); }
-  window.syncEffects = syncEffects;
-
-  // 7) Персистентный watcher handle (poll + storage)
-  (() => {
-    // Ключи, за которыми точно следим (эффекты + тема + Open-Blocker)
+  // ────────────────────────────────────────────────────────────────────────────
+  // 7) Persistent handle watcher (poll + storage)
+  ;(() => {
     const EFFECT_KEYS = [
       'Эффекты.enableBackgroundImage',
       'Эффекты.enableAvatarZoom',
-      'Эффекты.enableFullVibe'
+      'Эффекты.enableFullVibe',
+      'Тема.useCustomColor','Тема.baseColor','useCustomColor','baseColor'
     ];
     const OB_KEYS = OB_MODULES.map(m => [
       `OpenBlocker.OB${m.charAt(0).toUpperCase()}${m.slice(1)}`,
       `Open-Blocker.OB${m.charAt(0).toUpperCase()}${m.slice(1)}`
     ]).flat();
 
-    let sigPrev = '';
+    let prev = '';
     let inflight = false;
 
-    function makeSignature() {
-      const eff = EFFECT_KEYS.map(k => `${k}=${readSetting(k)}`).join('|');
-      const ob  = OB_KEYS.map(k => `${k}=${readSetting(k)}`).join('|');
-      const theme = [
-        `Тема.useCustomColor=${readSetting('Тема.useCustomColor')}`,
-        `Тема.baseColor=${readSetting('Тема.baseColor')}`,
-        `useCustomColor=${readSetting('useCustomColor')}`,
-        `baseColor=${readSetting('baseColor')}`
-      ].join('|');
-      return `${eff}#${ob}#${theme}`;
-    }
+    const signature = () => {
+      const eff = EFFECT_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
+      const ob  = OB_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
+      return eff + '#' + ob;
+    };
 
     async function tick() {
       if (inflight || !App.__settingsReady) return;
@@ -338,27 +311,26 @@
       try { await sm.update(); } catch {}
       finally { inflight = false; }
 
-      const sig = makeSignature();
-      if (sig !== sigPrev) {
-        sigPrev = sig;
-        try { applyOpenBlocker(); } catch {}
-        try { App.__syncEffects?.(); } catch {}
+      const sig = signature();
+      if (sig !== prev) {
+        prev = sig;
+        applyOpenBlocker();
+        Effects.sync();
         try { window.Library?.colorize2?.recolor?.(true); } catch {}
       }
     }
 
-    const start = () => {
-      tick();
-      App.__settingsWatcher && clearInterval(App.__settingsWatcher);
-      App.__settingsWatcher = setInterval(tick, 1200);
-    };
-
-    if (App.__settingsReady) start();
-    else {
-      const iv = setInterval(() => { if (App.__settingsReady) { clearInterval(iv); start(); } }, 250);
+    const start = () => { tick(); clearInterval(App.__settingsWatcher); App.__settingsWatcher=setInterval(tick, 1200); };
+    if (App.__settingsReady) start(); else {
+      const iv = setInterval(()=>{ if (App.__settingsReady){ clearInterval(iv); start(); } }, 250);
     }
-
     window.addEventListener('storage', tick);
   })();
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // 8) Start effects watchers
+  Effects.start();
+
+  // удобный хук для консоли
+  window.syncEffects = () => Effects.sync();
 })();

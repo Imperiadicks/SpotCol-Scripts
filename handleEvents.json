@@ -162,21 +162,21 @@
                     "id": "OBdonations",
                     "name": "Донаты",
                     "type": "button",
-                    "bool": false,
+                    "bool": true,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBconcerts",
                     "name": "Концерты",
                     "type": "button",
-                    "bool": false,
+                    "bool": true,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBuserprofile",
                     "name": "Профиль",
                     "type": "button",
-                    "bool": false,
+                    "bool": true,
                     "defaultParameter": true
                 },
                 {
