@@ -1,6 +1,6 @@
-// === Main.js — rebooted core (v2.0.1) ===
+// === Main.js — rebooted core (v2.1.0) ===
 (() => {
-  console.log('[Main] v2.0.1');
+  console.log('[Main] v2.1.0');
 
   // ── 1. Bootstrap Theme instance
   const ThemeClass = window.Theme;
@@ -25,17 +25,6 @@
 
   App.__settingsReady = false;
 
-  // ── 3. First load from handle, then sync everything
-  (async () => {
-    try { await sm.update(); } catch {}
-    finally {
-      App.__settingsReady = true;
-      try { window.Library?.colorize2?.recolor?.(true); } catch {}
-      applyOpenBlocker();
-      Effects.sync();
-    }
-  })();
-
   // ────────────────────────────────────────────────────────────────────────────
   // Helpers
   const readSM = (keys, def=null) => {
@@ -56,7 +45,7 @@
     '';
 
   // ────────────────────────────────────────────────────────────────────────────
-  // 4) Open-Blocker (Git-only)
+  // 3) Open-Blocker (CSS грузим ТОЛЬКО из твоего raw-репо)
   const OB_MODULES = [
     'donations','concerts','userprofile','trailers','betabutton',
     'vibeanimation','globaltabs','relevantnow','instyle','likesandhistory','neuromusic',
@@ -65,45 +54,104 @@
     'continuelisten','editorialartists','editorialnewreleases','mixedblock',
     'mixesgrid','newplaylists','nonmusiceditorialcompilation','openplaylist'
   ];
-  const OB_REMOTE = () =>
-    window.OpenBlockerBaseCSSRemote ||
-    'https://raw.githubusercontent.com/Open-Blocker-FYM/Open-Blocker/main/blocker-css';
+
+  // Только твой репозиторий:
+  const OB_REMOTE_BASE =
+    'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/blocker-css';
+
   const obCache = new Map();
-  const obKey   = (m) => `OB${m.charAt(0).toUpperCase()}${m.slice(1)}`;
+
+  // Имя вида OBPodcasts/OBDonations
+  const toOBKey = (mod) => `OB${mod.charAt(0).toUpperCase()}${mod.slice(1)}`;
 
   function injectOB(mod) {
     const id = `ob:${mod}`;
     if (document.querySelector(`link[data-id="${id}"]`)) return;
+
     const link = document.createElement('link');
     link.rel  = 'stylesheet';
-    link.href = `${OB_REMOTE()}/${mod}.css`;
+    link.href = `${OB_REMOTE_BASE}/${encodeURIComponent(mod)}.css`;
     link.dataset.id = id;
     link.crossOrigin   = 'anonymous';
     link.referrerPolicy = 'no-referrer';
+
+    link.addEventListener('load', () =>
+      console.log(`[OB] ✓ ${mod} loaded → ${link.href}`)
+    );
+    link.addEventListener('error', () =>
+      console.warn(`[OB] ✗ ${mod} failed ← ${link.href}`)
+    );
+
     document.head.appendChild(link);
   }
   function removeOB(mod) {
-    document.querySelector(`link[data-id="ob:${mod}"]`)?.remove();
+    document.querySelectorAll(`link[data-id="ob:${mod}"]`).forEach(n => n.remove());
   }
 
-  // ← ключевой фикс: поддерживаем легаси-ключ "NewbuttonHide" для подкастов
+  // ← универсальное чтение флагов OB (новые и легаси)
+  // поддерживаем:
+  //  - OB<Cap>                     (например, OBPodcasts)
+  //  - OpenBlocker.<mod>           (например, OpenBlocker.podcasts)
+  //  - Open-Blocker.<mod>
+  //  - OpenBlocker.OB<Cap> / Open-Blocker.OB<Cap> (на всякий)
+  //  - legacy: NewbuttonHide для подкастов (true → скрывать)
   function readOBEnabled(module) {
-    // обычные варианты: OpenBlocker/ Open-Blocker / просто ключ (OBxxxx)
-    const key = obKey(module);
-    let v =
-      readSM(`OpenBlocker.${key}`) ??
-      readSM(`Open-Blocker.${key}`) ??
-      readSM(key);
+    const cap = module[0].toUpperCase() + module.slice(1);
+    const obKey = toOBKey(module);
 
-    // legacy: id "NewbuttonHide" = «Подкасты: убрать». True → включаем скрывающий CSS podcasts.
-    if ((v === undefined || v === null) && module === 'podcasts') {
-      v = readSM(['Open-Blocker.NewbuttonHide', 'OpenBlocker.NewbuttonHide', 'NewbuttonHide']);
+    const candidates = [
+      `OpenBlocker.${module}`,
+      `Open-Blocker.${module}`,
+      `OpenBlocker.${obKey}`,
+      `Open-Blocker.${obKey}`,
+      obKey,
+    ];
+
+    for (const k of candidates) {
+      const s = sm.get?.(k);
+      if (s && typeof s.value !== 'undefined') return !!s.value;
     }
-    return !!v;
+
+    if (module === 'podcasts') {
+      const legacy = readSM(['Open-Blocker.NewbuttonHide','OpenBlocker.NewbuttonHide','NewbuttonHide']);
+      if (typeof legacy !== 'undefined' && legacy !== null) return !!legacy;
+    }
+    return false;
+  }
+
+  function detectOBModules() {
+    // Автодетект из текущих настроек + гарантируем podcasts
+    const mods = new Set();
+    const walk = (obj, prefix='') => {
+      if (!obj || typeof obj !== 'object') return;
+      for (const k of Object.keys(obj)) {
+        const v = obj[k];
+        const path = prefix ? `${prefix}.${k}` : k;
+
+        if (v && typeof v === 'object' && 'value' in v) {
+          if (/^OB[A-Z]/.test(path)) {
+            const name = path.replace(/^OB/, '');
+            mods.add(name.charAt(0).toLowerCase() + name.slice(1));
+          }
+          if (/^Open(Blocker|-Blocker)\./.test(path)) {
+            const tail = path.split('.')[1]; // OpenBlocker.<tail>
+            if (tail && !/^(OB[A-Z])/.test(tail)) mods.add(tail);
+          }
+          if (path === 'NewbuttonHide') mods.add('podcasts');
+          continue;
+        }
+        if (v && typeof v === 'object') walk(v, path);
+      }
+    };
+    try { walk(sm.settings); } catch {}
+    for (const m of OB_MODULES) mods.add(m);
+    mods.add('podcasts');
+    return Array.from(mods);
   }
 
   function applyOpenBlocker() {
-    for (const mod of OB_MODULES) {
+    const modules = detectOBModules();
+    for (const mod of modules) {
       const enabled = readOBEnabled(mod);
       const prev = obCache.get(mod) ?? false;
       if (enabled && !prev) { injectOB(mod); obCache.set(mod, true); }
@@ -112,7 +160,7 @@
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // 5) Background / FullVibe / Zoom — аккуратно и локально
+  // 4) Background / FullVibe / Zoom — аккуратно и локально
   const Effects = (() => {
     let lastURL = '';
     let guardIv = null;
@@ -278,6 +326,78 @@
   App.removeAvatarZoomEffect= ()    => Effects.sync();
 
   // ────────────────────────────────────────────────────────────────────────────
+  // 5) ПРОЗРАЧНОСТЬ (возвращаем как раньше, безопасные селекторы)
+  const TRANSPARENCY_KEYS = [
+    'togglePlayerBackground',
+    'Effects.transparency',
+    'Действия.togglePlayerBackground'
+  ];
+
+  const ensureStyle = (id, css) => {
+    let st = document.getElementById(id);
+    if (!st) {
+      st = document.createElement('style');
+      st.id = id;
+      document.head.appendChild(st);
+    }
+    if (typeof css === 'string') st.textContent = css;
+    return st;
+  };
+  const removeStyle = (id) => document.getElementById(id)?.remove();
+
+  function isTransparencyEnabled() {
+    for (const k of TRANSPARENCY_KEYS) {
+      const s = sm.get?.(k);
+      if (s && typeof s.value !== 'undefined') return !!s.value;
+    }
+    return false;
+  }
+
+  function applyTransparency() {
+    const enabled = isTransparencyEnabled();
+    const ID = 'spotcol-transparency';
+    if (!enabled) { removeStyle(ID); return; }
+
+    const CSS = `
+/* === SpotCol Transparency (safe selectors) === */
+[class*="PlayerBarDesktop_root"],
+[class*="PlayerBar_root"],
+[class*="MainPage_vibe"],
+[class*="PlayQueue_root"],
+[class*="FullscreenPlayerDesktopContent_info"],
+[class*="FullscreenPlayerDesktopContent_syncLyrics"],
+[class*="FullscreenPlayerDesktopControls"],
+[class*="Content_root"],
+[class*="Layout_root"],
+[class*="Page_root"],
+[class*="Card_root"],
+[class*="Shelf_root"],
+[class*="Sidebar_root"]
+{
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+[class*="overlay"], [class*="Backdrop"], [class*="backdrop"],
+[class*="blur"], [style*="backdrop-filter"], [class*="frost"], [class*="glass"]
+{
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+div[data-test-id="FULLSCREEN_PLAYER_MODAL"] {
+  --brightness: 1 !important;
+  --brightness-correction: 1 !important;
+  background: transparent !important;
+}
+`.trim();
+
+    ensureStyle(ID, CSS);
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
   // 6) Track hooks: как только трек меняется — цвет и фон обновляются сразу
   ;(() => {
     const Lib = window.Library || {};
@@ -297,7 +417,7 @@
   })();
 
   // ────────────────────────────────────────────────────────────────────────────
-  // 7) Persistent handle watcher (poll + storage)
+  // 7) Persistent handle watcher (poll + signature)
   ;(() => {
     const EFFECT_KEYS = [
       'Эффекты.enableBackgroundImage',
@@ -305,12 +425,23 @@
       'Эффекты.enableFullVibe',
       'Тема.useCustomColor','Тема.baseColor','useCustomColor','baseColor'
     ];
-    const OB_KEYS = OB_MODULES.map(m => [
-      `OpenBlocker.OB${m.charAt(0).toUpperCase()}${m.slice(1)}`,
-      `Open-Blocker.OB${m.charAt(0).toUpperCase()}${m.slice(1)}`
-    ]).flat();
-    // ← добавили легаси ключи подкастов
+
+    // Подписи для OB (оба формата ключей) + legacy подкастов:
+    const OB_KEYS = OB_MODULES.map(m => {
+      const cap = m[0].toUpperCase() + m.slice(1);
+      return [
+        `OpenBlocker.${m}`,
+        `Open-Blocker.${m}`,
+        `OpenBlocker.OB${cap}`,
+        `Open-Blocker.OB${cap}`,
+        `OB${cap}`
+      ];
+    }).flat();
+
     const LEGACY_PODCAST_KEYS = ['Open-Blocker.NewbuttonHide', 'OpenBlocker.NewbuttonHide', 'NewbuttonHide'];
+
+    // Ключи прозрачности:
+    const TRANSP_KEYS = [...TRANSPARENCY_KEYS];
 
     let prev = '';
     let inflight = false;
@@ -319,7 +450,8 @@
       const eff = EFFECT_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
       const ob  = OB_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
       const lg  = LEGACY_PODCAST_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
-      return eff + '#' + ob + '#' + lg;
+      const tr  = TRANSP_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
+      return [eff, ob, lg, tr].join('#');
     };
 
     async function tick() {
@@ -332,7 +464,8 @@
       if (sig !== prev) {
         prev = sig;
         applyOpenBlocker();
-        Effects.sync();
+        applyTransparency();
+        try { Effects.sync(); } catch {}
         try { window.Library?.colorize2?.recolor?.(true); } catch {}
       }
     }
@@ -345,9 +478,22 @@
   })();
 
   // ────────────────────────────────────────────────────────────────────────────
-  // 8) Start effects watchers
+  // 8) First load from handle, then sync everything
+  (async () => {
+    try { await sm.update(); } catch {}
+    finally {
+      App.__settingsReady = true;
+      try { window.Library?.colorize2?.recolor?.(true); } catch {}
+      applyOpenBlocker();
+      applyTransparency();
+      Effects.sync();
+    }
+  })();
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // 9) Start effects watchers
   Effects.start();
 
   // удобный хук для консоли
-  window.syncEffects = () => Effects.sync();
+  window.syncEffects = () => { applyOpenBlocker(); applyTransparency(); Effects.sync(); };
 })();
