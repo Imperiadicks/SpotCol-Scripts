@@ -1,6 +1,12 @@
-// === Main.js — rebooted core (v2.1.0) ===
+// === Main.js — core (v2.1.1) ===
+// Правки:
+//  - OB-CSS: грузим raw → fetch + <style> (MIME fix)
+//  - Watcher: универсальная подпись по ВСЕМ handle (не по белому списку)
+//  - FullVibe/OB/Transparency применяются при ЛЮБОМ изменении handle
+//  - Мелкие фиксы: безопасный sm.defaults, корректные хуки player
+
 (() => {
-  console.log('[Main] v2.1.0');
+  console.log('[Main] v2.1.1');
 
   // ── 1. Bootstrap Theme instance
   const ThemeClass = window.Theme;
@@ -12,16 +18,16 @@
   window.Theme = App;
 
   const sm = App.settingsManager;
+  if (typeof sm?.defaults === 'function') {
+    sm.defaults({
+      'Тема.useCustomColor': { value:false },
+      'Тема.baseColor':      { value:'#7da6ff' },
 
-  // ── 2. Defaults (минимум)
-  sm.defaults({
-    'Тема.useCustomColor': { value:false },
-    'Тема.baseColor':      { value:'#7da6ff' },
-
-    'Эффекты.enableBackgroundImage': { value:true  },
-    'Эффекты.enableAvatarZoom':      { value:true  },
-    'Эффекты.enableFullVibe':        { value:false }
-  });
+      'Эффекты.enableBackgroundImage': { value:true  },
+      'Эффекты.enableAvatarZoom':      { value:true  },
+      'Эффекты.enableFullVibe':        { value:false }
+    });
+  }
 
   App.__settingsReady = false;
 
@@ -45,7 +51,7 @@
     '';
 
   // ────────────────────────────────────────────────────────────────────────────
-  // 3) Open-Blocker (CSS грузим ТОЛЬКО из твоего raw-репо)
+  // 2) Open-Blocker (CSS грузим ТОЛЬКО из твоего raw-репо; MIME fix: fetch → <style>)
   const OB_MODULES = [
     'donations','concerts','userprofile','trailers','betabutton',
     'vibeanimation','globaltabs','relevantnow','instyle','likesandhistory','neuromusic',
@@ -55,44 +61,44 @@
     'mixesgrid','newplaylists','nonmusiceditorialcompilation','openplaylist'
   ];
 
-  // Только твой репозиторий:
   const OB_REMOTE_BASE =
     'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/blocker-css';
 
   const obCache = new Map();
 
-  // Имя вида OBPodcasts/OBDonations
-  const toOBKey = (mod) => `OB${mod.charAt(0).toUpperCase()}${mod.slice(1)}`;
+  function toOBKey(mod) { return `OB${mod[0].toUpperCase()}${mod.slice(1)}`; }
 
-async function injectOB(mod) {
-  const id = `ob:${mod}`;
-  if (document.querySelector(`[data-id="${id}"]`)) return;
+  async function injectOB(mod) {
+    const id = `ob:${mod}`;
+    if (document.querySelector(`[data-id="${id}"]`)) return;
 
-  const url = `${OB_REMOTE_BASE}/${encodeURIComponent(mod)}.css?nocache=${Date.now()}`;
-  try {
-    const res = await fetch(url, { mode: 'cors', cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const css = await res.text();
+    const url = `${OB_REMOTE_BASE}/${encodeURIComponent(mod)}.css?nocache=${Date.now()}`;
+    try {
+      const res = await fetch(url, { mode: 'cors', cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const css = await res.text();
 
-    const st = document.createElement('style');
-    st.type = 'text/css';
-    st.dataset.id = id;
-    st.textContent = css;
+      const st = document.createElement('style');
+      st.type = 'text/css';
+      st.dataset.id = id;
+      st.textContent = css;
+      document.head.appendChild(st);
 
-    document.head.appendChild(st);
-    console.log(`[OB] ✓ ${mod} inlined (${css.length} bytes)`);
-  } catch (e) {
-    console.warn(`[OB] ✗ ${mod} fetch failed`, e);
+      console.log(`[OB] ✓ ${mod} inlined (${css.length} bytes)`);
+    } catch (e) {
+      console.warn(`[OB] ✗ ${mod} fetch failed`, e);
+    }
   }
-}
+  function removeOB(mod) {
+    const id = `ob:${mod}`;
+    document.querySelectorAll(`[data-id="${id}"]`).forEach(n => n.remove());
+  }
 
-function removeOB(mod) {
-  const id = `ob:${mod}`;
-  document.querySelectorAll(`[data-id="${id}"]`).forEach(n => n.remove());
-}
-  // Чтение настроек OpenBlocker для модуля
-  // Возвращает true/false или null/undefined, если не найдено
-  // Если модуль — подкасты, то проверяет legacy ключи
+  // поддерживаем:
+  //  - OB<Cap>                     (например, OBPodcasts)
+  //  - OpenBlocker.<mod> / Open-Blocker.<mod>
+  //  - OpenBlocker.OB<Cap> / Open-Blocker.OB<Cap>
+  //  - legacy: NewbuttonHide (true → скрывать подкасты)
   function readOBEnabled(module) {
     const cap = module[0].toUpperCase() + module.slice(1);
     const obKey = toOBKey(module);
@@ -109,7 +115,6 @@ function removeOB(mod) {
       const s = sm.get?.(k);
       if (s && typeof s.value !== 'undefined') return !!s.value;
     }
-
     if (module === 'podcasts') {
       const legacy = readSM(['Open-Blocker.NewbuttonHide','OpenBlocker.NewbuttonHide','NewbuttonHide']);
       if (typeof legacy !== 'undefined' && legacy !== null) return !!legacy;
@@ -118,7 +123,6 @@ function removeOB(mod) {
   }
 
   function detectOBModules() {
-    // Автодетект из текущих настроек + гарантируем podcasts
     const mods = new Set();
     const walk = (obj, prefix='') => {
       if (!obj || typeof obj !== 'object') return;
@@ -132,7 +136,7 @@ function removeOB(mod) {
             mods.add(name.charAt(0).toLowerCase() + name.slice(1));
           }
           if (/^Open(Blocker|-Blocker)\./.test(path)) {
-            const tail = path.split('.')[1]; // OpenBlocker.<tail>
+            const tail = path.split('.')[1];
             if (tail && !/^(OB[A-Z])/.test(tail)) mods.add(tail);
           }
           if (path === 'NewbuttonHide') mods.add('podcasts');
@@ -158,7 +162,7 @@ function removeOB(mod) {
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // 4) Background / FullVibe / Zoom — аккуратно и локально
+  // 3) Background / FullVibe / Zoom — аккуратно и локально
   const Effects = (() => {
     let lastURL = '';
     let guardIv = null;
@@ -291,9 +295,9 @@ function removeOB(mod) {
     function watchDOM() {
       if (domObs) return;
       domObs = new MutationObserver(() => updateAll());
+      domObs.observe(document.body, { childList:true, subtree:true });
       (document.querySelector('[class*="CommonLayout_root"]') || document.body)
         .addEventListener?.('transitionend', updateAll, { passive:true });
-      domObs.observe(document.body, { childList:true, subtree:true });
     }
 
     function startGuard() {
@@ -315,16 +319,16 @@ function removeOB(mod) {
     };
   })();
 
-  // ── экспорт, чтобы SpotifyScreen мог дёргать
-  App.backgroundReplace     = (url) => Effects.onTrack(url || getCover());
-  App.removeBackgroundImage = ()    => { /* compat */ };
-  App.FullVibe              = ()    => Effects.sync();
-  App.RemoveFullVibe        = ()    => Effects.sync();
-  App.setupAvatarZoomEffect = ()    => Effects.sync();
-  App.removeAvatarZoomEffect= ()    => Effects.sync();
+  // экспорт для других модулей
+  App.backgroundReplace      = (url) => Effects.onTrack(url || getCover());
+  App.removeBackgroundImage  = ()    => { /* compat */ };
+  App.FullVibe               = ()    => Effects.sync();
+  App.RemoveFullVibe         = ()    => Effects.sync();
+  App.setupAvatarZoomEffect  = ()    => Effects.sync();
+  App.removeAvatarZoomEffect = ()    => Effects.sync();
 
   // ────────────────────────────────────────────────────────────────────────────
-  // 5) ПРОЗРАЧНОСТЬ (возвращаем как раньше, безопасные селекторы)
+  // 4) ПРОЗРАЧНОСТЬ (возвращаем, безопасные селекторы)
   const TRANSPARENCY_KEYS = [
     'togglePlayerBackground',
     'Effects.transparency',
@@ -396,10 +400,10 @@ div[data-test-id="FULLSCREEN_PLAYER_MODAL"] {
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // 6) Track hooks: как только трек меняется — цвет и фон обновляются сразу
+  // 5) Track hooks
   ;(() => {
     const Lib = window.Library || {};
-    const tp  = Theme?.player;
+    const tp  = App.player;
 
     const onChange = () => {
       const url = getCover();
@@ -415,52 +419,39 @@ div[data-test-id="FULLSCREEN_PLAYER_MODAL"] {
   })();
 
   // ────────────────────────────────────────────────────────────────────────────
-  // 7) Persistent handle watcher (poll + signature)
+  // 6) UNIVERSAL watcher: подпись по ВСЕМ handle (.value) → любые изменения сработают
+  function makeSignatureAll() {
+    const out = [];
+    const walk = (obj, p = '') => {
+      if (!obj || typeof obj !== 'object') return;
+      for (const k of Object.keys(obj)) {
+        const v = obj[k];
+        const path = p ? `${p}.${k}` : k;
+        if (v && typeof v === 'object' && 'value' in v) {
+          out.push(`${path}=${JSON.stringify(v.value)}`);
+        } else if (v && typeof v === 'object') {
+          walk(v, path);
+        }
+      }
+    };
+    try { walk(sm.settings); } catch {}
+    return out.sort().join('|');
+  }
+
   ;(() => {
-    const EFFECT_KEYS = [
-      'Эффекты.enableBackgroundImage',
-      'Эффекты.enableAvatarZoom',
-      'Эффекты.enableFullVibe',
-      'Тема.useCustomColor','Тема.baseColor','useCustomColor','baseColor'
-    ];
-
-    // Подписи для OB (оба формата ключей) + legacy подкастов:
-    const OB_KEYS = OB_MODULES.map(m => {
-      const cap = m[0].toUpperCase() + m.slice(1);
-      return [
-        `OpenBlocker.${m}`,
-        `Open-Blocker.${m}`,
-        `OpenBlocker.OB${cap}`,
-        `Open-Blocker.OB${cap}`,
-        `OB${cap}`
-      ];
-    }).flat();
-
-    const LEGACY_PODCAST_KEYS = ['Open-Blocker.NewbuttonHide', 'OpenBlocker.NewbuttonHide', 'NewbuttonHide'];
-
-    // Ключи прозрачности:
-    const TRANSP_KEYS = [...TRANSPARENCY_KEYS];
-
     let prev = '';
     let inflight = false;
 
-    const signature = () => {
-      const eff = EFFECT_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
-      const ob  = OB_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
-      const lg  = LEGACY_PODCAST_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
-      const tr  = TRANSP_KEYS.map(k => `${k}=${readSM(k)}`).join('|');
-      return [eff, ob, lg, tr].join('#');
-    };
-
     async function tick() {
-      if (inflight || !App.__settingsReady) return;
+      if (inflight) return;
       inflight = true;
       try { await sm.update(); } catch {}
       finally { inflight = false; }
 
-      const sig = signature();
+      const sig = makeSignatureAll();
       if (sig !== prev) {
         prev = sig;
+        // применяем ВСЁ при любом изменении handle
         applyOpenBlocker();
         applyTransparency();
         try { Effects.sync(); } catch {}
@@ -472,11 +463,11 @@ div[data-test-id="FULLSCREEN_PLAYER_MODAL"] {
     if (App.__settingsReady) start(); else {
       const iv = setInterval(()=>{ if (App.__settingsReady){ clearInterval(iv); start(); } }, 250);
     }
-    window.addEventListener('storage', tick);
+    ['visibilitychange','focus','pageshow'].forEach(ev=>window.addEventListener(ev, tick));
   })();
 
   // ────────────────────────────────────────────────────────────────────────────
-  // 8) First load from handle, then sync everything
+  // 7) First load
   (async () => {
     try { await sm.update(); } catch {}
     finally {
@@ -489,7 +480,7 @@ div[data-test-id="FULLSCREEN_PLAYER_MODAL"] {
   })();
 
   // ────────────────────────────────────────────────────────────────────────────
-  // 9) Start effects watchers
+  // 8) Start effects guards
   Effects.start();
 
   // удобный хук для консоли
