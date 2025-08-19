@@ -12,9 +12,10 @@
   "allowedUrls": [
         "https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/js",
         "https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/css",
+        "https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/blocker-css",
+        "https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets",
         "https://ru.wikipedia.org/w/api.php?action=query&format=json&origin=*",
         "https://api.onlysq.ru/ai/v2",
-        "https://raw.githubusercontent.com/Open-Blocker-FYM/Open-Blocker/refs/heads/main/blocker-css/",
         "http://127.0.0.1:2007/Assets/no-cover-image.png"
     ]
 }

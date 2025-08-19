@@ -64,37 +64,35 @@
   // Имя вида OBPodcasts/OBDonations
   const toOBKey = (mod) => `OB${mod.charAt(0).toUpperCase()}${mod.slice(1)}`;
 
-  function injectOB(mod) {
-    const id = `ob:${mod}`;
-    if (document.querySelector(`link[data-id="${id}"]`)) return;
+async function injectOB(mod) {
+  const id = `ob:${mod}`;
+  if (document.querySelector(`[data-id="${id}"]`)) return;
 
-    const link = document.createElement('link');
-    link.rel  = 'stylesheet';
-    link.href = `${OB_REMOTE_BASE}/${encodeURIComponent(mod)}.css`;
-    link.dataset.id = id;
-    link.crossOrigin   = 'anonymous';
-    link.referrerPolicy = 'no-referrer';
+  const url = `${OB_REMOTE_BASE}/${encodeURIComponent(mod)}.css?nocache=${Date.now()}`;
+  try {
+    const res = await fetch(url, { mode: 'cors', cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const css = await res.text();
 
-    link.addEventListener('load', () =>
-      console.log(`[OB] ✓ ${mod} loaded → ${link.href}`)
-    );
-    link.addEventListener('error', () =>
-      console.warn(`[OB] ✗ ${mod} failed ← ${link.href}`)
-    );
+    const st = document.createElement('style');
+    st.type = 'text/css';
+    st.dataset.id = id;
+    st.textContent = css;
 
-    document.head.appendChild(link);
+    document.head.appendChild(st);
+    console.log(`[OB] ✓ ${mod} inlined (${css.length} bytes)`);
+  } catch (e) {
+    console.warn(`[OB] ✗ ${mod} fetch failed`, e);
   }
-  function removeOB(mod) {
-    document.querySelectorAll(`link[data-id="ob:${mod}"]`).forEach(n => n.remove());
-  }
+}
 
-  // ← универсальное чтение флагов OB (новые и легаси)
-  // поддерживаем:
-  //  - OB<Cap>                     (например, OBPodcasts)
-  //  - OpenBlocker.<mod>           (например, OpenBlocker.podcasts)
-  //  - Open-Blocker.<mod>
-  //  - OpenBlocker.OB<Cap> / Open-Blocker.OB<Cap> (на всякий)
-  //  - legacy: NewbuttonHide для подкастов (true → скрывать)
+function removeOB(mod) {
+  const id = `ob:${mod}`;
+  document.querySelectorAll(`[data-id="${id}"]`).forEach(n => n.remove());
+}
+  // Чтение настроек OpenBlocker для модуля
+  // Возвращает true/false или null/undefined, если не найдено
+  // Если модуль — подкасты, то проверяет legacy ключи
   function readOBEnabled(module) {
     const cap = module[0].toUpperCase() + module.slice(1);
     const obKey = toOBKey(module);

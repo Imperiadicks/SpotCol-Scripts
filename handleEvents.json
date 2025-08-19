@@ -3,6 +3,14 @@
         {
             "title": "Действия",
             "items": [
+                                {
+                    "id": "NewbuttonHide",
+                    "name": "Подкасты",
+                    "description": "убирает подкасты",
+                    "type": "button",
+                    "bool": true,
+                    "defaultParameter": false
+                },
                 {
                     "id": "togglePlayerBackground",
                     "name": "прозрачность",
@@ -150,26 +158,19 @@
         {
             "title": "Open-Blocker",
             "items": [
-                {
-                    "id": "NewbuttonHide",
-                    "name": "Подкасты",
-                    "description": "убирает подкасты",
-                    "type": "button",
-                    "bool": true,
-                    "defaultParameter": false
-                },
+
                 {
                     "id": "OBdonations",
                     "name": "Донаты",
                     "type": "button",
-                    "bool": false,
+                    "bool": true,
                     "defaultParameter": true
                 },
                 {
                     "id": "OBconcerts",
                     "name": "Концерты",
                     "type": "button",
-                    "bool": false,
+                    "bool": true,
                     "defaultParameter": true
                 },
                 {
@@ -274,7 +275,7 @@
                     "id": "OBbarbelow",
                     "name": "Рекламные беннеры",
                     "type": "button",
-                    "bool": false,
+                    "bool": true,
                     "defaultParameter": true
                 }
             ]
