@@ -4,14 +4,6 @@
             "title": "Действия",
             "items": [
                 {
-                    "id": "NewbuttonHide",
-                    "name": "Подкасты",
-                    "description": "убирает подкасты",
-                    "type": "button",
-                    "bool": true,
-                    "defaultParameter": false
-                },
-                {
                     "id": "togglePlayerBackground",
                     "name": "прозрачность",
                     "description": "убирает весь background, там где это уместно",
@@ -159,6 +151,14 @@
             "title": "Open-Blocker",
             "items": [
                 {
+                    "id": "NewbuttonHide",
+                    "name": "Подкасты",
+                    "description": "убирает подкасты",
+                    "type": "button",
+                    "bool": true,
+                    "defaultParameter": false
+                },
+                {
                     "id": "OBdonations",
                     "name": "Донаты",
                     "type": "button",
@@ -176,7 +176,7 @@
                     "id": "OBuserprofile",
                     "name": "Профиль",
                     "type": "button",
-                    "bool": false,
+                    "bool": true,
                     "defaultParameter": true
                 },
                 {
