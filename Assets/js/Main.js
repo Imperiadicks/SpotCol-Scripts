@@ -1,12 +1,13 @@
-// === Main.js — v2.3.0 ===
-// Цель: корректная синхронизация с handle для «Прозрачности», «Подкастов» и всех модулей Open-Blocker.
-// Ничего не ломаем: только добавления и более строгая логика чтения handle.
+// === Main.js — v2.4.0 (FULL) ===
+// Возвращаю все «важные» функции + синхронизацию с handle.
+// Включено: Open-Blocker, Прозрачность, backgroundReplace (плавная подмена фона),
+// FullVibe, AvatarZoom, интеграция с Colorize 2, трек-вотчеры, страничные вотчеры.
 
 (() => {
-  console.log('[Main] v2.3.0 start');
+  console.log('[Main] v2.4.0 start');
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Доступ к settingsManager из разных возможных мест (совместимость)
+  // settingsManager (ищем во всех привычных местах; НИЧЕГО не создаём заново)
   const sm =
     window?.Theme?.settingsManager ||
     window?.SpotColЛичная?.settingsManager ||
@@ -15,29 +16,25 @@
     null;
 
   if (!sm) {
-    console.error('[Main] settingsManager not found.');
-    return;
+    console.error('[Main] settingsManager not found — работаю в деградированном режиме');
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Утилиты для чтения handle c поддержкой формата { value }
+  // Универсальное чтение значения из handle (поддерживает { value })
   const getRaw = (key) => {
     try {
-      if (typeof sm.get === 'function') {
+      if (sm?.get) {
         const v = sm.get(key);
-        if (v && typeof v === 'object' && 'value' in v) return v.value;
-        return v;
+        return v && typeof v === 'object' && 'value' in v ? v.value : v;
       }
-      // прямой доступ, если есть sm.settings
       const parts = key.split('.');
-      let cur = sm.settings || {};
+      let cur = sm?.settings || {};
       for (const p of parts) cur = cur?.[p];
-      if (cur && typeof cur === 'object' && 'value' in cur) return cur.value;
-      return cur;
-    } catch { return undefined; }
+      return cur && typeof cur === 'object' && 'value' in cur ? cur.value : cur;
+    } catch {
+      return undefined;
+    }
   };
 
-  // Чтение с альтернативными ключами
   const read = (keys, def = undefined) => {
     const list = Array.isArray(keys) ? keys : [keys];
     for (const k of list) {
@@ -47,16 +44,15 @@
     return def;
   };
 
-  // Один раз задать дефолт, только если значения нет и sm.defaults поддерживается
   const setDefaultOnce = (key, value) => {
     try {
       if (getRaw(key) !== undefined) return;
-      if (typeof sm.defaults === 'function') sm.defaults({ [key]: { value } });
+      if (typeof sm?.defaults === 'function') sm.defaults({ [key]: { value } });
     } catch {}
   };
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Open-Blocker
+  // Open-Blocker (CSS из GitHub raw → <style>)
   const OB_BASE =
     'https://raw.githubusercontent.com/Imperiadicks/SpotCol-Scripts/main/Assets/blocker-css';
 
@@ -69,19 +65,12 @@
     'mixesgrid','newplaylists','nonmusiceditorialcompilation','openplaylist'
   ];
 
-  const styleCache = new Map(); // url -> css
-  const styleIds = (m) => `ob-css-${m}`;
-  const obLoaded = new Set();
+  const styleCache = new Map(); // url → css
+  const styleId = (m) => `ob-css-${m}`;
+  const obKeys = (m) => [`OpenBlocker.${m}`, `OB.${m}`, `blocker.${m}`, m];
 
-  const obKeys = (m) => [
-    `OpenBlocker.${m}`, `OB.${m}`, `blocker.${m}`, m
-  ];
-
-  // ЛОГИКА ВКЛ/ВЫКЛ:
-  // 1) Если есть явное значение модуля → используем его (true/false).
-  // 2) Иначе, если глобальный OpenBlocker.enabled === true → включаем модуль.
-  // 3) Иначе модуль выключен (по умолчанию OFF, чтобы «не залипало»).
-  const isObModuleEnabled = (m) => {
+  // Включение модуля: явное значение → оно и рулит; иначе ориентируемся на глобальный флаг
+  const isOBEnabled = (m) => {
     const per = read(obKeys(m), undefined);
     if (typeof per === 'boolean') return per;
     const global = read(['OpenBlocker.enabled', 'OB.enabled', 'blocker.enabled'], false);
@@ -106,50 +95,45 @@
     }
     st.textContent = css;
   };
-
   const unmountStyle = (id) => document.getElementById(id)?.remove();
 
-  const applyOpenBlocker = async () => {
-    // «Подкасты» дополнительно защищаем от скрытия (частая проблема)
-    const wantPodcasts = isObModuleEnabled('podcasts');
-    if (wantPodcasts) {
+  async function applyOpenBlocker() {
+    // Подкасты дополнительно страхуем от скрытия
+    if (isOBEnabled('podcasts')) {
       mountStyle(
         'ob-protect-podcasts',
         `
-        /* Protect podcasts visibility */
+        /* Ensure Podcasts stay visible */
         [class*="Podcasts_root"],
         [data-block-id*="podcast"],
         [data-test-id*="podcast"],
         a[href*="/podcasts"] { display: initial !important; visibility: visible !important; }
-      `);
+      `
+      );
     } else {
       unmountStyle('ob-protect-podcasts');
     }
 
-    // По каждому модулю – грузим/снимаем CSS
     await Promise.all(
       OB_MODULES.map(async (m) => {
-        const id = styleIds(m);
-        if (isObModuleEnabled(m)) {
+        const id = styleId(m);
+        if (isOBEnabled(m)) {
           try {
             const url = `${OB_BASE}/${encodeURIComponent(m)}.css`;
             const css = await fetchCSS(url);
             mountStyle(id, css);
-            obLoaded.add(m);
           } catch (e) {
             console.warn('[Main][OB] failed', m, e);
           }
         } else {
           unmountStyle(id);
-          obLoaded.delete(m);
         }
       })
     );
-  };
+  }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Прозрачность
-  // Ключи, из которых читаем флаг; дефолт НЕ навязываем (OFF), чтобы не залипало.
+  // Прозрачность (OFF по умолчанию, без «залипания»)
   const TRANSPARENCY_KEYS = [
     'Effects.transparency',
     'togglePlayerBackground',
@@ -157,12 +141,9 @@
   ];
   setDefaultOnce('Effects.transparency', false);
 
-  const isTransparencyOn = () => {
-    const v = read(TRANSPARENCY_KEYS, undefined);
-    return !!v; // по умолчанию false, если значения нет
-  };
+  const isTransparencyOn = () => !!read(TRANSPARENCY_KEYS, false);
 
-  const applyTransparency = () => {
+  function applyTransparency() {
     const ID = 'spotcol-transparency';
     if (!isTransparencyOn()) {
       unmountStyle(ID);
@@ -199,56 +180,262 @@ div[data-test-id="FULLSCREEN_PLAYER_MODAL"]{
   background: transparent !important;
 }`;
     mountStyle(ID, CSS);
-  };
+  }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Реакция на изменения handle (строго по подписке нужных ключей)
+  // ЭФФЕКТЫ (возвращены ВСЕ «важные» функции)
+  const Library = window.Library || {};
+  const getCover = () =>
+    Library.getHiResCover?.() ||
+    Library.coverURL?.() ||
+    '';
+
+  // Не создаём дубликат lastBackgroundURL, если он уже есть у пользователя
+  const bgState = {
+    get last() {
+      return typeof window.lastBackgroundURL !== 'undefined'
+        ? window.lastBackgroundURL
+        : window.__spotcol_lastBG || null;
+    },
+    set last(v) {
+      if (typeof window.lastBackgroundURL !== 'undefined') {
+        window.lastBackgroundURL = v;
+      } else {
+        window.__spotcol_lastBG = v;
+      }
+    }
+  };
+
+  function ensureVibeTarget() {
+    return (
+      document.querySelector('[class*="MainPage_vibe"]') ||
+      document.querySelector('[class*="VibeBlock_vibe"]') ||
+      document.querySelector('[data-test-id="MAIN_PAGE"]') ||
+      document.body
+    );
+  }
+
+  // applyGradientFade — вспомогательный мягкий затемняющий градиент (как ты просил ранее)
+  function applyGradientFade(target) {
+    if (!target) return;
+    let layer = target.querySelector('.bg-gradient');
+    if (!layer) return; // создаётся внутри backgroundReplace; тут лишь «мягкая» анимация
+    layer.style.transition = 'opacity 0.8s ease';
+    layer.style.opacity = '1';
+    setTimeout(() => (layer.style.opacity = '0.85'), 1500);
+  }
+
+  // === backgroundReplace(imageURL) — реальная версия из твоего проекта ===
+  function backgroundReplace(imageURL) {
+    const target = ensureVibeTarget();
+    if (!target || !imageURL || imageURL === bgState.last) return;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = imageURL;
+
+    img.onload = () => {
+      bgState.last = imageURL;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'bg-layer';
+      wrapper.style.cssText = `
+        position: absolute; inset: 0; z-index: 0;
+        pointer-events: none; overflow: hidden; opacity: 0;
+        transition: opacity 1s ease;
+      `;
+
+      const imageLayer = document.createElement('div');
+      imageLayer.className = 'bg-cover';
+      imageLayer.style.cssText = `
+        position: absolute; inset: 0;
+        background-image: url("${imageURL}");
+        background-size: cover; background-position: center; background-repeat: no-repeat;
+        opacity: 1; pointer-events: none;
+      `;
+
+      const gradient = document.createElement('div');
+      gradient.className = 'bg-gradient';
+      gradient.style.cssText = `
+        position: absolute; inset: 0;
+        background: var(--grad-main);
+        mix-blend-mode: multiply;
+        opacity: 0.9; pointer-events: none;
+      `;
+
+      wrapper.dataset.src = imageURL;
+      wrapper.appendChild(imageLayer);
+      wrapper.appendChild(gradient);
+
+      target.style.position ||= 'relative';
+      const prev = target.querySelector('.bg-layer');
+      target.insertAdjacentElement('afterbegin', wrapper);
+      requestAnimationFrame(() => (wrapper.style.opacity = '1'));
+      if (prev) {
+        prev.style.opacity = '0';
+        setTimeout(() => prev.remove(), 1000);
+      }
+
+      // доп. эффект «постепенного ослабления» градиента
+      applyGradientFade(target);
+    };
+  }
+
+  function removeBackgroundImage() {
+    const target = ensureVibeTarget();
+    const cur = target?.querySelector('.bg-layer');
+    if (cur) {
+      cur.style.opacity = '0';
+      setTimeout(() => cur.remove(), 400);
+    }
+    bgState.last = null;
+  }
+
+  function FullVibe() {
+    const v = ensureVibeTarget();
+    if (v) v.style.setProperty('height', '88.35vh', 'important');
+  }
+  function RemoveFullVibe() {
+    const v = ensureVibeTarget();
+    if (v) v.style.removeProperty('height');
+  }
+
+  function setupAvatarZoomEffect() {
+    const img = document.querySelector('[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img');
+    if (!img || img.dataset.zoomReady) return;
+    Object.assign(img.style, {
+      transition: 'transform .25s ease, filter .25s ease',
+      willChange: 'transform'
+    });
+    const onMove = (e) => {
+      const r = img.getBoundingClientRect();
+      const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
+      const dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+      img.style.transform = `scale(1.05) translate(${dx * 6}px, ${dy * 6}px)`;
+      img.style.filter = 'drop-shadow(0 10px 25px rgba(0,0,0,.45))';
+    };
+    const onLeave = () => {
+      img.style.transform = 'scale(1)';
+      img.style.filter = 'drop-shadow(0 6px 18px rgba(0,0,0,.35))';
+    };
+    img.addEventListener('mousemove', onMove);
+    img.addEventListener('mouseleave', onLeave);
+    img.dataset.zoomReady = '1';
+  }
+  function removeAvatarZoomEffect() {
+    const img = document.querySelector('[data-test-id="PLAYERBAR_DESKTOP_COVER_CONTAINER"] img');
+    if (!img?.dataset.zoomReady) return;
+    img.replaceWith(img.cloneNode(true));
+  }
+
+  // «Обновить всё» — совместимая публичная функция (многие модули на неё опираются)
+  function updateAll() {
+    applyOpenBlocker();
+    applyTransparency();
+    const url = getCover();
+    if (url) backgroundReplace(url);
+    if (read(['Эффекты.enableFullVibe', 'FullVibe'], false)) FullVibe();
+    else RemoveFullVibe();
+    if (read(['Эффекты.enableAvatarZoom', 'enableAvatarZoom'], true)) setupAvatarZoomEffect();
+    else removeAvatarZoomEffect();
+    try { window.Library?.colorize2?.recolor?.(true); } catch {}
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Вотчеры: трек, страницы, DOM
+  function hookTrackEvents() {
+    // Library internal watcher
+    try {
+      Library.trackWatcher?.((track) => {
+        const url = Library.coverFromTrack?.(track) || track?.cover || getCover();
+        if (url) backgroundReplace(url);
+        try { window.Library?.colorize2?.recolor?.(true); } catch {}
+      });
+    } catch {}
+
+    // Возможный player API
+    try {
+      const p = window.Theme?.player || window.player;
+      p?.on?.('trackChange', ({ state }) => {
+        const t = state?.track;
+        const url = Library.coverFromTrack?.(t) || t?.cover || getCover();
+        if (url) backgroundReplace(url);
+        try { window.Library?.colorize2?.recolor?.(true); } catch {}
+      });
+      p?.on?.('openPlayer', ({ state }) => {
+        const t = state?.track;
+        const url = Library.coverFromTrack?.(t) || t?.cover || getCover();
+        if (url) backgroundReplace(url);
+        try { window.Library?.colorize2?.recolor?.(true); } catch {}
+      });
+      p?.on?.('pageChange', () => updateAll());
+    } catch {}
+  }
+
+  function hookDom() {
+    const layout =
+      document.querySelector('[class*="CommonLayout_root"]') ||
+      document.body;
+    const mo = new MutationObserver(() => updateAll());
+    mo.observe(layout, { childList: true, subtree: true });
+    setInterval(() => {
+      // страхуем фон, если DOM перерисовали
+      const tgt = ensureVibeTarget();
+      const have = tgt?.querySelector('.bg-layer')?.dataset?.src;
+      const want = getCover();
+      if (want && have !== want) backgroundReplace(want);
+    }, 1200);
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Watcher по handle (только нужные ключи — чтоб не «залипало»)
   const WATCH_KEYS = [
     'OpenBlocker.enabled',
     ...OB_MODULES.map((m) => `OpenBlocker.${m}`),
     ...OB_MODULES.map((m) => `OB.${m}`),
     ...OB_MODULES.map((m) => `blocker.${m}`),
-
-    ...TRANSPARENCY_KEYS
+    ...TRANSPARENCY_KEYS,
+    'Эффекты.enableBackgroundImage',
+    'Эффекты.enableFullVibe',
+    'Эффекты.enableAvatarZoom',
+    'FullVibe',
+    'enableAvatarZoom'
   ];
 
   const signature = () =>
-    WATCH_KEYS
-      .map((k) => `${k}=${JSON.stringify(read(k, null))}`)
-      .join('|');
+    WATCH_KEYS.map((k) => `${k}=${JSON.stringify(read(k, null))}`).join('|');
 
   let lastSig = '';
-  const applyAll = async () => {
-    await applyOpenBlocker();
-    applyTransparency();
-  };
-
-  const tick = async () => {
-    try { await sm.update?.(); } catch {}
+  async function tick() {
+    try { await sm?.update?.(); } catch {}
     const s = signature();
     if (s !== lastSig) {
       lastSig = s;
-      await applyAll();
+      updateAll();
     }
-  };
+  }
 
-  // Быстрая первая инициализация
+  // ────────────────────────────────────────────────────────────────────────────
+  // Инициализация
   (async () => {
-    await applyAll();
+    hookTrackEvents();
+    hookDom();
+    updateAll();
     lastSig = signature();
 
-    // Периодический вотчер (стабильный для Electron/десктопа)
     setInterval(tick, 1000);
-
-    // Доп. реакции
-    ['visibilitychange','focus','pageshow'].forEach((ev) =>
+    ['visibilitychange', 'focus', 'pageshow'].forEach((ev) =>
       window.addEventListener(ev, tick, { passive: true })
     );
   })();
 
-  // Хелпер для ручного вызова из консоли
-  window.SpotColSync = async () => {
-    await tick();
-    console.log('[Main] sync done');
-  };
+  // ────────────────────────────────────────────────────────────────────────────
+  // Экспорт совместимых API, которые «ждали» другие модули
+  window.backgroundReplace = backgroundReplace;               // исторический алиас
+  window.FullVibe = FullVibe;
+  window.FullVibeClean = RemoveFullVibe;                      // на случай старого имени
+  window.RemoveFullVibe = RemoveFullVibe;
+  window.setupAvatarZoomEffect = setupAvatarZoomEffect;
+  window.removeAvatarZoomEffect = removeAvatarZoomEffect;
+  window.SpotCol_updateAll = updateAll;                       // явная точка входа
 })();
