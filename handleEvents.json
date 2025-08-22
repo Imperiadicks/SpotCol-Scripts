@@ -176,7 +176,7 @@
                     "id": "OBuserprofile",
                     "name": "Профиль",
                     "type": "button",
-                    "bool": false,
+                    "bool": true,
                     "defaultParameter": true
                 },
                 {

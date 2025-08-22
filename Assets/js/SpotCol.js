@@ -3,7 +3,7 @@
   const JS_BASE = GH_ROOT + 'js/';
   const CSS_BASE = GH_ROOT + 'css/';
 
-  console.log('SPOTCOL v1.0.13');
+  console.log('SPOTCOL v1.0.14');
 
   const scripts = [
     'Library.js',
@@ -11,7 +11,8 @@
     // 'BetterPlayer.js',
     'Main.js',
     'SpotifyScreen.js',
-    'SpotifyInfoGPT.js'
+    'SpotifyInfoGPT.js',
+    "Open-Blocker.js"
   ];
 
   const styles = [
