@@ -19,7 +19,7 @@
   function getContentContainer() {
     // приоритет — строго твой класс; дальше fallback'и
     return (
-      document.querySelector('.WithTopBanner_content__6Vh7a') ||
+      document.querySelector('.WithTopBanner_root__P__x3') ||
       document.querySelector('.Content_rootOld__g85_m') ||
       document.querySelector('[class*="CommonLayout_content__"]') ||
       document.querySelector('[class*="Content_root"]') ||
