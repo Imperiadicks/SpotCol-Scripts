@@ -1,13 +1,13 @@
 /*Spotify Screen*/
 :root{
-  --SpotifyScreen-css-version: 'v1.0.10';
+  --SpotifyScreen-css-version: 'v1.0.10.1';
 }
 
 /*------------------------------------------------------------------------------------*/
 /* Корневой контейнер */
 .Spotify_Screen {
     height: 930px;
-    position: fixed;
+    position: relative;
     right: 12px;
     top: 61px;
     z-index: 1;
